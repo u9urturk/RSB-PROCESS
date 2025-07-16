@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+/* Custom animations */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+}
+
+.animate-slide-in {
+    animation: slide-in 0.8s ease-out;
+}
+
+/* Stock specific animations */
+@keyframes stock-card-hover {
+    from {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    to {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
+    }
+}
+
+/* Restaurant Status specific animations - Performance optimized */
+@keyframes table-card-hover {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(-2px);
+    }
+}
+
+@keyframes transfer-highlight {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .table-card-hover {
+        animation: none;
+    }
+}
+
+/* Utility classes for table cards */
+.animate-pulse-glow {
+    animation: pulse-glow 2s infinite;
+}
+
+.animate-transfer-pulse {
+    animation: transfer-pulse 2s infinite;
+}
+
+.animate-table-hover {
+    animation: table-card-hover 0.3s ease-out;
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-table-status-pulse {
+    animation: table-status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-table-occupied-glow {
+    animation: table-occupied-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Scanner specific styles */
+.barcode-scanner-container {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.barcode-video {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 16px;
+}
+
+.barcode-retry-btn {
+    background: linear-gradient(to right, #f97316, #dc2626);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.barcode-retry-btn:hover {
+    background: linear-gradient(to right, #ea580c, #b91c1c);
+    transform: scale(1.05);
+}
