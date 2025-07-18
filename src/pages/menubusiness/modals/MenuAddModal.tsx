@@ -1,6 +1,6 @@
 import { useState, ChangeEvent, FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ImagePlus, Trash2, Pencil } from "lucide-react";
+import { X, ImagePlus, Trash2, Pencil, Upload, Camera, Star, DollarSign, Tag, FileText } from "lucide-react";
 import { useNotification } from "../../../context/provider/NotificationProvider";
 import { MenuAddModalProps, MenuItemDetailed } from "../../../types";
 
@@ -11,6 +11,7 @@ export default function MenuAddModal({ open, onClose, onAdd, categories }: MenuA
     const [status, setStatus] = useState<"active" | "inactive">("active");
     const [description, setDescription] = useState<string>("");
     const [images, setImages] = useState<(File | string)[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
     const { showNotification } = useNotification();
 
     const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -36,24 +37,7 @@ export default function MenuAddModal({ open, onClose, onAdd, categories }: MenuA
         if (input) input.click();
     };
 
-    const handleSubmit = (e: FormEvent): void => {
-        e.preventDefault();
-        if (!name || !category || !price || images.length === 0) {
-            showNotification("error", "Lütfen tüm zorunlu alanları ve en az bir görsel ekleyin.");
-            return;
-        }
-
-        const newItem: MenuItemDetailed = {
-            id: Date.now().toString(),
-            name,
-            category,
-            price: Number(price),
-            status,
-            description,
-            image: typeof images[0] === "string" ? images[0] : URL.createObjectURL(images[0] as File),
-        };
-
-        onAdd(newItem);
+    const resetForm = () => {
         setName("");
         setCategory("");
         setPrice("");
@@ -62,144 +46,293 @@ export default function MenuAddModal({ open, onClose, onAdd, categories }: MenuA
         setImages([]);
     };
 
+    const handleSubmit = async (e: FormEvent): Promise<void> => {
+        e.preventDefault();
+        
+        if (!name.trim() || !category || !price || images.length === 0) {
+            showNotification("error", "Lütfen tüm zorunlu alanları ve en az bir görsel ekleyin.");
+            return;
+        }
+
+        if (Number(price) <= 0) {
+            showNotification("error", "Fiyat 0'dan büyük olmalıdır.");
+            return;
+        }
+
+        setLoading(true);
+        
+        try {
+            const newItem: MenuItemDetailed = {
+                id: Date.now().toString(),
+                name: name.trim(),
+                category,
+                price: Number(price),
+                status,
+                description: description.trim(),
+                image: typeof images[0] === "string" ? images[0] : URL.createObjectURL(images[0] as File),
+                images: images.map(img => typeof img === "string" ? img : URL.createObjectURL(img as File))
+            };
+
+            await onAdd(newItem);
+            resetForm();
+            onClose();
+        } catch (error) {
+            showNotification("error", "Ürün eklenirken bir hata oluştu.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleClose = () => {
+        resetForm();
+        onClose();
+    };
+
     return (
         <AnimatePresence>
             {open && (
                 <motion.div
-                    className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
+                    onClick={(e) => e.target === e.currentTarget && handleClose()}
                 >
                     <motion.div
-                        className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative"
-                        initial={{ scale: 0.95, opacity: 0, y: 40 }}
+                        className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.95, opacity: 0, y: 40 }}
-                        transition={{ type: "spring", duration: 0.3 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                        transition={{ type: "spring", duration: 0.4 }}
                     >
-                        <button
-                            className="absolute top-3 right-3 cursor-pointer transition-colors text-gray-400 hover:text-gray-700"
-                            onClick={onClose}
-                        >
-                            <X size={22} />
-                        </button>
-                        <h2 className="text-xl font-bold mb-4 text-gray-800">Yeni Menü Ürünü Ekle</h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Ürün Adı</label>
-                                <input
-                                    type="text"
-                                    className="w-full border rounded px-3 py-2"
-                                    value={name}
-                                    onChange={e => setName(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Kategori</label>
-                                <select
-                                    className="w-full border rounded px-3 py-2"
-                                    value={category}
-                                    onChange={e => setCategory(e.target.value)}
-                                    required
-                                >
-                                    <option value="">Kategori seçiniz</option>
-                                    {categories.map(cat => (
-                                        <option key={cat} value={cat}>
-                                            {cat}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Fiyat (₺)</label>
-                                <input
-                                    type="number"
-                                    min={0}
-                                    className="w-full border rounded px-3 py-2"
-                                    value={price}
-                                    onChange={e => setPrice(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Durum</label>
-                                <select
-                                    className="w-full border rounded px-3 py-2"
-                                    value={status}
-                                    onChange={e => setStatus(e.target.value as "active" | "inactive")}
-                                >
-                                    <option value="active">Aktif</option>
-                                    <option value="inactive">Pasif</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Açıklama</label>
-                                <textarea
-                                    className="w-full border rounded px-3 py-2"
-                                    value={description}
-                                    onChange={e => setDescription(e.target.value)}
-                                    rows={2}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1 items-center gap-2">
-                                    <ImagePlus size={18} /> Ürün Görselleri (en az 1, en fazla 3)
-                                </label>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={handleImageChange}
-                                    disabled={images.length >= 3}
-                                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
-                                />
-                                <div className="flex gap-2 mt-2 flex-wrap">
-                                    {images.map((img, idx) => (
-                                        <div key={idx} className="relative group">
-                                            <img
-                                                src={typeof img === "string" ? img : URL.createObjectURL(img)}
-                                                alt={`ürün görseli ${idx + 1}`}
-                                                className="w-16 h-16 object-cover rounded border"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveImage(idx)}
-                                                className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow text-red-500 hover:bg-red-100 transition-opacity opacity-80 group-hover:opacity-100"
-                                                title="Sil"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleUpdateImageClick(idx)}
-                                                className="absolute -bottom-2 right-0 bg-white rounded-full p-1 shadow text-orange-500 hover:bg-orange-100 transition-opacity opacity-80 group-hover:opacity-100"
-                                                title="Güncelle"
-                                            >
-                                                <Pencil size={16} />
-                                            </button>
-                                            <input
-                                                id={`update-image-input-${idx}`}
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={e => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) handleUpdateImage(idx, file);
-                                                }}
-                                            />
-                                        </div>
-                                    ))}
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 relative">
+                            <button
+                                className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors"
+                                onClick={handleClose}
+                                disabled={loading}
+                            >
+                                <X size={24} />
+                            </button>
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-white/20 rounded-2xl">
+                                    <ImagePlus size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold">Yeni Menü Ürünü</h2>
+                                    <p className="text-orange-100 mt-1">Restoranınıza yeni lezzet ekleyin</p>
                                 </div>
                             </div>
-                            <button
-                                type="submit"
-                                className="w-full cursor-pointer transition-colors bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 rounded-lg mt-2"
-                            >
-                                Kaydet
-                            </button>
-                        </form>
+                        </div>
+
+                        {/* Content */}
+                        <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
+                            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                                {/* Product Name */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                        <Tag size={16} />
+                                        Ürün Adı *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all placeholder-gray-400"
+                                        placeholder="Örn: Margherita Pizza"
+                                        value={name}
+                                        onChange={e => setName(e.target.value)}
+                                        required
+                                        disabled={loading}
+                                    />
+                                </div>
+
+                                {/* Category and Status Row */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                            <FileText size={16} />
+                                            Kategori *
+                                        </label>
+                                        <select
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all bg-white"
+                                            value={category}
+                                            onChange={e => setCategory(e.target.value)}
+                                            required
+                                            disabled={loading}
+                                        >
+                                            <option value="">Kategori seçiniz</option>
+                                            {categories.map(cat => (
+                                                <option key={cat} value={cat}>
+                                                    {cat}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                            <Star size={16} />
+                                            Durum
+                                        </label>
+                                        <select
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all bg-white"
+                                            value={status}
+                                            onChange={e => setStatus(e.target.value as "active" | "inactive")}
+                                            disabled={loading}
+                                        >
+                                            <option value="active">🟢 Aktif</option>
+                                            <option value="inactive">🔴 Pasif</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Price */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                        <DollarSign size={16} />
+                                        Fiyat (₺) *
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            step="0.01"
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all placeholder-gray-400"
+                                            placeholder="0.00"
+                                            value={price}
+                                            onChange={e => setPrice(e.target.value)}
+                                            required
+                                            disabled={loading}
+                                        />
+                                        <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">₺</span>
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                        <FileText size={16} />
+                                        Açıklama
+                                    </label>
+                                    <textarea
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all placeholder-gray-400 resize-none"
+                                        placeholder="Ürün hakkında detaylar..."
+                                        value={description}
+                                        onChange={e => setDescription(e.target.value)}
+                                        rows={3}
+                                        disabled={loading}
+                                    />
+                                </div>
+
+                                {/* Image Upload */}
+                                <div className="space-y-4">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                        <Camera size={16} />
+                                        Ürün Görselleri * (En az 1, en fazla 3)
+                                    </label>
+                                    
+                                    {/* Image Grid */}
+                                    <div className="grid grid-cols-3 gap-4">
+                                        {images.map((img, idx) => (
+                                            <div key={idx} className="relative group aspect-square">
+                                                <img
+                                                    src={typeof img === "string" ? img : URL.createObjectURL(img)}
+                                                    alt={`Ürün görseli ${idx + 1}`}
+                                                    className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                                />
+                                                
+                                                {/* Overlay Actions */}
+                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleUpdateImageClick(idx)}
+                                                        className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+                                                        title="Güncelle"
+                                                        disabled={loading}
+                                                    >
+                                                        <Pencil size={16} className="text-orange-600" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveImage(idx)}
+                                                        className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
+                                                        title="Sil"
+                                                        disabled={loading}
+                                                    >
+                                                        <Trash2 size={16} className="text-red-600" />
+                                                    </button>
+                                                </div>
+                                                
+                                                {/* Update Input */}
+                                                <input
+                                                    id={`update-image-input-${idx}`}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={e => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleUpdateImage(idx, file);
+                                                    }}
+                                                    disabled={loading}
+                                                />
+                                            </div>
+                                        ))}
+                                        
+                                        {/* Add Image Button */}
+                                        {images.length < 3 && (
+                                            <label className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all group">
+                                                <Upload size={24} className="text-gray-400 group-hover:text-orange-500 mb-2" />
+                                                <span className="text-sm text-gray-500 group-hover:text-orange-600 font-medium">
+                                                    Görsel Ekle
+                                                </span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    multiple
+                                                    onChange={handleImageChange}
+                                                    className="hidden"
+                                                    disabled={loading || images.length >= 3}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                    
+                                    <p className="text-xs text-gray-500">
+                                        JPG, PNG formatında, maksimum 5MB boyutunda olmalıdır.
+                                    </p>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="border-t border-gray-100 p-6 bg-gray-50/50">
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    type="button"
+                                    onClick={handleClose}
+                                    className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                                    disabled={loading}
+                                >
+                                    İptal
+                                </button>
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={loading || !name.trim() || !category || !price || images.length === 0}
+                                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 transition-all font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Kaydediliyor...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ImagePlus size={18} />
+                                            Ürünü Kaydet
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
                     </motion.div>
                 </motion.div>
             )}

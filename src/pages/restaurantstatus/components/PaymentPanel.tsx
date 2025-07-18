@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, CreditCard, Edit2, Receipt, Banknote, Wallet, Check, Minus, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useRestaurant } from "../../../context/provider/RestaurantProvider";
 
 interface CartItem {
     orderItemId: string;
@@ -19,8 +20,6 @@ interface PaymentPanelProps {
     setCart: (cart: CartItem[]) => void;
     onClose: () => void;
     onCompletePayment: (paymentMethod: "cash" | "card") => void;
-    updateOrder?: (tableId: number, cart: CartItem[]) => void;
-    updateTable?: (tableId: number, data: any) => void;
 }
 
 interface PaymentOption {
@@ -149,75 +148,71 @@ const NoteModal = ({ open, onClose, onSave, initialNote = [], suggestions }: Not
 };
 
 const PaymentPanel = ({
+    table,
     cart,
     setCart,
     onClose,
-    onCompletePayment,
-    updateOrder,
-    updateTable
+    onCompletePayment
 }: PaymentPanelProps) => {
+    // RestaurantProvider'dan metotları al
+    const { updateOrderInTable, removeOrderFromTable } = useRestaurant();
+    
     const [selectedPayment, setSelectedPayment] = useState<"cash" | "card">("cash");
     const [noteModal, setNoteModal] = useState<{ open: boolean; item: CartItem | null }>({ open: false, item: null });
 
     // Sepet işlemleri
     const handleQtyChange = (item: CartItem, delta: number) => {
-        const newCart = cart
-            .map((it: CartItem) =>
-                it.orderItemId === item.orderItemId
-                    ? { ...it, quantity: Math.max(1, it.quantity + delta) }
-                    : it
-            )
-            .filter((it: CartItem) => it.quantity > 0);
+        const newQuantity = Math.max(1, item.quantity + delta);
+        
+        // Local state güncelleme
+        const newCart = cart.map((it: CartItem) =>
+            it.orderItemId === item.orderItemId
+                ? { ...it, quantity: newQuantity }
+                : it
+        );
         setCart(newCart);
-        updateOrder && updateOrder(newCart[0]?.tableId || 0, newCart);
+        
+        // RestaurantProvider'da güncelleme
+        updateOrderInTable(table.id, item.orderItemId, { quantity: newQuantity });
     };
 
     const handleRemove = (item: CartItem) => {
+        // Local state güncelleme
         const newCart = cart.filter((it: CartItem) => it.orderItemId !== item.orderItemId);
         setCart(newCart);
-        if (updateOrder && newCart.length > 0) {
-            updateOrder(newCart[0].tableId || 0, newCart);
-        } else if (updateOrder && cart.length > 0) {
-            updateOrder(cart[0].tableId || 0, []);
-        }
+        
+        // RestaurantProvider'dan silme
+        removeOrderFromTable(table.id, item.orderItemId);
     };
 
     // Not güncelleme
     const handleEditNote = (item: CartItem) => setNoteModal({ open: true, item });
     const handleNoteSave = (noteArr: string[]) => {
         if (noteModal.item) {
+            // Local state güncelleme
             const newCart = cart.map((it: CartItem) =>
                 it.orderItemId === noteModal.item!.orderItemId
                     ? { ...it, note: noteArr }
                     : it
             );
             setCart(newCart);
-            updateOrder && updateOrder(newCart[0]?.tableId || 0, newCart);
+            
+            // RestaurantProvider'da güncelleme
+            updateOrderInTable(table.id, noteModal.item.orderItemId, { note: noteArr });
         }
         setNoteModal({ open: false, item: null });
     };
 
     // Toplam tutar
     const total = cart.reduce(
-        (sum, it) => sum + ((it.price ?? (it.totalPrice && (it.qty ?? it.quantity) ? it.totalPrice / (it.qty ?? it.quantity) : 0)) * (it.qty ?? it.quantity)),
+        (sum, it) => sum + ((it.price ?? 0) * (it.quantity ?? 1)),
         0
     );
 
     // Ödeme işlemi
     const handlePayment = () => {
-        if (updateOrder && cart.length > 0) {
-            updateOrder(
-                cart[0].tableId || 0,
-                cart.map((it: CartItem) => ({
-                    orderItemId: it.orderItemId,
-                    productName: it.productName,
-                    quantity: it.qty ?? it.quantity,
-                    note: it.note,
-                    totalPrice: (it.price ?? (it.totalPrice && (it.qty ?? it.quantity) ? it.totalPrice / (it.qty ?? it.quantity) : 0)) * (it.qty ?? it.quantity)
-                } as CartItem))
-            );
-        }
-        updateTable && updateTable(cart[0]?.tableId || 0, { occupied: false, totalBill: 0, waiter: "", lastOrderTime: "" });
+        // PaymentPanel zaten önceden ödeme onayını handle ediyor
+        // onCompletePayment callback'i TableModal'da processPayment'ı çağırıyor
         onCompletePayment(selectedPayment);
     };
 

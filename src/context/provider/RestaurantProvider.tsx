@@ -25,6 +25,7 @@ interface UpdateTableData {
     reservedAt?: string;
     serviceStartTime?: string;
     cleanStatus?: boolean;
+    orders?: any;
 }
 
 // API'den veri çekiyormuş gibi simüle eden fonksiyonlar
@@ -57,12 +58,183 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
         });
     }, []);
 
-    // Masa güncelleme fonksiyonu
+    // ===== MASA YÖNETİMİ METOTLARI =====
+    
+    // Masa güncelleme fonksiyonu (genel)
     const updateTable = (tableId: string, newData: UpdateTableData): void => {
         setTables(prev =>
             prev.map(t => (t.id === tableId ? { ...t, ...newData } : t))
         );
     };
+
+    // Masa açma fonksiyonu
+    const openTable = (tableId: string, waiterData?: { waiterId?: string; waiterName?: string }): void => {
+        const updateData: UpdateTableData = {
+            status: "occupied",
+            occupiedAt: new Date().toISOString(),
+            cleanStatus: true,
+            ...waiterData
+        };
+        updateTable(tableId, updateData);
+    };
+
+    // Masa kapatma fonksiyonu
+    const closeTable = (tableId: string): void => {
+        updateTable(tableId, {
+            status: "available",
+            totalAmount: 0,
+            occupiedAt: undefined,
+            waiterId: undefined,
+            waiterName: undefined,
+            serviceStartTime: undefined,
+            cleanStatus: true,
+            orders: undefined
+        });
+    };
+
+    // Masa temizleme fonksiyonu
+    const cleanTable = (tableId: string): void => {
+        updateTable(tableId, { cleanStatus: true });
+    };
+
+    // ===== SİPARİŞ YÖNETİMİ METOTLARI =====
+
+    // Masaya sipariş ekleme
+    const addOrderToTable = (tableId: string, orderItems: any[]): void => {
+        setTables(prev =>
+            prev.map(table => {
+                if (table.id === tableId) {
+                    const newOrders = orderItems.map(item => ({
+                        id: item.orderItemId || `order-${Date.now()}-${Math.random()}`,
+                        productName: item.productName || item.name,
+                        quantity: item.quantity || 1,
+                        price: item.price || 0,
+                        note: item.note || [],
+                        status: 'pending' as const,
+                        orderedAt: new Date().toISOString(),
+                        items: [{
+                            id: item.orderItemId || `item-${Date.now()}`,
+                            name: item.productName || item.name,
+                            quantity: item.quantity || 1,
+                            price: item.price || 0
+                        }],
+                        total: (item.price || 0) * (item.quantity || 1)
+                    }));
+
+                    const existingOrders = table.orders || [];
+                    const updatedOrders = [...existingOrders, ...newOrders];
+                    const totalAmount = updatedOrders.reduce((sum, order) => sum + order.total, 0);
+
+                    return {
+                        ...table,
+                        orders: updatedOrders,
+                        totalAmount,
+                        status: "occupied" as const,
+                        occupiedAt: table.occupiedAt || new Date().toISOString()
+                    };
+                }
+                return table;
+            })
+        );
+    };
+
+    // Sipariş güncelleme
+    const updateOrderInTable = (tableId: string, orderItemId: string, updateData: any): void => {
+        setTables(prev =>
+            prev.map(table => {
+                if (table.id === tableId && table.orders) {
+                    const updatedOrders = table.orders.map(order => {
+                        if (order.id === orderItemId) {
+                            const updated = { ...order, ...updateData };
+                            updated.total = updated.price * updated.quantity;
+                            return updated;
+                        }
+                        return order;
+                    });
+                    
+                    const totalAmount = updatedOrders.reduce((sum, order) => sum + order.total, 0);
+                    
+                    return {
+                        ...table,
+                        orders: updatedOrders,
+                        totalAmount
+                    };
+                }
+                return table;
+            })
+        );
+    };
+
+    // Sipariş silme
+    const removeOrderFromTable = (tableId: string, orderItemId: string): void => {
+        setTables(prev =>
+            prev.map(table => {
+                if (table.id === tableId && table.orders) {
+                    const updatedOrders = table.orders.filter(order => order.id !== orderItemId);
+                    const totalAmount = updatedOrders.reduce((sum, order) => sum + order.total, 0);
+                    
+                    return {
+                        ...table,
+                        orders: updatedOrders,
+                        totalAmount,
+                        // Eğer hiç sipariş kalmadıysa masayı boşalt
+                        ...(updatedOrders.length === 0 && {
+                            status: "available" as const,
+                            occupiedAt: undefined,
+                            totalAmount: 0
+                        })
+                    };
+                }
+                return table;
+            })
+        );
+    };
+
+    // Sipariş durumu güncelleme
+    const updateOrderStatus = (tableId: string, orderId: string, status: 'pending' | 'preparing' | 'ready' | 'delivered'): void => {
+        setTables(prev =>
+            prev.map(table => {
+                if (table.id === tableId && table.orders) {
+                    const updatedOrders = table.orders.map(order =>
+                        order.id === orderId ? { ...order, status } : order
+                    );
+                    return { ...table, orders: updatedOrders };
+                }
+                return table;
+            })
+        );
+    };
+
+    // ===== ÖDEME YÖNETİMİ METOTLARI =====
+
+    // Toplam tutar hesaplama
+    const calculateTableTotal = (tableId: string): number => {
+        const table = tables.find(t => t.id === tableId);
+        if (!table?.orders) return 0;
+        return table.orders.reduce((sum, order) => sum + order.total, 0);
+    };
+
+    // Ödeme işlemi
+    const processPayment = (tableId: string, paymentMethod: 'cash' | 'card', amount?: number): void => {
+        const table = tables.find(t => t.id === tableId);
+        if (!table) return;
+
+        const totalAmount = amount || calculateTableTotal(tableId);
+        
+        // Masayı temizle ve boşalt
+        updateTable(tableId, {
+            status: "available",
+            totalAmount: 0,
+            occupiedAt: undefined,
+            orders: undefined,
+            cleanStatus: false, // Ödeme sonrası temizlik gerekli
+            waiterId: undefined,
+            waiterName: undefined,
+            serviceStartTime: undefined
+        });
+    };
+
+    // ===== GARSON YÖNETİMİ METOTLARI =====
 
     // Garson atama fonksiyonu
     const assignWaiterToTable = (tableId: string, waiterId: string): void => {
@@ -74,7 +246,6 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
                 ...t, 
                 waiterId,
                 waiterName: waiter.name,
-                waiterPhone: waiter.phone,
                 serviceStartTime: new Date().toISOString()
             } : t))
         );
@@ -83,7 +254,7 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
         setWaiters(prev =>
             prev.map(w => (w.id === waiterId ? {
                 ...w,
-                assignedTables: [...w.assignedTables, tableId]
+                assignedTables: [...w.assignedTables.filter(id => id !== tableId), tableId]
             } : w))
         );
     };
@@ -98,7 +269,6 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
                 ...t, 
                 waiterId: undefined,
                 waiterName: undefined,
-                waiterPhone: undefined,
                 serviceStartTime: undefined
             } : t))
         );
@@ -122,29 +292,45 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
         return waiters.filter(w => w.isActive && w.assignedTables.length < 10); // Max 10 masa
     };
 
+    // ===== TRANSFER İŞLEMLERİ =====
+
     // Aktarım fonksiyonu
     const transferOrder = (fromTableId: string, toTableId: string): void => {
         setTables(prev => {
             const fromTable = prev.find(t => t.id === fromTableId);
-            if (!fromTable) return prev;
+            const toTable = prev.find(t => t.id === toTableId);
+            
+            if (!fromTable || !toTable) return prev;
             
             return prev.map(t => {
                 if (t.id === fromTableId) {
                     return {
                         ...t,
-                        status: "available",
-                        totalAmount: undefined,
+                        status: "available" as const,
+                        totalAmount: 0,
                         occupiedAt: undefined,
-                        orders: undefined
+                        orders: undefined,
+                        cleanStatus: false // Transfer sonrası temizlik gerekli
                     };
                 }
                 if (t.id === toTableId) {
+                    const existingOrders = t.orders || [];
+                    const transferredOrders = fromTable.orders || [];
+                    const allOrders = [...existingOrders, ...transferredOrders];
+                    const totalAmount = allOrders.reduce((sum, order) => sum + order.total, 0);
+                    
                     return {
                         ...t,
-                        status: "occupied",
-                        totalAmount: fromTable.totalAmount,
-                        occupiedAt: fromTable.occupiedAt,
-                        orders: fromTable.orders
+                        status: "occupied" as const,
+                        totalAmount,
+                        occupiedAt: t.occupiedAt || fromTable.occupiedAt || new Date().toISOString(),
+                        orders: allOrders,
+                        // Eğer hedef masada garson yoksa, kaynak masanın garsonunu aktar
+                        ...((!t.waiterId && fromTable.waiterId) && {
+                            waiterId: fromTable.waiterId,
+                            waiterName: fromTable.waiterName,
+                            serviceStartTime: fromTable.serviceStartTime
+                        })
                     };
                 }
                 return t;
@@ -152,69 +338,61 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
         });
     };
 
+    // ===== ESKI METOTLAR (GERİYE UYUMLULUK) =====
+
+    // Eski updateOrder metodu - yeni updateOrderInTable'a yönlendir
+    const updateOrder = (tableId: string, orderId: string, updateData: any): void => {
+        updateOrderInTable(tableId, orderId, updateData);
+    };
+
+    // Eski updateTableStatus metodu - yeni updateTable'a yönlendir
+    const updateTableStatus = (tableId: string, status: 'available' | 'occupied' | 'reserved'): void => {
+        updateTable(tableId, { status });
+    };
+
+    // Eski addOrder metodu - yeni addOrderToTable'a yönlendir
+    const addOrder = (tableId: string, order: any): void => {
+        addOrderToTable(tableId, [order]);
+    };
+
     const value: RestaurantContextType = {
+        // State değerleri
         tables,
         setTables,
         waiters,
         setWaiters,
         loading,
         categories: [], // Boş array olarak başlat
+
+        // Masa yönetimi metotları
         updateTable,
+        openTable,
+        closeTable,
+        cleanTable,
+
+        // Sipariş yönetimi metotları
+        addOrderToTable,
+        updateOrderInTable,
+        removeOrderFromTable,
+        updateOrderStatus,
+
+        // Ödeme yönetimi metotları
+        calculateTableTotal,
+        processPayment,
+
+        // Garson yönetimi metotları
         assignWaiterToTable,
         unassignWaiterFromTable,
         getWaiterById,
         getAvailableWaiters,
-        updateOrder: (tableId: string, orderId: string, updateData: any) => {
-            setTables(prevTables => 
-                prevTables.map(table => 
-                    table.id === tableId 
-                        ? { 
-                            ...table, 
-                            orders: table.orders?.map(order => 
-                                order.id === orderId 
-                                    ? { ...order, ...updateData }
-                                    : order
-                            ) 
-                        }
-                        : table
-                )
-            );
-        },
-        updateTableStatus: (tableId: string, status: 'available' | 'occupied' | 'reserved') => {
-            setTables(prevTables => 
-                prevTables.map(table => 
-                    table.id === tableId 
-                        ? { ...table, status }
-                        : table
-                )
-            );
-        },
-        addOrder: (tableId: string, order: any) => {
-            setTables(prevTables => 
-                prevTables.map(table => 
-                    table.id === tableId 
-                        ? { ...table, orders: [...(table.orders || []), order] }
-                        : table
-                )
-            );
-        },
-        updateOrderStatus: (tableId: string, orderId: string, status: 'pending' | 'preparing' | 'ready' | 'delivered') => {
-            setTables(prevTables => 
-                prevTables.map(table => 
-                    table.id === tableId 
-                        ? { 
-                            ...table, 
-                            orders: table.orders?.map(order => 
-                                order.id === orderId 
-                                    ? { ...order, status }
-                                    : order
-                            ) 
-                        }
-                        : table
-                )
-            );
-        },
+
+        // Transfer işlemleri
         transferOrder,
+
+        // Geriye uyumluluk için eski metotlar
+        updateOrder,
+        updateTableStatus,
+        addOrder
     };
 
     return (

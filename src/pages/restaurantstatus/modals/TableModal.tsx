@@ -31,6 +31,17 @@ interface NavButton {
 // Modern Status Badge Component
 function StatusBadge({ table }: StatusBadgeProps) {
     const getStatusConfig = () => {
+        // Eğer masa dolu ve temizlenmemişse (cleanStatus false), temizlik gerektiriyor
+        if (table.status === "occupied" && table.cleanStatus === false) {
+            return {
+                bg: "bg-gradient-to-r from-yellow-500 to-yellow-600",
+                text: "text-white",
+                icon: <FaBroom size={14} />,
+                label: "Temizlenecek",
+                shadow: "shadow-lg shadow-yellow-500/25"
+            };
+        }
+        
         switch (table.status) {
             case "occupied":
                 return {
@@ -112,7 +123,7 @@ const NAV_BUTTONS: NavButton[] = [
 ];
 
 const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onStartTransfer }) => {
-    const { tables, updateTable } = useRestaurant();
+    const { tables, updateTable, processPayment, cleanTable } = useRestaurant();
     const table = tables.find(t => t.id === tableId);
 
     // Eğer modal kapalıysa veya table yoksa render etme
@@ -147,8 +158,9 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
 
     const handleClean = async () => {
         try {
-            updateTable(table.id, { status: "available" });
-            showNotification("success", "Masa temizlendi");
+            // Sadece temizlik durumunu güncelle, masa durumunu değiştirme
+            cleanTable(table.id);
+            showNotification("success", "Masa temizlendi olarak işaretlendi");
         } catch (err) {
             showNotification("error", "Temizleme işlemi başarısız oldu. Lütfen tekrar deneyin.");
             console.error("Temizleme işlemi başarısız:", err);
@@ -164,9 +176,14 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
 
     // Ödeme tamamlandığında yapılacaklar
     const handleCompletePayment = (type: "cash" | "card") => {
-        setShowPaymentPanel(false);
-        showNotification("success", type === "cash" ? "Nakit ödeme tamamlandı" : "Kredi kartı ile ödeme başarıyla tamamlandı");
-        updateTable(table.id, { status: "available", totalAmount: 0 });
+        try {
+            processPayment(table.id, type);
+            setShowPaymentPanel(false);
+            showNotification("success", type === "cash" ? "Nakit ödeme tamamlandı" : "Kredi kartı ile ödeme başarıyla tamamlandı");
+        } catch (err) {
+            showNotification("error", "Ödeme işlemi başarısız oldu. Lütfen tekrar deneyin.");
+            console.error("Ödeme işlemi başarısız:", err);
+        }
     };
 
     // Bekleme süresini hesapla (dakika cinsinden)

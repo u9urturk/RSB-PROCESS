@@ -372,6 +372,7 @@ export interface ConfirmContextType {
 }
 
 export interface RestaurantContextType {
+    // State değerleri
     tables: TableData[];
     setTables: React.Dispatch<React.SetStateAction<TableData[]>>;
     loading: boolean;
@@ -384,7 +385,7 @@ export interface RestaurantContextType {
     getWaiterById: (waiterId: string) => Waiter | undefined;
     getAvailableWaiters: () => Waiter[];
     
-    // Mevcut context metodları
+    // Kategori verisi
     categories: Array<{
         id: string;
         name: string;
@@ -396,12 +397,30 @@ export interface RestaurantContextType {
             image?: string;
         }>;
     }>;
+    
+    // Masa yönetimi metotları
     updateTable: (tableId: string, updateData: any) => void;
+    openTable: (tableId: string, waiterData?: { waiterId?: string; waiterName?: string }) => void;
+    closeTable: (tableId: string) => void;
+    cleanTable: (tableId: string) => void;
+    
+    // Sipariş yönetimi metotları
+    addOrderToTable: (tableId: string, orderItems: any[]) => void;
+    updateOrderInTable: (tableId: string, orderItemId: string, updateData: any) => void;
+    removeOrderFromTable: (tableId: string, orderItemId: string) => void;
+    updateOrderStatus: (tableId: string, orderId: string, status: 'pending' | 'preparing' | 'ready' | 'delivered') => void;
+    
+    // Ödeme yönetimi metotları
+    calculateTableTotal: (tableId: string) => number;
+    processPayment: (tableId: string, paymentMethod: 'cash' | 'card', amount?: number) => void;
+    
+    // Transfer işlemleri
+    transferOrder: (fromTableId: string, toTableId: string) => void;
+    
+    // Geriye uyumluluk için eski metotlar
     updateOrder: (tableId: string, orderId: string, updateData: any) => void;
     updateTableStatus: (tableId: string, status: 'available' | 'occupied' | 'reserved') => void;
     addOrder: (tableId: string, order: any) => void;
-    updateOrderStatus: (tableId: string, orderId: string, status: 'pending' | 'preparing' | 'ready' | 'delivered') => void;
-    transferOrder: (fromTableId: string, toTableId: string) => void;
 }
 
 // Dashboard Types
@@ -448,6 +467,7 @@ export interface MenuItemDetailed {
     preparationTime?: number;
     isSpecial?: boolean;
     image?: string;
+    images?: string[];
     status: "active" | "inactive";
     variants?: {
         name: string;
@@ -465,7 +485,7 @@ export interface MenuTableProps {
     items: MenuItemDetailed[];
     onDelete?: (id: string) => Promise<void>;
     onEdit?: (item: MenuItemDetailed) => void;
-    onUpdate?: (id: string, available: boolean) => Promise<void>;
+    onUpdate?: (id: string, updatedItem: MenuItemDetailed) => Promise<void>;
     onAdd?: (item: MenuItemDetailed) => void;
 }
 

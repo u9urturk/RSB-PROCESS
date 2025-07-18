@@ -1,4 +1,59 @@
 import { TableData } from "../../../types";
+import { menuData } from "../../menubusiness/mocks/menuData";
+
+// Rastgele sipariş notları
+const orderNotes = [
+    ["#acı sos ekle"],
+    ["#soğansız", "#marul olmasın"],
+    ["#az tuz"],
+    ["#sıcak servis"],
+    ["#buzsuz"],
+    ["#ekstra peynir"],
+    ["#ince hamur"],
+    ["#az pişmiş"],
+    [],
+    ["#ekstra sos"]
+];
+
+// Sipariş durumları
+const orderStatuses = ['pending', 'preparing', 'ready', 'delivered'] as const;
+
+// Rastgele sipariş oluşturma fonksiyonu
+const generateRandomOrders = (tableNumber: number) => {
+    const orderCount = Math.floor(Math.random() * 5) + 1; // 1-5 arası sipariş
+    const orders = [];
+    
+    for (let i = 0; i < orderCount; i++) {
+        const randomMenuItem = menuData[Math.floor(Math.random() * menuData.length)];
+        const quantity = Math.floor(Math.random() * 3) + 1; // 1-3 adet
+        const randomNotes = orderNotes[Math.floor(Math.random() * orderNotes.length)];
+        const randomStatus = orderStatuses[Math.floor(Math.random() * orderStatuses.length)];
+        
+        // Sipariş zamanı (son 2 saat içinde)
+        const orderedAt = new Date(Date.now() - Math.floor(Math.random() * 2 * 60 * 60 * 1000)).toISOString();
+        
+        const order = {
+            id: `order-${tableNumber}-${i + 1}-${Date.now()}`,
+            productName: randomMenuItem.name,
+            quantity: quantity,
+            price: randomMenuItem.price,
+            note: randomNotes,
+            status: randomStatus,
+            orderedAt: orderedAt,
+            items: [{
+                id: `item-${tableNumber}-${i + 1}-${Date.now()}`,
+                name: randomMenuItem.name,
+                quantity: quantity,
+                price: randomMenuItem.price
+            }],
+            total: randomMenuItem.price * quantity
+        };
+        
+        orders.push(order);
+    }
+    
+    return orders;
+};
 
 export const tablesData: TableData[] = Array.from({ length: 44 }, (_, i): TableData => {
     const status = Math.random() > 0.45 ? "occupied" : Math.random() > 0.8 ? "reserved" : "available";
@@ -12,18 +67,24 @@ export const tablesData: TableData[] = Array.from({ length: 44 }, (_, i): TableD
     let occupiedAt: string | undefined;
     let reservedAt: string | undefined;
     let serviceStartTime: string | undefined;
+    let orders: any[] | undefined;
     let totalAmount = 0;
 
+    // Sipariş ve tutar hesaplaması
     if (status === "occupied") {
         occupiedAt = new Date(Date.now() - Math.floor(Math.random() * 3 * 60 * 60 * 1000)).toISOString();
         serviceStartTime = new Date(Date.now() - Math.floor(Math.random() * 2 * 60 * 60 * 1000)).toISOString();
-        totalAmount = Math.floor(Math.random() * 500) + 100;
+        
+        // Rastgele siparişler oluştur
+        orders = generateRandomOrders(i + 1);
+        
+        // Toplam tutarı siparişlerden hesapla
+        totalAmount = orders.reduce((sum, order) => sum + order.total, 0);
     } else if (status === "reserved") {
         reservedAt = new Date(Date.now() + Math.floor(Math.random() * 24 * 60 * 60 * 1000)).toISOString();
     }
 
     const waiterIndex = Math.floor(Math.random() * waiterNames.length);
-    const orderQuantity = Math.floor(Math.random() * 4) + 1; // 1-4 arası sipariş
 
     return {
         id: `table-${i + 1}`,
@@ -41,22 +102,6 @@ export const tablesData: TableData[] = Array.from({ length: 44 }, (_, i): TableD
         waiterName: status !== "available" ? waiterNames[waiterIndex] : undefined,
         
         // Sipariş bilgileri
-        orders: status === "occupied" ? [
-            {
-                id: `order-${i + 1}`,
-                productName: "Karma Türk Kahvaltısı",
-                quantity: orderQuantity,
-                price: 85,
-                note: ["Az tuzlu", "Çay yerine kahve"],
-                items: [
-                    { id: "item-1", name: "Türk Kahvaltısı", quantity: orderQuantity, price: 85 },
-                    { id: "item-2", name: "Çay", quantity: orderQuantity, price: 15 }
-                ],
-                status: ['pending', 'preparing', 'ready', 'delivered'][Math.floor(Math.random() * 4)] as 'pending' | 'preparing' | 'ready' | 'delivered',
-                total: (85 + 15) * orderQuantity,
-                orderedAt: new Date(Date.now() - Math.floor(Math.random() * 60 * 60 * 1000)).toISOString(),
-                servedAt: Math.random() > 0.5 ? new Date(Date.now() - Math.floor(Math.random() * 30 * 60 * 1000)).toISOString() : undefined
-            }
-        ] : undefined
+        orders: orders
     };
 });
