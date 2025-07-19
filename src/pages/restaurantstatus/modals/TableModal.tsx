@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Info, ShoppingCart, RefreshCw, CreditCard, CornerDownRight, List, User, Clock, MapPin, Utensils, Sparkles } from "lucide-react";
 import { FaBroom } from "react-icons/fa";
@@ -59,11 +59,11 @@ const modalVariants = {
 
 const backdropVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
         opacity: 1,
         transition: { duration: 0.3 }
     },
-    exit: { 
+    exit: {
         opacity: 0,
         transition: { duration: 0.2 }
     },
@@ -82,7 +82,7 @@ function StatusBadge({ table }: StatusBadgeProps) {
                 glow: "shadow-lg shadow-yellow-500/25"
             };
         }
-        
+
         switch (table.status) {
             case "occupied":
                 return {
@@ -120,9 +120,9 @@ function StatusBadge({ table }: StatusBadgeProps) {
     };
 
     const config = getStatusConfig();
-    
+
     return (
-        <span 
+        <span
             className={`${config.bg} ${config.text} ${config.glow} px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm border border-white/20`}
         >
             <span
@@ -172,70 +172,88 @@ const NAV_BUTTONS: NavButton[] = [
 const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onStartTransfer }) => {
     const { tables, processPayment, cleanTable } = useRestaurant();
     const { showNotification } = useNotification();
-    
+
     const [showOrderPanel, setShowOrderPanel] = useState(false);
     const [showPaymentPanel, setShowPaymentPanel] = useState(false);
     const [showOrderDetail, setShowOrderDetail] = useState(false);
     const [balloonStep, setBalloonStep] = useState(0);
-    
+
+    // Modal açık olduğunda body scroll'unu devre dışı bırak
+    useEffect(() => {
+        if (isOpen) {
+            // Mevcut scroll pozisyonunu kaydet
+            const scrollY = window.scrollY;
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.width = '100%';
+            document.body.style.overflow = 'hidden';
+
+            return () => {
+                // Modal kapandığında scroll'u geri getir
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.width = '';
+                document.body.style.overflow = '';
+                window.scrollTo(0, scrollY);
+            };
+        }
+    }, [isOpen]);
+
     const table = tables.find(t => t.id === tableId);
-    
+
     if (!table || !isOpen) return null;
 
     const isEmpty = table.status === "available";
     const isOccupied = table.status === "occupied";
-    
+
     const handleOverlayClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {
             onClose();
         }
     };
-    
+
     const handleOrderClick = () => {
         if (isEmpty) {
             setShowOrderPanel(true);
         }
     };
-    
+
     const handleClean = () => {
         if (table.cleanStatus === false) {
             cleanTable(table.id);
             showNotification("success", `Masa ${table.number} temizlendi!`);
         }
     };
-    
+
     const handleTransfer = () => {
         onStartTransfer(table);
         onClose();
     };
-    
+
     const handleCompletePayment = () => {
         processPayment(table.id, "cash");
         setShowPaymentPanel(false);
         showNotification("success", `Masa ${table.number} ödemesi tamamlandı!`);
     };
-    
+
     const handleHintClick = () => {
         setBalloonStep(1);
     };
-    
+
     const getWaitTime = (occupiedAt: string) => {
         const now = new Date();
         const occupiedTime = new Date(occupiedAt);
         const diffMs = now.getTime() - occupiedTime.getTime();
         return Math.floor(diffMs / (1000 * 60));
     };
-    
+
     const waitTime = table.occupiedAt ? getWaitTime(table.occupiedAt) : 0;
 
     return (
-        <AnimatePresence>
+        <div>
             {isOpen && (
-                <motion.div
-                    variants={backdropVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
+                <div
+                   
                     className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-md z-50 px-4"
                     onClick={handleOverlayClick}
                     aria-modal="true"
@@ -280,11 +298,10 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                     animate={{ opacity: 1, x: 0 }}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.98 }}
-                                    className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-3 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-lg border border-white/30 backdrop-blur-sm ${
-                                        showOrderDetail 
-                                            ? "bg-gray-600 shadow-gray-600/25" 
+                                    className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-3 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-lg border border-white/30 backdrop-blur-sm ${showOrderDetail
+                                            ? "bg-gray-600 shadow-gray-600/25"
                                             : "bg-blue-500 shadow-blue-500/25"
-                                    }`}
+                                        }`}
                                     onClick={() => setShowOrderDetail((v) => !v)}
                                     aria-label={showOrderDetail ? "Sipariş Detayını Kapat" : "Sipariş Detayını Göster"}
                                 >
@@ -295,7 +312,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                     >
                                         <List size={14} className="text-white sm:w-[18px] sm:h-[18px]" />
                                     </motion.div>
-                                    
+
                                     {/* Basit Notification Dot */}
                                     {!showOrderDetail && table.orders && table.orders.length > 0 && (
                                         <motion.div
@@ -304,23 +321,23 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                             className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full border-2 border-white"
                                         />
                                     )}
-                                    
+
                                     <InfoBalloon
                                         show={balloonStep === 6}
                                         text={"Sipariş Detayını Göster / Kapat"}
                                         onClose={() => setBalloonStep(balloonStep + 1)}
                                     />
                                 </motion.button>
-                        
+
                                 {!showOrderDetail ? (
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.1 }}
                                         className="flex flex-col flex-1"
                                     >
                                         {/* Modern Glass Header */}
-                                        <motion.div 
+                                        <motion.div
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             whileHover={{ scale: 1.02 }}
@@ -334,7 +351,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                         >
                                             {/* Animated Background Elements */}
                                             <motion.div
-                                                animate={{ 
+                                                animate={{
                                                     x: [0, 100, 0],
                                                     y: [0, -50, 0],
                                                     opacity: [0.3, 0.6, 0.3]
@@ -343,7 +360,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                 className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl"
                                             />
                                             <motion.div
-                                                animate={{ 
+                                                animate={{
                                                     x: [0, -80, 0],
                                                     y: [0, 60, 0],
                                                     opacity: [0.2, 0.5, 0.2]
@@ -351,24 +368,17 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                                                 className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-xl"
                                             />
-                                    
+
                                             <div className="relative z-10 flex justify-between items-center">
                                                 <div>
-                                                    <motion.h2 
-                                                        initial={{ x: -20, opacity: 0 }}
-                                                        animate={{ x: 0, opacity: 1 }}
-                                                        transition={{ delay: 0.2 }}
-                                                        className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3"
+                                                    <h2 className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3"
                                                     >
-                                                        <motion.div
-                                                            animate={{ rotate: [0, 360] }}
-                                                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                                        >
+                                                        <div className="flex items-center justify-center w-8 h-8 rounded-full">
                                                             <Utensils size={18} className="sm:w-6 sm:h-6" />
-                                                        </motion.div>
+                                                        </div>
                                                         Masa {table.number}
-                                                    </motion.h2>
-                                                    <motion.p 
+                                                    </h2>
+                                                    <motion.p
                                                         initial={{ x: -20, opacity: 0 }}
                                                         animate={{ x: 0, opacity: 1 }}
                                                         transition={{ delay: 0.3 }}
@@ -378,25 +388,21 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                     </motion.p>
                                                 </div>
                                                 <div className="flex items-center gap-2 sm:gap-3">
-                                                    <motion.button
-                                                        whileHover={{ scale: 1.1 }}
-                                                        whileTap={{ scale: 0.9 }}
+                                                    <div
+                                                        
                                                         onClick={handleHintClick}
                                                         className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20"
                                                         aria-label="İpucu Göster"
                                                     >
-                                                        <motion.div
-                                                            whileHover={{ rotate: [0, -10, 10, 0] }}
-                                                            transition={{ duration: 0.6 }}
-                                                        >
+                                                        <div>
                                                             <Info size={14} className="text-white sm:w-[18px] sm:h-[18px]" />
-                                                        </motion.div>
-                                                    </motion.button>
+                                                        </div>
+                                                    </div>
                                                     <motion.button
                                                         whileHover={{ scale: 1.1 }}
                                                         whileTap={{ scale: 0.9 }}
-                                                        onClick={onClose} 
-                                                        className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20" 
+                                                        onClick={onClose}
+                                                        className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20"
                                                         aria-label="Kapat"
                                                     >
                                                         <motion.div
@@ -411,14 +417,14 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                         </motion.div>
 
                                         {/* Modern Glass Info Cards */}
-                                        <motion.div 
+                                        <motion.div
                                             initial={{ opacity: 0, y: 30 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.3 }}
                                             className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-6"
                                         >
                                             {/* Status Card */}
-                                            <motion.div 
+                                            <motion.div
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.4 }}
@@ -431,7 +437,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div className="min-w-0 flex-1">
-                                                        <motion.p 
+                                                        <motion.p
                                                             initial={{ opacity: 0 }}
                                                             animate={{ opacity: 1 }}
                                                             transition={{ delay: 0.5 }}
@@ -443,7 +449,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                             <StatusBadge table={table} />
                                                         </div>
                                                     </div>
-                                                    <motion.div 
+                                                    <motion.div
                                                         whileHover={{ scale: 1.2, rotate: 15 }}
                                                         className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg sm:rounded-xl flex items-center justify-center"
                                                     >
@@ -453,7 +459,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                             </motion.div>
 
                                             {/* Capacity Card */}
-                                            <motion.div 
+                                            <motion.div
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.5 }}
@@ -466,7 +472,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <div className="min-w-0 flex-1">
-                                                        <motion.p 
+                                                        <motion.p
                                                             initial={{ opacity: 0 }}
                                                             animate={{ opacity: 1 }}
                                                             transition={{ delay: 0.6 }}
@@ -474,7 +480,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                         >
                                                             Kapasite
                                                         </motion.p>
-                                                        <motion.p 
+                                                        <motion.p
                                                             initial={{ scale: 0 }}
                                                             animate={{ scale: 1 }}
                                                             transition={{ delay: 0.7, type: "spring", damping: 15 }}
@@ -483,7 +489,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                             {table.capacity} Kişi
                                                         </motion.p>
                                                     </div>
-                                                    <motion.div 
+                                                    <motion.div
                                                         whileHover={{ scale: 1.2, rotate: -15 }}
                                                         className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg sm:rounded-xl flex items-center justify-center"
                                                     >
@@ -494,61 +500,45 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
 
                                             {/* Wait Time Card */}
                                             {table.status === "occupied" && waitTime > 0 && (
-                                                <motion.div 
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 0.6 }}
-                                                    whileHover={{ y: -5, scale: 1.02 }}
+                                                <div
+                                                    
                                                     className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 backdrop-blur-md border border-white/20 col-span-2"
                                                     style={{
                                                         background: "linear-gradient(135deg, rgba(251, 146, 60, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%)",
                                                         boxShadow: "0 8px 32px rgba(251, 146, 60, 0.1)",
                                                     }}
                                                 >
-                                                    <motion.div 
-                                                        animate={{
-                                                            scale: [1, 1.05, 1],
-                                                            opacity: [1, 0.8, 1],
-                                                        }}
-                                                        transition={{
-                                                            duration: 2,
-                                                            repeat: Infinity,
-                                                            ease: "easeInOut",
-                                                        }}
+                                                    <div
+                                                       
+                                                     
                                                         className="flex items-center justify-between"
                                                     >
                                                         <div className="min-w-0 flex-1">
-                                                            <motion.p 
-                                                                initial={{ opacity: 0 }}
-                                                                animate={{ opacity: 1 }}
-                                                                transition={{ delay: 0.7 }}
+                                                            <div
+                                                             
                                                                 className="text-xs text-gray-600 mb-1 sm:mb-2 font-medium"
                                                             >
                                                                 Bekleme Süresi
-                                                            </motion.p>
-                                                            <motion.p 
-                                                                initial={{ scale: 0 }}
-                                                                animate={{ scale: 1 }}
-                                                                transition={{ delay: 0.8, type: "spring", damping: 15 }}
+                                                            </div>
+                                                            <div
+                                                              
                                                                 className="text-sm sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent"
                                                             >
                                                                 {waitTime} dakika
-                                                            </motion.p>
+                                                            </div>
                                                         </div>
-                                                        <motion.div 
-                                                            whileHover={{ scale: 1.2, rotate: 360 }}
-                                                            transition={{ duration: 0.8 }}
+                                                        <div
                                                             className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg sm:rounded-xl flex items-center justify-center"
                                                         >
                                                             <Clock size={12} className="text-orange-600 sm:w-[18px] sm:h-[18px]" />
-                                                        </motion.div>
-                                                    </motion.div>
-                                                </motion.div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             )}
 
                                             {/* Total Amount Card */}
                                             {table.status === "occupied" && table.totalAmount !== undefined && table.totalAmount > 0 && (
-                                                <motion.div 
+                                                <motion.div
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: 0.7 }}
@@ -561,7 +551,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                 >
                                                     <div className="flex items-center justify-between">
                                                         <div className="min-w-0 flex-1">
-                                                            <motion.p 
+                                                            <motion.p
                                                                 initial={{ opacity: 0 }}
                                                                 animate={{ opacity: 1 }}
                                                                 transition={{ delay: 0.8 }}
@@ -569,7 +559,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                             >
                                                                 Toplam Tutar
                                                             </motion.p>
-                                                            <motion.p 
+                                                            <motion.p
                                                                 initial={{ scale: 0 }}
                                                                 animate={{ scale: 1 }}
                                                                 transition={{ delay: 0.9, type: "spring", damping: 15 }}
@@ -578,7 +568,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                                 {table.totalAmount}₺
                                                             </motion.p>
                                                         </div>
-                                                        <motion.div 
+                                                        <motion.div
                                                             whileHover={{ scale: 1.2, rotate: -360 }}
                                                             transition={{ duration: 0.8 }}
                                                             className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-lg sm:rounded-xl flex items-center justify-center"
@@ -592,7 +582,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
 
                                         {/* Modern Waiter Info Section */}
                                         {(table.status === "occupied" || table.status === "reserved") && table.waiterName && (
-                                            <motion.div 
+                                            <motion.div
                                                 initial={{ opacity: 0, x: -30 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: 1.0 }}
@@ -602,7 +592,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                     boxShadow: "0 8px 32px rgba(139, 69, 19, 0.1)",
                                                 }}
                                             >
-                                                <motion.h3 
+                                                <motion.h3
                                                     initial={{ y: -10, opacity: 0 }}
                                                     animate={{ y: 0, opacity: 1 }}
                                                     transition={{ delay: 1.1 }}
@@ -616,11 +606,11 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                     </motion.div>
                                                     Sorumlu Garson
                                                 </motion.h3>
-                                                <motion.div 
+                                                <motion.div
                                                     whileHover={{ scale: 1.02 }}
                                                     className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white/50 rounded-lg sm:rounded-xl backdrop-blur-sm"
                                                 >
-                                                    <motion.div 
+                                                    <motion.div
                                                         whileHover={{ scale: 1.3, rotate: 360 }}
                                                         transition={{ duration: 0.6 }}
                                                         className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-amber-100 to-amber-200 rounded-md sm:rounded-lg flex items-center justify-center"
@@ -629,7 +619,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                     </motion.div>
                                                     <div className="min-w-0 flex-1">
                                                         <p className="text-xs text-gray-500 font-medium hidden sm:block">Garson</p>
-                                                        <motion.p 
+                                                        <motion.p
                                                             initial={{ opacity: 0 }}
                                                             animate={{ opacity: 1 }}
                                                             transition={{ delay: 1.2 }}
@@ -643,7 +633,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                         )}
                                     </motion.div>
                                 ) : (
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.2 }}
@@ -655,9 +645,9 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                         />
                                     </motion.div>
                                 )}
-                        
+
                                 {/* Modern Navigation Panel */}
-                                <motion.nav 
+                                <motion.nav
                                     initial={{ opacity: 0, y: 30 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 1.3 }}
@@ -667,23 +657,23 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                         boxShadow: "0 8px 32px rgba(99, 102, 241, 0.08)",
                                     }}
                                 >
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 1.4 }}
                                         className="flex justify-between gap-1 sm:gap-3"
                                     >
                                         {NAV_BUTTONS.map((btn, idx) => {
-                                            const isDisabled = 
+                                            const isDisabled =
                                                 (btn.key === "order" && !isEmpty) ||
                                                 (btn.key === "update" && table.status === "available") ||
                                                 (btn.key === "pay" && !isOccupied) ||
-                                                (btn.key === "clean" && table.cleanStatus ===true) ||
+                                                (btn.key === "clean" && table.cleanStatus === true) ||
                                                 (btn.key === "transfer" && !isOccupied);
 
                                             return (
-                                                <motion.div 
-                                                    key={btn.key} 
+                                                <motion.div
+                                                    key={btn.key}
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: 1.5 + (idx * 0.1) }}
@@ -692,31 +682,29 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                     <motion.button
                                                         whileHover={isDisabled ? {} : { scale: 1.05 }}
                                                         whileTap={isDisabled ? {} : { scale: 0.95 }}
-                                                        className={`w-full flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg sm:rounded-xl min-h-[3rem] sm:min-h-[4rem] group relative overflow-hidden ${
-                                                            isDisabled 
-                                                                ? "bg-gray-100/50 text-gray-400 cursor-not-allowed opacity-60" 
+                                                        className={`w-full flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg sm:rounded-xl min-h-[3rem] sm:min-h-[4rem] group relative overflow-hidden ${isDisabled
+                                                                ? "bg-gray-100/50 text-gray-400 cursor-not-allowed opacity-60"
                                                                 : "bg-white/80 backdrop-blur-md text-gray-700 hover:text-white shadow-lg border border-white/20"
-                                                        }`}
+                                                            }`}
                                                         aria-label={btn.label}
                                                         disabled={isDisabled}
                                                         onClick={
                                                             btn.key === "order" ? handleOrderClick
-                                                            : btn.key === "update" ? () => setShowOrderPanel(true)
-                                                            : btn.key === "pay" ? () => setShowPaymentPanel(true)
-                                                            : btn.key === "clean" ? handleClean
-                                                            : btn.key === "transfer" ? handleTransfer
-                                                            : undefined
+                                                                : btn.key === "update" ? () => setShowOrderPanel(true)
+                                                                    : btn.key === "pay" ? () => setShowPaymentPanel(true)
+                                                                        : btn.key === "clean" ? handleClean
+                                                                            : btn.key === "transfer" ? handleTransfer
+                                                                                : undefined
                                                         }
                                                         style={{
-                                                            background: isDisabled ? "rgba(156, 163, 175, 0.3)" : 
-                                                                `linear-gradient(135deg, rgba(${btn.key === 'order' ? '59, 130, 246' : 
-                                                                    btn.key === 'update' ? '16, 185, 129' : 
-                                                                    btn.key === 'pay' ? '251, 146, 60' : 
-                                                                    btn.key === 'clean' ? '139, 69, 19' : '147, 51, 234'}, 0.8) 0%, rgba(${
-                                                                        btn.key === 'order' ? '147, 51, 234' : 
-                                                                        btn.key === 'update' ? '5, 150, 105' : 
-                                                                        btn.key === 'pay' ? '239, 68, 68' : 
-                                                                        btn.key === 'clean' ? '92, 51, 23' : '59, 130, 246'}, 0.8) 100%)`
+                                                            background: isDisabled ? "rgba(156, 163, 175, 0.3)" :
+                                                                `linear-gradient(135deg, rgba(${btn.key === 'order' ? '59, 130, 246' :
+                                                                    btn.key === 'update' ? '16, 185, 129' :
+                                                                        btn.key === 'pay' ? '251, 146, 60' :
+                                                                            btn.key === 'clean' ? '139, 69, 19' : '147, 51, 234'}, 0.8) 0%, rgba(${btn.key === 'order' ? '147, 51, 234' :
+                                                                    btn.key === 'update' ? '5, 150, 105' :
+                                                                        btn.key === 'pay' ? '239, 68, 68' :
+                                                                            btn.key === 'clean' ? '92, 51, 23' : '59, 130, 246'}, 0.8) 100%)`
                                                         }}
                                                     >
                                                         {/* Background Animation */}
@@ -733,12 +721,12 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                                 transition={{ duration: 2, repeat: Infinity }}
                                                             />
                                                         )}
-                                                
-                                                        <motion.div 
+
+                                                        <motion.div
                                                             className={`p-1 sm:p-2 rounded-md sm:rounded-lg mb-1 sm:mb-2 ${isDisabled ? "bg-gray-400/50" : "bg-white/20"}`}
-                                                            whileHover={isDisabled ? {} : { 
-                                                                scale: 1.1, 
-                                                                rotate: btn.key === 'update' ? 180 : btn.key === 'transfer' ? 15 : 0 
+                                                            whileHover={isDisabled ? {} : {
+                                                                scale: 1.1,
+                                                                rotate: btn.key === 'update' ? 180 : btn.key === 'transfer' ? 15 : 0
                                                             }}
                                                         >
                                                             <div className="w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center">
@@ -766,9 +754,9 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                             </>
                         )}
                     </motion.div>
-                </motion.div>
+                </div>
             )}
-        </AnimatePresence>
+        </div>
     );
 };
 

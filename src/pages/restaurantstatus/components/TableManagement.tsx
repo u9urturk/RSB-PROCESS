@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import TableModal from "../modals/TableModal";
 import { useConfirm } from "../../../context/provider/ConfirmProvider";
 import { useRestaurant } from "../../../context/context";
 import { useNotification } from "../../../context/provider/NotificationProvider";
 import { TableData } from "../../../types";
+import TableModal from "../modals/TableModal";
 
 interface FilterState {
     occupied: boolean | null;
