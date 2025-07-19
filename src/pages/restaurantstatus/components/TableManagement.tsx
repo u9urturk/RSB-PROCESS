@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import TableModal from "../modals/TableModal";
-import InfoBalloon from "../../../components/InfoBalloon";
 import { useConfirm } from "../../../context/provider/ConfirmProvider";
-import { useRestaurant } from "../../../context/provider/RestaurantProvider";
+import { useRestaurant } from "../../../context/context";
 import { TableData } from "../../../types";
 
 interface FilterState {

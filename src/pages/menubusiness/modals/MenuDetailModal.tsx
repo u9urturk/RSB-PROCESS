@@ -249,13 +249,15 @@ const MenuDetailModal: React.FC<MenuDetailModalProps> = ({
                                         <Clock size={16} className="text-gray-500" />
                                         {isEditing ? (
                                             <input
-                                                type="text"
-                                                value={editedItem.prepTime || '15-20 dk'}
-                                                onChange={(e) => setEditedItem({ ...editedItem, prepTime: e.target.value })}
+                                                type="number"
+                                                value={editedItem.prepTime || 15}
+                                                onChange={(e) => setEditedItem({ ...editedItem, prepTime: parseInt(e.target.value) || 15 })}
                                                 className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 w-32"
+                                                min="1"
+                                                max="120"
                                             />
                                         ) : (
-                                            <span className="text-gray-600">{item.prepTime || '15-20 dk'}</span>
+                                            <span className="text-gray-600">{item.prepTime || 15} dk</span>
                                         )}
                                     </div>
                                 </div>

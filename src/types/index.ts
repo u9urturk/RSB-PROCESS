@@ -465,10 +465,15 @@ export interface MenuItemDetailed {
     ingredients?: string[];
     allergens?: string[];
     preparationTime?: number;
+    prepTime?: number; // Hazırlık süresi (dakika)
     isSpecial?: boolean;
     image?: string;
     images?: string[];
     status: "active" | "inactive";
+    rating?: number; // 1-5 arası puan
+    views?: number; // Görüntülenme sayısı
+    likes?: number; // Beğeni sayısı
+    popularity?: number; // Popülerlik skoru
     variants?: {
         name: string;
         price: number;

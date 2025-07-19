@@ -4,9 +4,9 @@ import Circle from "../../components/Circle";
 import { useNavigation } from "../../context/provider/NavigationProvider";
 import TableManagement from "./components/TableManagement";
 import { AREA_CATEGORIES, CAPACITY_CATEGORIES } from "./mocks/categoriesData";
-import { RestaurantProvider } from "../../context/provider/RestaurantProvider";
-import { useRestaurant } from "../../context/provider/RestaurantProvider";
+import { useRestaurant } from "../../context/context";
 import { TableData } from "../../types";
+import { RestaurantProvider } from "../../context/provider/RestaurantProvider";
 
 interface AreaCategory {
     key: string;

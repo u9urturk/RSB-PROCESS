@@ -1,6 +1,6 @@
-import { Edit, Trash2, Eye, Star, Clock, DollarSign, Tag, MoreVertical } from "lucide-react";
+import { Edit, Trash2, Eye, Star, Tag, MoreVertical } from "lucide-react";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import MenuDetailModal from "../modals/MenuDetailModal";
 import { MenuItemDetailed, MenuTableProps } from "../../../types";
 
@@ -201,11 +201,10 @@ export default function MenuTable({ items, onEdit, onDelete, onUpdate, viewMode 
 
                 {selectedItem && (
                     <MenuDetailModal
-                        open={detailOpen}
+                        isOpen={detailOpen}
                         onClose={() => setDetailOpen(false)}
                         item={selectedItem}
                         onUpdate={handleUpdate}
-                        categories={[...new Set(items.map(item => item.category))]}
                     />
                 )}
             </div>
@@ -298,11 +297,10 @@ export default function MenuTable({ items, onEdit, onDelete, onUpdate, viewMode 
 
             {selectedItem && (
                 <MenuDetailModal
-                    open={detailOpen}
+                    isOpen={detailOpen}
                     onClose={() => setDetailOpen(false)}
                     item={selectedItem}
                     onUpdate={handleUpdate}
-                    categories={[...new Set(items.map(item => item.category))]}
                 />
             )}
         </div>

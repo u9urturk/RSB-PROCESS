@@ -25,7 +25,12 @@ export const menuData: MenuItemDetailed[] = [
         images: [
             "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
             "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80"
-        ]
+        ],
+        rating: 4.5,
+        views: 1250,
+        likes: 89,
+        popularity: 95,
+        prepTime: 18
     },
     {
         id: "2", 
@@ -37,7 +42,12 @@ export const menuData: MenuItemDetailed[] = [
         description: "Izgara tavuk, taze yeşillikler, kruton ve parmesan peyniri ile özel Caesar sosu.",
         images: [
             "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80"
-        ]
+        ],
+        rating: 4.2,
+        views: 890,
+        likes: 67,
+        popularity: 82,
+        prepTime: 12
     },
     {
         id: "3",

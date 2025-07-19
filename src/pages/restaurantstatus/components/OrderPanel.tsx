@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { X, Plus } from "lucide-react";
 import { TableData } from "../../../types";
-import { useRestaurant } from "../../../context/provider/RestaurantProvider";
+import { useRestaurant } from "../../../context/context";
 import { menuData } from "../../menubusiness/mocks/menuData";
 import { categoryData } from "../../menubusiness/mocks/categoryData";
+import { generateUniqueId } from "../../../utils/idUtils";
 
 interface Category {
     id: string;
@@ -21,7 +22,7 @@ interface Product {
 }
 
 interface CartItem {
-    orderItemId: string;
+    id: string;
     productName: string;
     quantity: number;
     price: number;
@@ -38,11 +39,10 @@ interface CategoryTabsProps {
 const CategoryTabs = ({ categories, selected, onSelect }: CategoryTabsProps) => (
     <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
         <button
-            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                selected === "" 
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 scale-105" 
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-102"
-            }`}
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${selected === ""
+                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 scale-105"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-102"
+                }`}
             onClick={() => onSelect("")}
         >
             Tümü
@@ -50,11 +50,10 @@ const CategoryTabs = ({ categories, selected, onSelect }: CategoryTabsProps) => 
         {categories.map(cat => (
             <button
                 key={cat.id}
-                className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                    selected === cat.name 
-                        ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 scale-105" 
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-102"
-                }`}
+                className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${selected === cat.name
+                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 scale-105"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-102"
+                    }`}
                 onClick={() => onSelect(cat.name)}
             >
                 {cat.name}
@@ -74,12 +73,12 @@ interface NoteModalProps {
 const NoteModal = ({ open, onClose, onSave, suggestions }: NoteModalProps) => {
     const [note, setNote] = useState<string[]>([]);
     const [input, setInput] = useState<string>("");
-    
+
     useEffect(() => {
         setNote([]);
         setInput("");
     }, [open]);
-    
+
     if (!open) return null;
 
     const handleAddTag = (tag: string) => {
@@ -102,14 +101,14 @@ const NoteModal = ({ open, onClose, onSave, suggestions }: NoteModalProps) => {
             <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 animate-in fade-in-0 zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-bold text-gray-800">Ürün Notu Ekle</h3>
-                    <button 
-                        className="p-2 rounded-xl hover:bg-gray-100 transition-colors" 
+                    <button
+                        className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
                         onClick={onClose}
                     >
                         <X size={20} className="text-gray-500" />
                     </button>
                 </div>
-                
+
                 <div className="space-y-4">
                     {/* Not etiketleri */}
                     <div className="flex flex-wrap gap-2">
@@ -187,19 +186,19 @@ const ProductCard = ({ product, onAdd, onAddWithNote }: ProductCardProps) => (
     <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 hover:border-blue-200">
         {/* Ürün Resmi */}
         <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden group-hover:from-blue-50 group-hover:to-blue-100 transition-all">
-            <img 
-                src={product.image} 
-                alt={product.name} 
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" 
+            <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300"></div>
         </div>
-        
+
         {/* Ürün Bilgileri */}
         <div className="p-3 sm:p-4">
             <h4 className="font-bold text-gray-800 text-sm sm:text-base mb-1 line-clamp-2">{product.name}</h4>
             <p className="text-blue-600 font-bold text-lg sm:text-xl mb-3">₺{product.price.toFixed(2)}</p>
-            
+
             {/* Butonlar */}
             <div className="flex gap-2">
                 <button
@@ -252,43 +251,128 @@ const ProductGrid = ({ products, onAddToCart, onAddToCartWithNote }: ProductGrid
 interface CartPanelProps {
     cart: CartItem[];
     setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
-    onClose: () => void;
+    table: TableData;
     onConfirm: () => void;
+    onUpdateExistingOrder: (orderId: string, updateData: any) => void;
+    onRemoveExistingOrder: (orderId: string) => void;
+    onClearCart: () => void; // Sepeti temizleme fonksiyonu
+    onClose: () => void; // Modal kapatma fonksiyonu
 }
 
-// Sepet paneli bileşeni - Modern responsive tasarım
-const CartPanel = ({ cart, setCart, onClose, onConfirm }: CartPanelProps) => {
-    const handleQtyChange = (orderItemId: string, delta: number) => {
+const CartPanel = ({ cart, setCart, table, onConfirm, onUpdateExistingOrder, onRemoveExistingOrder, onClearCart, onClose }: CartPanelProps) => {
+    const handleQtyChange = (id: string, delta: number) => {
         setCart((prev: CartItem[]) =>
             prev
                 .map((item: CartItem) =>
-                    item.orderItemId === orderItemId
+                    item.id === id
                         ? { ...item, quantity: Math.max(1, item.quantity + delta) }
                         : item
                 )
                 .filter((item: CartItem) => item.quantity > 0)
         );
     };
-    
-    const handleRemove = (orderItemId: string) =>
-        setCart((prev: CartItem[]) => prev.filter((item: CartItem) => item.orderItemId !== orderItemId));
-    
+
+    const handleRemove = (id: string) =>
+        setCart((prev: CartItem[]) => prev.filter((item: CartItem) => item.id !== id));
+
     const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
+    const existingOrders = table.orders || [];
+    const existingTotal = existingOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const grandTotal = existingTotal + totalAmount;
+
+    console.log(existingOrders)
+
     return (
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 flex flex-col h-full">
-            {/* Sepet Header */}
+            {/* Sepet Header - Genel Toplam */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <span className="text-blue-600 font-bold text-sm">{cart.length}</span>
+                        <span className="text-blue-600 font-bold text-sm">{existingOrders.length + cart.length}</span>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-800">Sepet</h3>
+                    <h3 className="text-lg font-bold text-gray-800">Sipariş Yönetimi</h3>
                 </div>
-                <span className="text-2xl font-bold text-blue-600">₺{totalAmount.toFixed(2)}</span>
+                <div className="text-right">
+                    <span className="text-2xl font-bold text-blue-600">₺{grandTotal.toFixed(2)}</span>
+                    {totalAmount > 0 && (
+                        <p className="text-xs text-gray-500">Yeni: +₺{totalAmount.toFixed(2)}</p>
+                    )}
+                </div>
             </div>
-            
-            {/* Sepet İçeriği */}
+
+            {existingOrders.length > 0 && (
+                <div className="border-b border-gray-200">
+                    <div className="p-3 bg-gray-50">
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-semibold text-gray-700">Mevcut Siparişler</h4>
+                            <span className="text-sm font-bold text-gray-600">₺{existingTotal.toFixed(2)}</span>
+                        </div>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {existingOrders.map((order: any, idx: number) => (
+                                <div key={order.id || idx} className="bg-white rounded-lg p-3 border border-gray-100">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="flex-1">
+                                            <h5 className="font-medium text-gray-800 text-sm">{order.productName}</h5>
+                                            {order.note && order.note.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                    {order.note.map((tag: string, idx: number) => (
+                                                        <span key={idx} className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="text-right ml-2">
+                                            <p className="font-bold text-gray-800 text-sm">₺{(order.total || 0).toFixed(2)}</p>
+                                            <p className="text-xs text-gray-500">₺{(order.price || 0).toFixed(2)} x {order.quantity}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Mevcut Sipariş Düzenleme Kontrolleri */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            {order.quantity === 1 ? (
+                                                <button
+                                                    className="w-6 h-6 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center text-xs"
+                                                    onClick={() => onRemoveExistingOrder(order.id)}
+                                                    title="Siparişi sil"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    className="w-6 h-6 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center text-xs font-bold"
+                                                    onClick={() => onUpdateExistingOrder(order.id, { quantity: order.quantity - 1 })}
+                                                >
+                                                    -
+                                                </button>
+                                            )}
+                                            <span className="min-w-[1.5rem] text-center font-semibold text-xs">{order.quantity}</span>
+                                            <button
+                                                className="w-6 h-6 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center text-xs font-bold"
+                                                onClick={() => onUpdateExistingOrder(order.id, { quantity: order.quantity + 1 })}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                        <span className={`px-2 py-1 rounded-full text-xs ${order.status === 'delivered' ? 'bg-green-100 text-green-600' :
+                                            order.status === 'ready' ? 'bg-blue-100 text-blue-600' :
+                                                order.status === 'preparing' ? 'bg-yellow-100 text-yellow-600' :
+                                                    'bg-gray-100 text-gray-600'
+                                            }`}>
+                                            {order.status === 'pending' ? 'Bekliyor' :
+                                                order.status === 'preparing' ? 'Hazırlanıyor' :
+                                                    order.status === 'ready' ? 'Hazır' : 'Teslim'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex-1 overflow-y-auto p-4">
                 {cart.length === 0 ? (
                     <div className="text-center py-12">
@@ -299,7 +383,7 @@ const CartPanel = ({ cart, setCart, onClose, onConfirm }: CartPanelProps) => {
                 ) : (
                     <div className="space-y-3">
                         {cart.map((item: CartItem) => (
-                            <div key={item.orderItemId} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                            <div key={item.id} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <h4 className="font-semibold text-gray-800 text-sm">{item.productName}</h4>
@@ -318,13 +402,13 @@ const CartPanel = ({ cart, setCart, onClose, onConfirm }: CartPanelProps) => {
                                         <p className="text-xs text-gray-500">₺{item.price.toFixed(2)} x {item.quantity}</p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex items-center justify-between mt-3">
                                     <div className="flex items-center gap-2">
                                         {item.quantity === 1 ? (
                                             <button
                                                 className="w-7 h-7 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center"
-                                                onClick={() => handleRemove(item.orderItemId)}
+                                                onClick={() => handleRemove(item.id)}
                                                 title="Ürünü sepetten çıkar"
                                             >
                                                 <X size={14} />
@@ -332,7 +416,7 @@ const CartPanel = ({ cart, setCart, onClose, onConfirm }: CartPanelProps) => {
                                         ) : (
                                             <button
                                                 className="w-7 h-7 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center text-sm font-bold"
-                                                onClick={() => handleQtyChange(item.orderItemId, -1)}
+                                                onClick={() => handleQtyChange(item.id, -1)}
                                             >
                                                 -
                                             </button>
@@ -340,7 +424,7 @@ const CartPanel = ({ cart, setCart, onClose, onConfirm }: CartPanelProps) => {
                                         <span className="min-w-[1.5rem] text-center font-semibold text-sm">{item.quantity}</span>
                                         <button
                                             className="w-7 h-7 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center text-sm font-bold"
-                                            onClick={() => handleQtyChange(item.orderItemId, 1)}
+                                            onClick={() => handleQtyChange(item.id, 1)}
                                         >
                                             +
                                         </button>
@@ -351,25 +435,23 @@ const CartPanel = ({ cart, setCart, onClose, onConfirm }: CartPanelProps) => {
                     </div>
                 )}
             </div>
-            
-            {/* Sepet Footer - Toplam ve Butonlar */}
-            {cart.length > 0 && (
-                <div className="p-4 border-t border-gray-200 space-y-3">
+
+            <div className="p-4 border-t border-gray-200 space-y-3">
+                {cart.length > 0 && (
                     <button
                         className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold hover:from-green-600 hover:to-green-700 transition-all shadow-lg shadow-green-500/25"
                         onClick={onConfirm}
-                        disabled={cart.length === 0}
                     >
-                        Siparişi Onayla
+                        Yeni Ürünleri Ekle ({cart.length} ürün)
                     </button>
-                    <button
-                        className="w-full py-2 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
-                        onClick={onClose}
-                    >
-                        İptal
-                    </button>
-                </div>
-            )}
+                )}
+                <button
+                    className="w-full py-2 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+                    onClick={cart.length > 0 ? onClearCart : onClose}
+                >
+                    {cart.length > 0 ? 'Sepeti Temizle' : 'Kapat'}
+                </button>
+            </div>
         </div>
     );
 };
@@ -390,41 +472,30 @@ interface OrderPanelProps {
 }
 
 const OrderPanel = ({ table, onClose }: OrderPanelProps) => {
-    // RestaurantProvider'dan metotları al
-    const { addOrderToTable, openTable } = useRestaurant();
-    
+    // RestaurantProvider'dan metotları ve güncel table data'sını al
+    const { addOrderToTable, updateOrderInTable, removeOrderFromTable, openTable, tables } = useRestaurant();
+
+    // Güncel table data'sını bul (real-time updates için)
+    const currentTable = tables.find(t => t.id === table.id) || table;
+
     // Gerçek kategorilerden ilkini seç (sadece aktif olanları)
     const activeCategories = categoryData;
     const activeMenuItems = menuData.filter(item => item.status === "active");
-    
+
     const [selectedCategory, setSelectedCategory] = useState<string>(activeCategories[0]?.name || "");
     const [search, setSearch] = useState("");
-    const [cart, setCart] = useState<CartItem[]>(
-        (table.orders || []).map((item: any) => ({
-            orderItemId: item.orderItemId || `orderitem-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-            productName: item.productName ?? item.name,
-            quantity: item.quantity ?? item.qty ?? 1,
-            note: item.note ?? [],
-            price: item.price ?? 0
-        }))
-    );
+    // Cart sadece yeni ürünler için - mevcut siparişleri tekrar eklememek için boş başlatıyoruz
+    const [cart, setCart] = useState<CartItem[]>([]);
     const [noteModal, setNoteModal] = useState<{ open: boolean; product: Product | null }>({ open: false, product: null });
 
     // Masa açılış zamanı state'i
     const [openTime, setOpenTime] = useState<Date | null>(table.occupiedAt ? new Date(table.occupiedAt) : null);
     const [elapsed, setElapsed] = useState<string>("");
 
+    // Cart'ı her table değiştiğinde temizle (yeni sipariş için temiz başlangıç)
     useEffect(() => {
-        setCart(
-            (table.orders || []).map((item: any) => ({
-                orderItemId: item.orderItemId || `orderitem-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-                productName: item.productName ?? item.name,
-                quantity: item.quantity ?? item.qty ?? 1,
-                note: item.note ?? [],
-                price: item.price ?? 0
-            }))
-        );
-    }, [table]);
+        setCart([]);
+    }, [table.id]);
 
     // Sipariş paneli açıldığında masa açık değilse açılış zamanını kaydet
     useEffect(() => {
@@ -482,10 +553,13 @@ const OrderPanel = ({ table, onClose }: OrderPanelProps) => {
                         : item
                 );
             }
+
+
+
             return [
                 ...prev,
                 {
-                    orderItemId: `orderitem-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+                    id: generateUniqueId(),
                     productName: product.name,
                     quantity: 1,
                     note,
@@ -506,28 +580,37 @@ const OrderPanel = ({ table, onClose }: OrderPanelProps) => {
         setNoteModal({ open: false, product: null });
     };
 
-    // Siparişi merkezi state'e kaydet
+    // Mevcut sipariş güncelleme fonksiyonları
+    const handleUpdateExistingOrder = (orderId: string, updateData: any) => {
+        updateOrderInTable(currentTable.id, orderId, updateData);
+    };
+
+    const handleRemoveExistingOrder = (orderId: string) => {
+        removeOrderFromTable(currentTable.id, orderId);
+    };
+
     const handleConfirmOrder = async () => {
         try {
-            // Eğer sepette ürün varsa siparişleri ekle
             if (cart.length > 0) {
-                // RestaurantProvider'daki addOrderToTable metotunu kullan
-                addOrderToTable(table.id, cart);
-                
-                // Eğer masa boşsa, açılış zamanını kaydet
-                if (table.status === "available") {
-                    openTable(table.id);
+                if (currentTable.status === "available") {
+                    openTable(currentTable.id);
+                    addOrderToTable(currentTable.id, cart);
+
+                } else {
+                    addOrderToTable(currentTable.id, cart);
                 }
+                setCart([]);
             }
-            
-            // Paneli kapat
-            onClose();
+
         } catch (error) {
             console.error("Sipariş ekleme hatası:", error);
         }
     };
 
-    // --- MODERN TASARIM REVİZYONU ---
+    const handleClearCart = () => {
+        setCart([]);
+    };
+
     return (
         <>
             <NoteModal
@@ -536,7 +619,7 @@ const OrderPanel = ({ table, onClose }: OrderPanelProps) => {
                 onSave={handleNoteSave}
                 suggestions={noteSuggestions}
             />
-            
+
             <div className="flex flex-col h-full bg-gray-50 rounded-2xl overflow-hidden">
                 {/* Modern Header */}
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 relative">
@@ -572,7 +655,7 @@ const OrderPanel = ({ table, onClose }: OrderPanelProps) => {
                                     selected={selectedCategory}
                                     onSelect={setSelectedCategory}
                                 />
-                                
+
                                 {/* Modern Arama Çubuğu */}
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -597,7 +680,7 @@ const OrderPanel = ({ table, onClose }: OrderPanelProps) => {
                                     )}
                                 </div>
                             </div>
-                            
+
                             {/* Ürün Grid - Full Height */}
                             <div className="flex-1 overflow-hidden">
                                 <ProductGrid
@@ -608,13 +691,16 @@ const OrderPanel = ({ table, onClose }: OrderPanelProps) => {
                             </div>
                         </div>
 
-                        {/* Sepet Bölümü - Responsive Width */}
                         <div className="xl:w-96 flex-shrink-0 border-t xl:border-t-0 xl:border-l border-gray-200">
                             <CartPanel
                                 cart={cart}
                                 setCart={setCart}
-                                onClose={onClose}
+                                table={currentTable}
                                 onConfirm={handleConfirmOrder}
+                                onUpdateExistingOrder={handleUpdateExistingOrder}
+                                onRemoveExistingOrder={handleRemoveExistingOrder}
+                                onClearCart={handleClearCart}
+                                onClose={onClose}
                             />
                         </div>
                     </div>

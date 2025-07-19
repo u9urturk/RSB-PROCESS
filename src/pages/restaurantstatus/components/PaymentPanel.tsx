@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { X, CreditCard, Edit2, Receipt, Banknote, Wallet, Check, Minus, Plus } from "lucide-react";
 import { motion } from "framer-motion";
-import { useRestaurant } from "../../../context/provider/RestaurantProvider";
+import { useRestaurant } from "../../../context/context";
 
 interface CartItem {
-    orderItemId: string;
+    id: string;
     productName: string;
     quantity: number;
     qty?: number;
@@ -17,7 +17,6 @@ interface CartItem {
 interface PaymentPanelProps {
     table: any;
     cart: CartItem[];
-    setCart: (cart: CartItem[]) => void;
     onClose: () => void;
     onCompletePayment: (paymentMethod: "cash" | "card") => void;
 }
@@ -150,7 +149,6 @@ const NoteModal = ({ open, onClose, onSave, initialNote = [], suggestions }: Not
 const PaymentPanel = ({
     table,
     cart,
-    setCart,
     onClose,
     onCompletePayment
 }: PaymentPanelProps) => {
@@ -160,45 +158,34 @@ const PaymentPanel = ({
     const [selectedPayment, setSelectedPayment] = useState<"cash" | "card">("cash");
     const [noteModal, setNoteModal] = useState<{ open: boolean; item: CartItem | null }>({ open: false, item: null });
 
-    // Sepet işlemleri
+    // Sepet işlemleri - Sadece RestaurantProvider üzerinden güncelleme
     const handleQtyChange = (item: CartItem, delta: number) => {
         const newQuantity = Math.max(1, item.quantity + delta);
         
-        // Local state güncelleme
-        const newCart = cart.map((it: CartItem) =>
-            it.orderItemId === item.orderItemId
-                ? { ...it, quantity: newQuantity }
-                : it
-        );
-        setCart(newCart);
+        console.log("PaymentPanel handleQtyChange:", {
+            tableId: table.id,
+            orderItemId: item.id,
+            currentQuantity: item.quantity,
+            newQuantity: newQuantity
+        });
         
-        // RestaurantProvider'da güncelleme
-        updateOrderInTable(table.id, item.orderItemId, { quantity: newQuantity });
+       
+        updateOrderInTable(table.id, item.id, { quantity: newQuantity });
     };
 
     const handleRemove = (item: CartItem) => {
-        // Local state güncelleme
-        const newCart = cart.filter((it: CartItem) => it.orderItemId !== item.orderItemId);
-        setCart(newCart);
-        
-        // RestaurantProvider'dan silme
-        removeOrderFromTable(table.id, item.orderItemId);
+        // Sadece RestaurantProvider'dan silme
+        // Local cart state'i useEffect ile otomatik güncellenecek
+        removeOrderFromTable(table.id, item.id);
     };
 
-    // Not güncelleme
+    // Not güncelleme - Sadece RestaurantProvider üzerinden
     const handleEditNote = (item: CartItem) => setNoteModal({ open: true, item });
     const handleNoteSave = (noteArr: string[]) => {
         if (noteModal.item) {
-            // Local state güncelleme
-            const newCart = cart.map((it: CartItem) =>
-                it.orderItemId === noteModal.item!.orderItemId
-                    ? { ...it, note: noteArr }
-                    : it
-            );
-            setCart(newCart);
-            
-            // RestaurantProvider'da güncelleme
-            updateOrderInTable(table.id, noteModal.item.orderItemId, { note: noteArr });
+            // Sadece RestaurantProvider'da güncelleme yap
+            // Local cart state'i useEffect ile otomatik güncellenecek
+            updateOrderInTable(table.id, noteModal.item.id, { note: noteArr });
         }
         setNoteModal({ open: false, item: null });
     };
