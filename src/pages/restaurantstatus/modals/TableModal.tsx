@@ -254,7 +254,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
             {isOpen && (
                 <div
                    
-                    className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-md z-50 px-4"
+                    className="fixed inset-0 flex items-center  justify-center bg-black/50 backdrop-blur-md z-50 px-4"
                     onClick={handleOverlayClick}
                     aria-modal="true"
                     role="dialog"
@@ -264,7 +264,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                         initial="hidden"
                         animate="visible"
                         exit="exit"
-                        className={`bg-white/95 backdrop-blur-xl shadow-2xl border border-white/20 flex flex-col max-h-[95vh] relative overflow-hidden rounded-2xl
+                        className={`bg-white/95 backdrop-blur-xl shadow-2xl border overflow-x-hidden overflow-y-scroll border-white/20 flex flex-col max-h-[95vh] relative  rounded-2xl
                             ${(showOrderPanel || showPaymentPanel) ? "w-[95vw] sm:w-[90vw] h-[90vh] sm:h-[85vh] p-3 sm:p-6" : showOrderDetail ? "w-[95vw] sm:w-full max-w-3xl h-auto p-3 sm:p-6" : "w-[95vw] sm:w-full max-w-lg h-auto p-3 sm:p-5"}`}
                         style={{
                             background: "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)",
@@ -651,7 +651,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                     initial={{ opacity: 0, y: 30 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 1.3 }}
-                                    className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 mt-3 sm:mt-6 backdrop-blur-md border border-white/20"
+                                    className="relative fixed overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 mt-3 sm:mt-6 backdrop-blur-md border border-white/20"
                                     style={{
                                         background: "linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)",
                                         boxShadow: "0 8px 32px rgba(99, 102, 241, 0.08)",
