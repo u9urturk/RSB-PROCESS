@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import TableModal from "../modals/TableModal";
 import { useConfirm } from "../../../context/provider/ConfirmProvider";
 import { useRestaurant } from "../../../context/context";
+import { useNotification } from "../../../context/provider/NotificationProvider";
 import { TableData } from "../../../types";
 
 interface FilterState {
@@ -93,6 +94,7 @@ interface TableManagementProps {
 
 const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
     const { transferOrder } = useRestaurant();
+    const { showNotification } = useNotification();
     const [filters, setFilters] = useState<FilterState>({ occupied: null, reserved: false, cleanStatus: null });
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [currentTableId, setCurrentTableId] = useState<string | null>(null);
@@ -120,23 +122,49 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
             if (!table.occupied && table.cleanStatus === true) {
                 setShowTransferBalloon(false);
 
+                const sourceTable = externalTables.find(t => t.id === sourceTableId);
+                const sourceName = sourceTable?.name || `Masa ${sourceTable?.number}`;
+                const targetName = table.name || `Masa ${table.number}`;
+
                 const result = await confirm({
                     title: "Masa Aktarımı",
-                    message: "Siparişi bu masaya aktarmak istediğinize emin misiniz?",
-                    confirmText: "Evet",
-                    cancelText: "Hayır"
+                    message: `${sourceName} masasındaki siparişi ${targetName} masasına aktarmak istediğinize emin misiniz?\n\nBu işlem sonrasında:\n• Tüm siparişler ${targetName} masasına taşınacak\n• ${sourceName} masası boş ve temizlenecek olarak işaretlenecek`,
+                    confirmText: "Evet, Aktar",
+                    cancelText: "İptal"
                 });
 
                 if (result) {
-                    if (sourceTableId) {
-                        await transferOrder(sourceTableId, table.id);
+                    try {
+                        if (sourceTableId) {
+                            // Transfer işlemini gerçekleştir
+                            await transferOrder(sourceTableId, table.id);
+                            
+                            // Başarı bildirimi göster
+                            showNotification(
+                                'success',
+                                `${sourceName} masasındaki siparişler ${targetName} masasına başarıyla aktarıldı.`
+                            );
+                        }
+
+                        // Transfer modunu kapat ve hedef masayı aç
+                        setTransferMode(false);
+                        setSourceTableId(null);
+                        setShowTransferBalloon(false);
+                        setCurrentTableId(table.id);
+                        setIsModalOpen(true);
+
+                    } catch (error) {
+                        // Hata durumunda kullanıcıya bildir
+                        showNotification(
+                            'error',
+                            error instanceof Error ? error.message : 'Masa aktarımı sırasında bir hata oluştu.'
+                        );
+                        
+                        // Transfer modunu yeniden etkinleştir
+                        setShowTransferBalloon(true);
                     }
-                    setTransferMode(false);
-                    setSourceTableId(null);
-                    setShowTransferBalloon(false);
-                    setCurrentTableId(table.id);
-                    setIsModalOpen(true);
                 } else {
+                    // İptal edildi, balonu tekrar göster
                     setShowTransferBalloon(true);
                 }
             }
@@ -237,6 +265,10 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
             }) : null;
         };
 
+        // Transfer modu için ek stiller
+        const isTransferTarget = transferMode && table.status === "available" && table.cleanStatus === true;
+        const isTransferInactive = transferMode && !isTransferTarget;
+
         return (
             <div
                 className={`
@@ -248,6 +280,8 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
                     flex flex-col justify-between
                     group overflow-hidden
                     will-change-transform
+                    ${isTransferTarget ? 'ring-2 ring-blue-400 ring-opacity-60 animate-pulse' : ''}
+                    ${isTransferInactive ? 'opacity-40 cursor-not-allowed' : ''}
                 `}
             >
                 {/* Üst Kısım - Masa Numarası ve Durum */}
@@ -322,6 +356,16 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
                 {!table.cleanStatus && (
                     <div className="absolute -bottom-1 -left-1 w-6 h-6 bg-yellow-500 rounded-tr-lg rounded-bl-2xl flex items-center justify-center">
                         <span className="text-white text-xs">🧹</span>
+                    </div>
+                )}
+
+                {/* Transfer Target İndikator */}
+                {isTransferTarget && (
+                    <div className="absolute inset-0 rounded-2xl bg-blue-400 bg-opacity-10 flex items-center justify-center">
+                        <div className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                            <span>🔄</span>
+                            Transfer Edilebilir
+                        </div>
                     </div>
                 )}
             </div>

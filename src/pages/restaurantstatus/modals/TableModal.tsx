@@ -122,21 +122,16 @@ function StatusBadge({ table }: StatusBadgeProps) {
     const config = getStatusConfig();
     
     return (
-        <motion.span 
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            whileHover={{ scale: 1.1 }}
-            transition={{ type: "spring", damping: 15 }}
-            className={`${config.bg} ${config.text} ${config.glow} px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 backdrop-blur-sm border border-white/20`}
+        <span 
+            className={`${config.bg} ${config.text} ${config.glow} px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm border border-white/20`}
         >
-            <motion.span
-                animate={table.status === "occupied" ? { rotate: [0, 10, -10, 0] } : {}}
-                transition={{ duration: 2, repeat: Infinity }}
+            <span
+                className="w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center"
             >
                 {config.icon}
-            </motion.span>
-            {config.label}
-        </motion.span>
+            </span>
+            <span className="">{config.label}</span>
+        </span>
     );
 }
 
@@ -252,7 +247,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                         animate="visible"
                         exit="exit"
                         className={`bg-white/95 backdrop-blur-xl shadow-2xl border border-white/20 flex flex-col max-h-[95vh] relative overflow-hidden rounded-2xl
-                            ${(showOrderPanel || showPaymentPanel) ? "w-[90vw] h-[85vh] p-6" : showOrderDetail ? "w-full max-w-3xl h-auto p-6" : "w-full max-w-lg h-auto p-5"}`}
+                            ${(showOrderPanel || showPaymentPanel) ? "w-[95vw] sm:w-[90vw] h-[90vh] sm:h-[85vh] p-3 sm:p-6" : showOrderDetail ? "w-[95vw] sm:w-full max-w-3xl h-auto p-3 sm:p-6" : "w-[95vw] sm:w-full max-w-lg h-auto p-3 sm:p-5"}`}
                         style={{
                             background: "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)",
                             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.2)",
@@ -285,7 +280,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                     animate={{ opacity: 1, x: 0 }}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.98 }}
-                                    className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-20 w-12 h-12 rounded-full shadow-lg border border-white/30 backdrop-blur-sm ${
+                                    className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-3 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-lg border border-white/30 backdrop-blur-sm ${
                                         showOrderDetail 
                                             ? "bg-gray-600 shadow-gray-600/25" 
                                             : "bg-blue-500 shadow-blue-500/25"
@@ -298,7 +293,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                         transition={{ type: "spring", damping: 20 }}
                                         className="w-full h-full flex items-center justify-center"
                                     >
-                                        <List size={18} className="text-white" />
+                                        <List size={14} className="text-white sm:w-[18px] sm:h-[18px]" />
                                     </motion.div>
                                     
                                     {/* Basit Notification Dot */}
@@ -306,7 +301,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                         <motion.div
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
-                                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white"
+                                            className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full border-2 border-white"
                                         />
                                     )}
                                     
@@ -329,7 +324,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             whileHover={{ scale: 1.02 }}
-                                            className="relative overflow-hidden rounded-2xl p-6 mb-6"
+                                            className="relative overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-6 mb-3 sm:mb-6"
                                             style={{
                                                 background: "linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%)",
                                                 backdropFilter: "blur(20px)",
@@ -363,13 +358,13 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                         initial={{ x: -20, opacity: 0 }}
                                                         animate={{ x: 0, opacity: 1 }}
                                                         transition={{ delay: 0.2 }}
-                                                        className="text-2xl font-bold text-white flex items-center gap-3"
+                                                        className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3"
                                                     >
                                                         <motion.div
                                                             animate={{ rotate: [0, 360] }}
                                                             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                                                         >
-                                                            <Utensils size={24} />
+                                                            <Utensils size={18} className="sm:w-6 sm:h-6" />
                                                         </motion.div>
                                                         Masa {table.number}
                                                     </motion.h2>
@@ -377,38 +372,38 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                         initial={{ x: -20, opacity: 0 }}
                                                         animate={{ x: 0, opacity: 1 }}
                                                         transition={{ delay: 0.3 }}
-                                                        className="text-white/80 text-sm mt-1"
+                                                        className="text-white/80 text-xs sm:text-sm mt-1 hidden sm:block"
                                                     >
                                                         Masa Yönetim Paneli
                                                     </motion.p>
                                                 </div>
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2 sm:gap-3">
                                                     <motion.button
                                                         whileHover={{ scale: 1.1 }}
                                                         whileTap={{ scale: 0.9 }}
                                                         onClick={handleHintClick}
-                                                        className="p-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20"
+                                                        className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20"
                                                         aria-label="İpucu Göster"
                                                     >
                                                         <motion.div
                                                             whileHover={{ rotate: [0, -10, 10, 0] }}
                                                             transition={{ duration: 0.6 }}
                                                         >
-                                                            <Info size={18} className="text-white" />
+                                                            <Info size={14} className="text-white sm:w-[18px] sm:h-[18px]" />
                                                         </motion.div>
                                                     </motion.button>
                                                     <motion.button
                                                         whileHover={{ scale: 1.1 }}
                                                         whileTap={{ scale: 0.9 }}
                                                         onClick={onClose} 
-                                                        className="p-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20" 
+                                                        className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20" 
                                                         aria-label="Kapat"
                                                     >
                                                         <motion.div
                                                             whileHover={{ rotate: 90 }}
                                                             transition={{ type: "spring", damping: 15 }}
                                                         >
-                                                            <X size={18} className="text-white" />
+                                                            <X size={14} className="text-white sm:w-[18px] sm:h-[18px]" />
                                                         </motion.div>
                                                     </motion.button>
                                                 </div>
@@ -420,7 +415,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                             initial={{ opacity: 0, y: 30 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.3 }}
-                                            className="grid grid-cols-2 gap-4 mb-6"
+                                            className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-6"
                                         >
                                             {/* Status Card */}
                                             <motion.div 
@@ -428,29 +423,31 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.4 }}
                                                 whileHover={{ y: -5, scale: 1.02 }}
-                                                className="relative overflow-hidden rounded-xl p-4 backdrop-blur-md border border-white/20"
+                                                className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 backdrop-blur-md border border-white/20"
                                                 style={{
                                                     background: "linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)",
                                                     boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
                                                 }}
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <div>
+                                                    <div className="min-w-0 flex-1">
                                                         <motion.p 
                                                             initial={{ opacity: 0 }}
                                                             animate={{ opacity: 1 }}
                                                             transition={{ delay: 0.5 }}
-                                                            className="text-xs text-gray-600 mb-2 font-medium"
+                                                            className="text-xs text-gray-600 mb-1 sm:mb-2 font-medium"
                                                         >
                                                             Durum
                                                         </motion.p>
-                                                        <StatusBadge table={table} />
+                                                        <div className="scale-75 sm:scale-100 origin-left">
+                                                            <StatusBadge table={table} />
+                                                        </div>
                                                     </div>
                                                     <motion.div 
                                                         whileHover={{ scale: 1.2, rotate: 15 }}
-                                                        className="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center"
+                                                        className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg sm:rounded-xl flex items-center justify-center"
                                                     >
-                                                        <MapPin size={18} className="text-purple-600" />
+                                                        <MapPin size={12} className="text-purple-600 sm:w-[18px] sm:h-[18px]" />
                                                     </motion.div>
                                                 </div>
                                             </motion.div>
@@ -461,19 +458,19 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.5 }}
                                                 whileHover={{ y: -5, scale: 1.02 }}
-                                                className="relative overflow-hidden rounded-xl p-4 backdrop-blur-md border border-white/20"
+                                                className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 backdrop-blur-md border border-white/20"
                                                 style={{
                                                     background: "linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)",
                                                     boxShadow: "0 8px 32px rgba(59, 130, 246, 0.1)",
                                                 }}
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <div>
+                                                    <div className="min-w-0 flex-1">
                                                         <motion.p 
                                                             initial={{ opacity: 0 }}
                                                             animate={{ opacity: 1 }}
                                                             transition={{ delay: 0.6 }}
-                                                            className="text-xs text-gray-600 mb-2 font-medium"
+                                                            className="text-xs text-gray-600 mb-1 sm:mb-2 font-medium"
                                                         >
                                                             Kapasite
                                                         </motion.p>
@@ -481,16 +478,16 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                             initial={{ scale: 0 }}
                                                             animate={{ scale: 1 }}
                                                             transition={{ delay: 0.7, type: "spring", damping: 15 }}
-                                                            className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+                                                            className="text-sm sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
                                                         >
                                                             {table.capacity} Kişi
                                                         </motion.p>
                                                     </div>
                                                     <motion.div 
                                                         whileHover={{ scale: 1.2, rotate: -15 }}
-                                                        className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center"
+                                                        className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg sm:rounded-xl flex items-center justify-center"
                                                     >
-                                                        <User size={18} className="text-blue-600" />
+                                                        <User size={12} className="text-blue-600 sm:w-[18px] sm:h-[18px]" />
                                                     </motion.div>
                                                 </div>
                                             </motion.div>
@@ -502,7 +499,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: 0.6 }}
                                                     whileHover={{ y: -5, scale: 1.02 }}
-                                                    className="relative overflow-hidden rounded-xl p-4 backdrop-blur-md border border-white/20 col-span-2"
+                                                    className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 backdrop-blur-md border border-white/20 col-span-2"
                                                     style={{
                                                         background: "linear-gradient(135deg, rgba(251, 146, 60, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%)",
                                                         boxShadow: "0 8px 32px rgba(251, 146, 60, 0.1)",
@@ -520,12 +517,12 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                         }}
                                                         className="flex items-center justify-between"
                                                     >
-                                                        <div>
+                                                        <div className="min-w-0 flex-1">
                                                             <motion.p 
                                                                 initial={{ opacity: 0 }}
                                                                 animate={{ opacity: 1 }}
                                                                 transition={{ delay: 0.7 }}
-                                                                className="text-xs text-gray-600 mb-2 font-medium"
+                                                                className="text-xs text-gray-600 mb-1 sm:mb-2 font-medium"
                                                             >
                                                                 Bekleme Süresi
                                                             </motion.p>
@@ -533,7 +530,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                                 initial={{ scale: 0 }}
                                                                 animate={{ scale: 1 }}
                                                                 transition={{ delay: 0.8, type: "spring", damping: 15 }}
-                                                                className="text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent"
+                                                                className="text-sm sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent"
                                                             >
                                                                 {waitTime} dakika
                                                             </motion.p>
@@ -541,9 +538,9 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                         <motion.div 
                                                             whileHover={{ scale: 1.2, rotate: 360 }}
                                                             transition={{ duration: 0.8 }}
-                                                            className="w-10 h-10 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl flex items-center justify-center"
+                                                            className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg sm:rounded-xl flex items-center justify-center"
                                                         >
-                                                            <Clock size={18} className="text-orange-600" />
+                                                            <Clock size={12} className="text-orange-600 sm:w-[18px] sm:h-[18px]" />
                                                         </motion.div>
                                                     </motion.div>
                                                 </motion.div>
@@ -556,19 +553,19 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: 0.7 }}
                                                     whileHover={{ y: -5, scale: 1.02 }}
-                                                    className="relative overflow-hidden rounded-xl p-4 backdrop-blur-md border border-white/20 col-span-2"
+                                                    className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 backdrop-blur-md border border-white/20 col-span-2"
                                                     style={{
                                                         background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)",
                                                         boxShadow: "0 8px 32px rgba(16, 185, 129, 0.1)",
                                                     }}
                                                 >
                                                     <div className="flex items-center justify-between">
-                                                        <div>
+                                                        <div className="min-w-0 flex-1">
                                                             <motion.p 
                                                                 initial={{ opacity: 0 }}
                                                                 animate={{ opacity: 1 }}
                                                                 transition={{ delay: 0.8 }}
-                                                                className="text-xs text-gray-600 mb-2 font-medium"
+                                                                className="text-xs text-gray-600 mb-1 sm:mb-2 font-medium"
                                                             >
                                                                 Toplam Tutar
                                                             </motion.p>
@@ -576,7 +573,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                                 initial={{ scale: 0 }}
                                                                 animate={{ scale: 1 }}
                                                                 transition={{ delay: 0.9, type: "spring", damping: 15 }}
-                                                                className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"
+                                                                className="text-sm sm:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"
                                                             >
                                                                 {table.totalAmount}₺
                                                             </motion.p>
@@ -584,9 +581,9 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                         <motion.div 
                                                             whileHover={{ scale: 1.2, rotate: -360 }}
                                                             transition={{ duration: 0.8 }}
-                                                            className="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center"
+                                                            className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-lg sm:rounded-xl flex items-center justify-center"
                                                         >
-                                                            <CreditCard size={18} className="text-green-600" />
+                                                            <CreditCard size={12} className="text-green-600 sm:w-[18px] sm:h-[18px]" />
                                                         </motion.div>
                                                     </div>
                                                 </motion.div>
@@ -599,7 +596,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                 initial={{ opacity: 0, x: -30 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: 1.0 }}
-                                                className="relative overflow-hidden rounded-xl p-5 mb-6 backdrop-blur-md border border-white/20"
+                                                className="relative overflow-hidden rounded-lg sm:rounded-xl p-3 sm:p-5 mb-3 sm:mb-6 backdrop-blur-md border border-white/20"
                                                 style={{
                                                     background: "linear-gradient(135deg, rgba(139, 69, 19, 0.1) 0%, rgba(92, 51, 23, 0.1) 100%)",
                                                     boxShadow: "0 8px 32px rgba(139, 69, 19, 0.1)",
@@ -609,34 +606,34 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                     initial={{ y: -10, opacity: 0 }}
                                                     animate={{ y: 0, opacity: 1 }}
                                                     transition={{ delay: 1.1 }}
-                                                    className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2"
+                                                    className="text-xs sm:text-sm font-bold text-gray-800 mb-2 sm:mb-3 flex items-center gap-2"
                                                 >
                                                     <motion.div
                                                         animate={{ rotate: [0, 10, -10, 0] }}
                                                         transition={{ duration: 3, repeat: Infinity }}
                                                     >
-                                                        <User size={16} className="text-amber-600" />
+                                                        <User size={12} className="text-amber-600 sm:w-4 sm:h-4" />
                                                     </motion.div>
                                                     Sorumlu Garson
                                                 </motion.h3>
                                                 <motion.div 
                                                     whileHover={{ scale: 1.02 }}
-                                                    className="flex items-center gap-3 p-3 bg-white/50 rounded-xl backdrop-blur-sm"
+                                                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white/50 rounded-lg sm:rounded-xl backdrop-blur-sm"
                                                 >
                                                     <motion.div 
                                                         whileHover={{ scale: 1.3, rotate: 360 }}
                                                         transition={{ duration: 0.6 }}
-                                                        className="w-8 h-8 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center"
+                                                        className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-amber-100 to-amber-200 rounded-md sm:rounded-lg flex items-center justify-center"
                                                     >
-                                                        <User size={14} className="text-amber-600" />
+                                                        <User size={10} className="text-amber-600 sm:w-[14px] sm:h-[14px]" />
                                                     </motion.div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 font-medium">Garson</p>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs text-gray-500 font-medium hidden sm:block">Garson</p>
                                                         <motion.p 
                                                             initial={{ opacity: 0 }}
                                                             animate={{ opacity: 1 }}
                                                             transition={{ delay: 1.2 }}
-                                                            className="font-bold text-gray-800"
+                                                            className="text-xs sm:text-sm font-bold text-gray-800 truncate"
                                                         >
                                                             {table.waiterName}
                                                         </motion.p>
@@ -664,7 +661,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                     initial={{ opacity: 0, y: 30 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 1.3 }}
-                                    className="relative overflow-hidden rounded-xl p-4 mt-6 backdrop-blur-md border border-white/20"
+                                    className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 mt-3 sm:mt-6 backdrop-blur-md border border-white/20"
                                     style={{
                                         background: "linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)",
                                         boxShadow: "0 8px 32px rgba(99, 102, 241, 0.08)",
@@ -674,7 +671,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 1.4 }}
-                                        className="flex justify-between gap-3"
+                                        className="flex justify-between gap-1 sm:gap-3"
                                     >
                                         {NAV_BUTTONS.map((btn, idx) => {
                                             const isDisabled = 
@@ -695,7 +692,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                     <motion.button
                                                         whileHover={isDisabled ? {} : { scale: 1.05 }}
                                                         whileTap={isDisabled ? {} : { scale: 0.95 }}
-                                                        className={`w-full flex flex-col items-center justify-center p-3 rounded-xl min-h-[4rem] group relative overflow-hidden ${
+                                                        className={`w-full flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg sm:rounded-xl min-h-[3rem] sm:min-h-[4rem] group relative overflow-hidden ${
                                                             isDisabled 
                                                                 ? "bg-gray-100/50 text-gray-400 cursor-not-allowed opacity-60" 
                                                                 : "bg-white/80 backdrop-blur-md text-gray-700 hover:text-white shadow-lg border border-white/20"
@@ -738,13 +735,19 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                         )}
                                                 
                                                         <motion.div 
-                                                            className={`p-2 rounded-lg mb-2 ${isDisabled ? "bg-gray-400/50" : "bg-white/20"}`}
+                                                            className={`p-1 sm:p-2 rounded-md sm:rounded-lg mb-1 sm:mb-2 ${isDisabled ? "bg-gray-400/50" : "bg-white/20"}`}
                                                             whileHover={isDisabled ? {} : { 
                                                                 scale: 1.1, 
                                                                 rotate: btn.key === 'update' ? 180 : btn.key === 'transfer' ? 15 : 0 
                                                             }}
                                                         >
-                                                            {btn.icon}
+                                                            <div className="w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center">
+                                                                {btn.key === "order" && <ShoppingCart className="w-full h-full" />}
+                                                                {btn.key === "update" && <RefreshCw className="w-full h-full" />}
+                                                                {btn.key === "pay" && <CreditCard className="w-full h-full" />}
+                                                                {btn.key === "clean" && <FaBroom className="w-full h-full" />}
+                                                                {btn.key === "transfer" && <CornerDownRight className="w-full h-full" />}
+                                                            </div>
                                                         </motion.div>
                                                         <span className="text-xs font-semibold text-center leading-tight">
                                                             {btn.label}

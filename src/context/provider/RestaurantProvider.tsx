@@ -1,4 +1,4 @@
-import React, { useEffect, useState, ReactNode } from "react";
+import React, { useEffect, useState, ReactNode, useCallback } from "react";
 import { RestaurantContext } from "../context";
 import { tablesData } from "../../pages/restaurantstatus/mocks/tablesData";
 import { waitersData } from "../../pages/restaurantstatus/mocks/waitersData";
@@ -271,13 +271,68 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
     };
 
     // Transfer işlemleri
-    const transferOrder = (fromTableId: string, toTableId: string): void => {
-        const fromTable = tables.find(t => t.id === fromTableId);
-        if (!fromTable || !fromTable.orders) return;
+    const transferOrder = useCallback(async (sourceTableId: string, targetTableId: string) => {
+        try {
+            const sourceTable = tables.find(t => t.id === sourceTableId);
+            const targetTable = tables.find(t => t.id === targetTableId);
+            
+            if (!sourceTable || !targetTable) {
+                throw new Error('Kaynak veya hedef masa bulunamadı');
+            }
 
-        addOrderToTable(toTableId, fromTable.orders);
-        updateTable(fromTableId, { orders: [], totalAmount: 0 });
-    };
+            if (!sourceTable.orders || sourceTable.orders.length === 0) {
+                throw new Error('Kaynak masada aktarılacak sipariş bulunmuyor');
+            }
+
+            if (targetTable.occupied) {
+                throw new Error('Hedef masa zaten dolu');
+            }
+
+            // Yeni tables array'ini oluştur
+            const updatedTables = tables.map(table => {
+                if (table.id === sourceTableId) {
+                    // Kaynak masa: Tüm bilgileri temizle, boş ve temizlenecek olarak işaretle
+                    return {
+                        ...table,
+                        status: "available" as const,
+                        occupied: false,
+                        orders: [],
+                        totalAmount: 0,
+                        waiterName: undefined,
+                        occupiedAt: undefined,
+                        cleanStatus: false, // Temizlenecek olarak işaretle
+                        serviceStartTime: undefined
+                    };
+                } else if (table.id === targetTableId) {
+                    // Hedef masa: Tüm bilgileri kaynak masadan aktar
+                    return {
+                        ...table,
+                        status: "occupied" as const,
+                        occupied: true,
+                        orders: sourceTable.orders ? [...sourceTable.orders] : [], // Siparişleri güvenli kopyala
+                        totalAmount: sourceTable.totalAmount || 0,
+                        waiterName: sourceTable.waiterName,
+                        occupiedAt: new Date().toISOString(), // Yeni açılış zamanı
+                        cleanStatus: true, // Temiz masa olduğu için true
+                        serviceStartTime: sourceTable.serviceStartTime
+                    };
+                }
+                return table;
+            });
+
+            // State'i güncelle
+            setTables(updatedTables);
+
+            // Başarı mesajı (opsiyonel - notification context'i varsa)
+            console.log(`Sipariş ${sourceTable.name || sourceTable.number} masasından ${targetTable.name || targetTable.number} masasına başarıyla aktarıldı`);
+            
+            return true;
+
+        } catch (error) {
+            console.error('Masa aktarım hatası:', error);
+            throw error;
+        }
+    }, [tables, setTables]);
 
     // Geriye uyumluluk metotları
     const updateOrder = (tableId: string, orderId: string, updateData: any): void => {
