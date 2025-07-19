@@ -37,7 +37,7 @@ export default function StockBusinessMain() {
     const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState<boolean>(false);
 
     useEffect(() => {
-        setActivePath('/stockbusiness');
+        setActivePath('/dashboard/stockbusiness');
     }, [setActivePath]);
 
     // Stok istatistikleri
