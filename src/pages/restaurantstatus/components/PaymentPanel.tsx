@@ -247,7 +247,7 @@ const PaymentPanel = ({
                                     <h3 className="text-xl font-bold text-gray-800">Sipariş Özeti</h3>
                                 </div>
                             </div>
-                            <div className="p-6 overflow-y-auto max-h-96">
+                            <div className="p-6 overflow-y-auto no-scrollbar max-h-96">
                                 {cart.length === 0 ? (
                                     <div className="text-center py-12">
                                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">

@@ -1,11 +1,24 @@
 @import "tailwindcss";
 
+
+/* src/index.css veya global.css */
+.no-scrollbar {
+    scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+
+
 /* Custom animations */
 @keyframes fade-in {
     from {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -17,6 +30,7 @@
         opacity: 0;
         transform: translateX(30px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -37,6 +51,7 @@
         transform: translateY(0) scale(1);
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
+
     to {
         transform: translateY(-8px) scale(1.02);
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -44,9 +59,12 @@
 }
 
 @keyframes pulse-glow {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
     }
+
     50% {
         box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
     }
@@ -57,15 +75,19 @@
     from {
         transform: translateY(0);
     }
+
     to {
         transform: translateY(-2px);
     }
 }
 
 @keyframes transfer-highlight {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
     }
+
     50% {
         box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
     }
@@ -78,7 +100,7 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
-    
+
     .table-card-hover {
         animation: none;
     }

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { X, Info, ShoppingCart, RefreshCw, CreditCard, CornerDownRight, List, User, Clock, MapPin, Utensils, Sparkles } from "lucide-react";
 import { FaBroom } from "react-icons/fa";
 import InfoBalloon from "../../../components/InfoBalloon";
@@ -9,6 +8,9 @@ import OrderDetail from "../components/OrderDetail";
 import PaymentPanel from "../components/PaymentPanel";
 import { useRestaurant } from "../../../context/context";
 import { TableData } from "../../../types";
+import TableModalHeader from "../components/TableModalHeader";
+import InfoCard from "../components/InfoCard";
+import NavigationPanel from "../components/NavigationPanel";
 
 interface StatusBadgeProps {
     table: TableData;
@@ -28,38 +30,7 @@ interface NavButton {
     info: string;
 }
 
-// Modern Animation Variants
-const modalVariants = {
-    hidden: {
-        opacity: 0,
-        scale: 0.9,
-        y: 50,
-    },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        y: 0,
-        transition: {
-            type: "spring" as const,
-            damping: 25,
-            stiffness: 300,
-            duration: 0.3,
-        },
-    },
-    exit: {
-        opacity: 0,
-        scale: 0.95,
-        y: -20,
-        transition: {
-            duration: 0.2,
-            ease: "easeInOut" as const,
-        },
-    },
-};
 
-
-
-// Modern Status Badge Component with Glass Morphism
 function StatusBadge({ table }: StatusBadgeProps) {
     const getStatusConfig = () => {
         // Eğer masa dolu ve temizlenmemişse (cleanStatus false), temizlik gerektiriyor
@@ -125,7 +96,6 @@ function StatusBadge({ table }: StatusBadgeProps) {
     );
 }
 
-// Navigation Buttons Configuration
 const NAV_BUTTONS: NavButton[] = [
     {
         key: "order",
@@ -168,10 +138,8 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
     const [showOrderDetail, setShowOrderDetail] = useState(false);
     const [balloonStep, setBalloonStep] = useState(0);
 
-    // Modal açık olduğunda body scroll'unu devre dışı bırak
     useEffect(() => {
         if (isOpen) {
-            // Mevcut scroll pozisyonunu kaydet
             const scrollY = window.scrollY;
             document.body.style.position = 'fixed';
             document.body.style.top = `-${scrollY}px`;
@@ -179,7 +147,6 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
             document.body.style.overflow = 'hidden';
 
             return () => {
-                // Modal kapandığında scroll'u geri getir
                 document.body.style.position = '';
                 document.body.style.top = '';
                 document.body.style.width = '';
@@ -243,22 +210,15 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
         <div>
             {isOpen && (
                 <div
-                   
-                    className="fixed inset-0 flex items-center  justify-center  backdrop-blur-xs z-50 px-4"
+
+                    className="fixed  inset-0 flex items-center  justify-center backdrop-blur-xs z-10 "
                     onClick={handleOverlayClick}
-                    aria-modal="true"
-                    role="dialog"
                 >
-                    <motion.div
-                        variants={modalVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        className={`bg-white/95 backdrop-blur-xl shadow-2xl border overflow-x-hidden overflow-y-scroll border-white/20 flex flex-col max-h-[95vh] relative  rounded-2xl
-                            ${(showOrderPanel || showPaymentPanel) ? "w-[95vw] sm:w-[90vw] h-[90vh] sm:h-[85vh] p-3 sm:p-6" : showOrderDetail ? "w-[95vw] sm:w-full max-w-3xl h-auto p-3 sm:p-6" : "w-[95vw] sm:w-full max-w-lg h-auto p-3 sm:p-5"}`}
-                        
+                    <div
+                        className={`bg-white/95 backdrop-blur-xl    shadow-2xl border  overflow-auto no-scrollbar border-white/20 flex flex-col max-h-screen   rounded-2xl
+                            ${(showOrderPanel || showPaymentPanel) ? "w-[calc(100%-3rem)] py-0  h-screen " : showOrderDetail ? "w-[calc(100%-3rem)] sm:w-full md:max-w-[calc(50%)] h-auto " : "w-[calc(100%-3rem)] sm:w-full max-w-2xl h-auto"}`}
+
                     >
-                        {/* Sipariş Paneli */}
                         {showOrderPanel ? (
                             <OrderPanel
                                 table={table}
@@ -278,474 +238,124 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                 onCompletePayment={handleCompletePayment}
                             />
                         ) : (
-                            <>
-                                {/* Sade Sipariş Detayları Butonu */}
-                                <motion.button
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-3 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-lg border border-white/30 backdrop-blur-sm ${showOrderDetail
-                                            ? "bg-gray-600 shadow-gray-600/25"
-                                            : "bg-blue-500 shadow-blue-500/25"
-                                        }`}
-                                    onClick={() => setShowOrderDetail((v) => !v)}
-                                    aria-label={showOrderDetail ? "Sipariş Detayını Kapat" : "Sipariş Detayını Göster"}
-                                >
-                                    <motion.div
-                                        animate={{ rotate: showOrderDetail ? 180 : 0 }}
-                                        transition={{ type: "spring", damping: 20 }}
-                                        className="w-full h-full flex items-center justify-center"
+                            <div>
+                                <div className="fixed right-0 top-1/2 z-[1] translate-y-[-50%] flex flex-col items-end">
+                                    <button
+                                        className={`transition-all duration-200 flex items-center justify-center w-12 h-12 rounded-full shadow-lg border border-gray-200 bg-gradient-to-br ${showOrderDetail
+                                            ? "from-gray-700 to-gray-600 text-white"
+                                            : "from-blue-600 to-blue-500 text-white"}
+                                            hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 relative`}
+                                        onClick={() => setShowOrderDetail((v) => !v)}
+                                        aria-label={showOrderDetail ? "Sipariş Detayını Kapat" : "Sipariş Detayını Göster"}
                                     >
-                                        <List size={14} className="text-white sm:w-[18px] sm:h-[18px]" />
-                                    </motion.div>
-
-                                    {/* Basit Notification Dot */}
-                                    {!showOrderDetail && table.orders && table.orders.length > 0 && (
-                                        <motion.div
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full border-2 border-white"
-                                        />
-                                    )}
+                                        <List size={24} />
+                                        {!showOrderDetail && table.orders && table.orders.length > 0 && (
+                                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white"></span>
+                                        )}
+                                    </button>
 
                                     <InfoBalloon
                                         show={balloonStep === 6}
                                         text={"Sipariş Detayını Göster / Kapat"}
                                         onClose={() => setBalloonStep(balloonStep + 1)}
                                     />
-                                </motion.button>
+                                </div>
 
                                 {!showOrderDetail ? (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.1 }}
-                                        className="flex flex-col flex-1"
-                                    >
-                                        {/* Modern Glass Header */}
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            whileHover={{ scale: 1.02 }}
-                                            className="relative overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-6 mb-3 sm:mb-6"
-                                            style={{
-                                                background: "linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%)",
-                                                backdropFilter: "blur(20px)",
-                                                border: "1px solid rgba(255, 255, 255, 0.2)",
-                                                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                                            }}
-                                        >
-                                            {/* Animated Background Elements */}
-                                            <motion.div
-                                                animate={{
-                                                    x: [0, 100, 0],
-                                                    y: [0, -50, 0],
-                                                    opacity: [0.3, 0.6, 0.3]
-                                                }}
-                                                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                                                className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl"
+                                    <div className="flex flex-col flex-1">
+                                        <div className="sticky top-0 left-0 right-0 z-10">
+                                            <TableModalHeader
+                                                table={table}
+                                                onClose={onClose}
+                                                onHint={handleHintClick}
                                             />
-                                            <motion.div
-                                                animate={{
-                                                    x: [0, -80, 0],
-                                                    y: [0, 60, 0],
-                                                    opacity: [0.2, 0.5, 0.2]
-                                                }}
-                                                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                                                className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-xl"
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-6">
+                                            <InfoCard
+                                                title="Durum"
+                                                value={<div className="scale-75 sm:scale-100 origin-left"><StatusBadge table={table} /></div>}
+                                                icon={<MapPin size={12} className="text-purple-600 sm:w-[18px] sm:h-[18px]" />}
+                                                bgGradient="linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)"
+                                                boxShadow="0 8px 32px rgba(0, 0, 0, 0.1)"
                                             />
 
-                                            <div className="relative z-10 flex justify-between items-center">
-                                                <div>
-                                                    <h2 className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3"
-                                                    >
-                                                        <div className="flex items-center justify-center w-8 h-8 rounded-full">
-                                                            <Utensils size={18} className="sm:w-6 sm:h-6" />
-                                                        </div>
-                                                        Masa {table.number}
-                                                    </h2>
-                                                    <motion.p
-                                                        initial={{ x: -20, opacity: 0 }}
-                                                        animate={{ x: 0, opacity: 1 }}
-                                                        transition={{ delay: 0.3 }}
-                                                        className="text-white/80 text-xs sm:text-sm mt-1 hidden sm:block"
-                                                    >
-                                                        Masa Yönetim Paneli
-                                                    </motion.p>
-                                                </div>
-                                                <div className="flex items-center gap-2 sm:gap-3">
-                                                    <div
-                                                        
-                                                        onClick={handleHintClick}
-                                                        className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20"
-                                                        aria-label="İpucu Göster"
-                                                    >
-                                                        <div>
-                                                            <Info size={14} className="text-white sm:w-[18px] sm:h-[18px]" />
-                                                        </div>
-                                                    </div>
-                                                    <motion.button
-                                                        whileHover={{ scale: 1.1 }}
-                                                        whileTap={{ scale: 0.9 }}
-                                                        onClick={onClose}
-                                                        className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20"
-                                                        aria-label="Kapat"
-                                                    >
-                                                        <motion.div
-                                                            whileHover={{ rotate: 90 }}
-                                                            transition={{ type: "spring", damping: 15 }}
-                                                        >
-                                                            <X size={14} className="text-white sm:w-[18px] sm:h-[18px]" />
-                                                        </motion.div>
-                                                    </motion.button>
-                                                </div>
-                                            </div>
-                                        </motion.div>
+                                            <InfoCard
+                                                title="Kapasite"
+                                                value={<p className="text-sm sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{table.capacity} Kişi</p>}
+                                                icon={<User size={12} className="text-blue-600 sm:w-[18px] sm:h-[18px]" />}
+                                                bgGradient="linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)"
+                                                boxShadow="0 8px 32px rgba(59, 130, 246, 0.1)"
+                                            />
 
-                                        {/* Modern Glass Info Cards */}
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 30 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: 0.3 }}
-                                            className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-6"
-                                        >
-                                            {/* Status Card */}
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: 0.4 }}
-                                                whileHover={{ y: -5, scale: 1.02 }}
-                                                className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 backdrop-blur-md border border-white/20"
-                                                style={{
-                                                    background: "linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)",
-                                                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-                                                }}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="min-w-0 flex-1">
-                                                        <motion.p
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            transition={{ delay: 0.5 }}
-                                                            className="text-xs text-gray-600 mb-1 sm:mb-2 font-medium"
-                                                        >
-                                                            Durum
-                                                        </motion.p>
-                                                        <div className="scale-75 sm:scale-100 origin-left">
-                                                            <StatusBadge table={table} />
-                                                        </div>
-                                                    </div>
-                                                    <motion.div
-                                                        whileHover={{ scale: 1.2, rotate: 15 }}
-                                                        className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg sm:rounded-xl flex items-center justify-center"
-                                                    >
-                                                        <MapPin size={12} className="text-purple-600 sm:w-[18px] sm:h-[18px]" />
-                                                    </motion.div>
-                                                </div>
-                                            </motion.div>
-
-                                            {/* Capacity Card */}
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: 0.5 }}
-                                                whileHover={{ y: -5, scale: 1.02 }}
-                                                className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 backdrop-blur-md border border-white/20"
-                                                style={{
-                                                    background: "linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)",
-                                                    boxShadow: "0 8px 32px rgba(59, 130, 246, 0.1)",
-                                                }}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="min-w-0 flex-1">
-                                                        <motion.p
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            transition={{ delay: 0.6 }}
-                                                            className="text-xs text-gray-600 mb-1 sm:mb-2 font-medium"
-                                                        >
-                                                            Kapasite
-                                                        </motion.p>
-                                                        <motion.p
-                                                            initial={{ scale: 0 }}
-                                                            animate={{ scale: 1 }}
-                                                            transition={{ delay: 0.7, type: "spring", damping: 15 }}
-                                                            className="text-sm sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-                                                        >
-                                                            {table.capacity} Kişi
-                                                        </motion.p>
-                                                    </div>
-                                                    <motion.div
-                                                        whileHover={{ scale: 1.2, rotate: -15 }}
-                                                        className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg sm:rounded-xl flex items-center justify-center"
-                                                    >
-                                                        <User size={12} className="text-blue-600 sm:w-[18px] sm:h-[18px]" />
-                                                    </motion.div>
-                                                </div>
-                                            </motion.div>
-
-                                            {/* Wait Time Card */}
                                             {table.status === "occupied" && waitTime > 0 && (
-                                                <div
-                                                    
-                                                    className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 backdrop-blur-md border border-white/20 col-span-2"
-                                                    style={{
-                                                        background: "linear-gradient(135deg, rgba(251, 146, 60, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%)",
-                                                        boxShadow: "0 8px 32px rgba(251, 146, 60, 0.1)",
-                                                    }}
-                                                >
-                                                    <div
-                                                       
-                                                     
-                                                        className="flex items-center justify-between"
-                                                    >
-                                                        <div className="min-w-0 flex-1">
-                                                            <div
-                                                             
-                                                                className="text-xs text-gray-600 mb-1 sm:mb-2 font-medium"
-                                                            >
-                                                                Bekleme Süresi
-                                                            </div>
-                                                            <div
-                                                              
-                                                                className="text-sm sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent"
-                                                            >
-                                                                {waitTime} dakika
-                                                            </div>
-                                                        </div>
-                                                        <div
-                                                            className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg sm:rounded-xl flex items-center justify-center"
-                                                        >
-                                                            <Clock size={12} className="text-orange-600 sm:w-[18px] sm:h-[18px]" />
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                <InfoCard
+                                                    title="Bekleme Süresi"
+                                                    value={<span className="text-sm sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">{waitTime} dakika</span>}
+                                                    icon={<Clock size={12} className="text-orange-600 sm:w-[18px] sm:h-[18px]" />}
+                                                    bgGradient="linear-gradient(135deg, rgba(251, 146, 60, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%)"
+                                                    boxShadow="0 8px 32px rgba(251, 146, 60, 0.1)"
+                                                    className="col-span-2"
+                                                />
                                             )}
 
-                                            {/* Total Amount Card */}
                                             {table.status === "occupied" && table.totalAmount !== undefined && table.totalAmount > 0 && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 0.7 }}
-                                                    whileHover={{ y: -5, scale: 1.02 }}
-                                                    className="relative overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 backdrop-blur-md border border-white/20 col-span-2"
-                                                    style={{
-                                                        background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)",
-                                                        boxShadow: "0 8px 32px rgba(16, 185, 129, 0.1)",
-                                                    }}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="min-w-0 flex-1">
-                                                            <motion.p
-                                                                initial={{ opacity: 0 }}
-                                                                animate={{ opacity: 1 }}
-                                                                transition={{ delay: 0.8 }}
-                                                                className="text-xs text-gray-600 mb-1 sm:mb-2 font-medium"
-                                                            >
-                                                                Toplam Tutar
-                                                            </motion.p>
-                                                            <motion.p
-                                                                initial={{ scale: 0 }}
-                                                                animate={{ scale: 1 }}
-                                                                transition={{ delay: 0.9, type: "spring", damping: 15 }}
-                                                                className="text-sm sm:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent"
-                                                            >
-                                                                {table.totalAmount}₺
-                                                            </motion.p>
-                                                        </div>
-                                                        <motion.div
-                                                            whileHover={{ scale: 1.2, rotate: -360 }}
-                                                            transition={{ duration: 0.8 }}
-                                                            className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-lg sm:rounded-xl flex items-center justify-center"
-                                                        >
-                                                            <CreditCard size={12} className="text-green-600 sm:w-[18px] sm:h-[18px]" />
-                                                        </motion.div>
-                                                    </div>
-                                                </motion.div>
+                                                <InfoCard
+                                                    title="Toplam Tutar"
+                                                    value={<span className="text-sm sm:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{table.totalAmount}₺</span>}
+                                                    icon={<CreditCard size={12} className="text-green-600 sm:w-[18px] sm:h-[18px]" />}
+                                                    bgGradient="linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)"
+                                                    boxShadow="0 8px 32px rgba(16, 185, 129, 0.1)"
+                                                    className="col-span-2"
+                                                />
                                             )}
-                                        </motion.div>
+                                        </div>
 
-                                        {/* Modern Waiter Info Section */}
                                         {(table.status === "occupied" || table.status === "reserved") && table.waiterName && (
-                                            <motion.div
-                                                initial={{ opacity: 0, x: -30 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: 1.0 }}
-                                                className="relative overflow-hidden rounded-lg sm:rounded-xl p-3 sm:p-5 mb-3 sm:mb-6 backdrop-blur-md border border-white/20"
-                                                style={{
-                                                    background: "linear-gradient(135deg, rgba(139, 69, 19, 0.1) 0%, rgba(92, 51, 23, 0.1) 100%)",
-                                                    boxShadow: "0 8px 32px rgba(139, 69, 19, 0.1)",
-                                                }}
+                                            <InfoCard
+                                                title={<span className="flex items-center gap-2"><User size={12} className="text-amber-600 sm:w-4 sm:h-4" /> Sorumlu Garson</span>}
+                                                value={<span className="text-xs sm:text-sm font-bold text-gray-800 truncate">{table.waiterName}</span>}
+                                                bgGradient="linear-gradient(135deg, rgba(139, 69, 19, 0.1) 0%, rgba(92, 51, 23, 0.1) 100%)"
+                                                boxShadow="0 8px 32px rgba(139, 69, 19, 0.1)"
+                                                className="mb-3 sm:mb-6 p-3 sm:p-5"
+                                                icon={<User size={10} className="text-amber-600 sm:w-[14px] sm:h-[14px]" />}
                                             >
-                                                <motion.h3
-                                                    initial={{ y: -10, opacity: 0 }}
-                                                    animate={{ y: 0, opacity: 1 }}
-                                                    transition={{ delay: 1.1 }}
-                                                    className="text-xs sm:text-sm font-bold text-gray-800 mb-2 sm:mb-3 flex items-center gap-2"
-                                                >
-                                                    <motion.div
-                                                        animate={{ rotate: [0, 10, -10, 0] }}
-                                                        transition={{ duration: 3, repeat: Infinity }}
-                                                    >
-                                                        <User size={12} className="text-amber-600 sm:w-4 sm:h-4" />
-                                                    </motion.div>
-                                                    Sorumlu Garson
-                                                </motion.h3>
-                                                <motion.div
-                                                    whileHover={{ scale: 1.02 }}
-                                                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white/50 rounded-lg sm:rounded-xl backdrop-blur-sm"
-                                                >
-                                                    <motion.div
-                                                        whileHover={{ scale: 1.3, rotate: 360 }}
-                                                        transition={{ duration: 0.6 }}
-                                                        className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-amber-100 to-amber-200 rounded-md sm:rounded-lg flex items-center justify-center"
-                                                    >
-                                                        <User size={10} className="text-amber-600 sm:w-[14px] sm:h-[14px]" />
-                                                    </motion.div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="text-xs text-gray-500 font-medium hidden sm:block">Garson</p>
-                                                        <motion.p
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            transition={{ delay: 1.2 }}
-                                                            className="text-xs sm:text-sm font-bold text-gray-800 truncate"
-                                                        >
-                                                            {table.waiterName}
-                                                        </motion.p>
-                                                    </div>
-                                                </motion.div>
-                                            </motion.div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs text-gray-500 font-medium hidden sm:block">Garson</p>
+                                                </div>
+                                            </InfoCard>
                                         )}
-                                    </motion.div>
+                                    </div>
                                 ) : (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.2 }}
+                                    <div
                                         className="flex-1 flex flex-col"
                                     >
                                         <OrderDetail
                                             table={table}
                                             onClose={() => setShowOrderDetail(false)}
                                         />
-                                    </motion.div>
+                                    </div>
                                 )}
 
-                                {/* Modern Navigation Panel */}
-                                <motion.nav
-                                    initial={{ opacity: 0, y: 30 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 1.3 }}
-                                    className="                                    // vite.config.js
-                                    export default {
-                                      server: {
-                                        host: '0.0.0.0'
-                                      }
-                                    } fixed overflow-hidden rounded-lg sm:rounded-xl p-2 sm:p-4 mt-3 sm:mt-6 backdrop-blur-md border border-white/20"
-                                    style={{
-                                        background: "linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)",
-                                        boxShadow: "0 8px 32px rgba(99, 102, 241, 0.08)",
-                                    }}
-                                >
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ delay: 1.4 }}
-                                        className="flex justify-between gap-1 sm:gap-3"
-                                    >
-                                        {NAV_BUTTONS.map((btn, idx) => {
-                                            const isDisabled =
-                                                (btn.key === "order" && !isEmpty) ||
-                                                (btn.key === "update" && table.status === "available") ||
-                                                (btn.key === "pay" && !isOccupied) ||
-                                                (btn.key === "clean" && table.cleanStatus === true) ||
-                                                (btn.key === "transfer" && !isOccupied);
+                                <div className="sticky bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 p-3 sm:p-1 z-10">
+                                    <NavigationPanel
+                                        buttons={NAV_BUTTONS}
+                                        isEmpty={isEmpty}
+                                        isOccupied={isOccupied}
+                                        table={table}
+                                        balloonStep={balloonStep}
+                                        setBalloonStep={setBalloonStep}
+                                        handleOrderClick={handleOrderClick}
+                                        setShowOrderPanel={setShowOrderPanel}
+                                        setShowPaymentPanel={setShowPaymentPanel}
+                                        handleClean={handleClean}
+                                        handleTransfer={handleTransfer}
+                                    />
+                                </div>
 
-                                            return (
-                                                <motion.div
-                                                    key={btn.key}
-                                                    initial={{ opacity: 0, y: 20 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: 1.5 + (idx * 0.1) }}
-                                                    className="flex-1 flex flex-col items-center relative min-w-0"
-                                                >
-                                                    <motion.button
-                                                        whileHover={isDisabled ? {} : { scale: 1.05 }}
-                                                        whileTap={isDisabled ? {} : { scale: 0.95 }}
-                                                        className={`w-full flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg sm:rounded-xl min-h-[3rem] sm:min-h-[4rem] group relative overflow-hidden ${isDisabled
-                                                                ? "bg-gray-100/50 text-gray-400 cursor-not-allowed opacity-60"
-                                                                : "bg-white/80 backdrop-blur-md text-gray-700 hover:text-white shadow-lg border border-white/20"
-                                                            }`}
-                                                        aria-label={btn.label}
-                                                        disabled={isDisabled}
-                                                        onClick={
-                                                            btn.key === "order" ? handleOrderClick
-                                                                : btn.key === "update" ? () => setShowOrderPanel(true)
-                                                                    : btn.key === "pay" ? () => setShowPaymentPanel(true)
-                                                                        : btn.key === "clean" ? handleClean
-                                                                            : btn.key === "transfer" ? handleTransfer
-                                                                                : undefined
-                                                        }
-                                                        style={{
-                                                            background: isDisabled ? "rgba(156, 163, 175, 0.3)" :
-                                                                `linear-gradient(135deg, rgba(${btn.key === 'order' ? '59, 130, 246' :
-                                                                    btn.key === 'update' ? '16, 185, 129' :
-                                                                        btn.key === 'pay' ? '251, 146, 60' :
-                                                                            btn.key === 'clean' ? '139, 69, 19' : '147, 51, 234'}, 0.8) 0%, rgba(${btn.key === 'order' ? '147, 51, 234' :
-                                                                    btn.key === 'update' ? '5, 150, 105' :
-                                                                        btn.key === 'pay' ? '239, 68, 68' :
-                                                                            btn.key === 'clean' ? '92, 51, 23' : '59, 130, 246'}, 0.8) 100%)`
-                                                        }}
-                                                    >
-                                                        {/* Background Animation */}
-                                                        {!isDisabled && (
-                                                            <motion.div
-                                                                className="absolute inset-0 opacity-0 group-hover:opacity-20"
-                                                                animate={{
-                                                                    background: [
-                                                                        "radial-gradient(circle at 0% 0%, rgba(255,255,255,0.3) 0%, transparent 50%)",
-                                                                        "radial-gradient(circle at 100% 100%, rgba(255,255,255,0.3) 0%, transparent 50%)",
-                                                                        "radial-gradient(circle at 0% 0%, rgba(255,255,255,0.3) 0%, transparent 50%)"
-                                                                    ]
-                                                                }}
-                                                                transition={{ duration: 2, repeat: Infinity }}
-                                                            />
-                                                        )}
-
-                                                        <motion.div
-                                                            className={`p-1 sm:p-2 rounded-md sm:rounded-lg mb-1 sm:mb-2 ${isDisabled ? "bg-gray-400/50" : "bg-white/20"}`}
-                                                            whileHover={isDisabled ? {} : {
-                                                                scale: 1.1,
-                                                                rotate: btn.key === 'update' ? 180 : btn.key === 'transfer' ? 15 : 0
-                                                            }}
-                                                        >
-                                                            <div className="w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center">
-                                                                {btn.key === "order" && <ShoppingCart className="w-full h-full" />}
-                                                                {btn.key === "update" && <RefreshCw className="w-full h-full" />}
-                                                                {btn.key === "pay" && <CreditCard className="w-full h-full" />}
-                                                                {btn.key === "clean" && <FaBroom className="w-full h-full" />}
-                                                                {btn.key === "transfer" && <CornerDownRight className="w-full h-full" />}
-                                                            </div>
-                                                        </motion.div>
-                                                        <span className="text-xs font-semibold text-center leading-tight">
-                                                            {btn.label}
-                                                        </span>
-                                                    </motion.button>
-                                                    <InfoBalloon
-                                                        show={balloonStep === idx + 1}
-                                                        text={btn.info}
-                                                        onClose={() => setBalloonStep(balloonStep + 1)}
-                                                    />
-                                                </motion.div>
-                                            );
-                                        })}
-                                    </motion.div>
-                                </motion.nav>
-                            </>
+                            </div>
                         )}
-                    </motion.div>
+                    </div>
                 </div>
             )}
         </div>
