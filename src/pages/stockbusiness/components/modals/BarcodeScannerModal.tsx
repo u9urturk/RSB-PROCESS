@@ -16,8 +16,6 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
     const [permissionChecked, setPermissionChecked] = useState(false);
 
     const handleDetected = useCallback((result: string) => {
-        const audio = new Audio('/bip.mp3');
-        audio.play();
 
         // Single scan mode - immediately set result
         setScanResult(result);
@@ -128,7 +126,7 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl w-full max-w-md mx-4 overflow-hidden shadow-2xl">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6">
@@ -224,23 +222,11 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
                             ) : (
                                 <div>
                                     <div className="mb-4">
-                                        <div className="relative rounded-xl overflow-hidden">
-                                            {showScanner && (
-                                                <ModernBarcodeScanner
-                                                    onDetected={handleDetected}
-                                                    onCancel={handleCancel}
-                                                    className="w-full"
-                                                />
-                                            )}
-                                            {!showScanner && (
-                                                <div className="flex items-center justify-center h-[360px] bg-gray-900 rounded-xl">
-                                                    <div className="text-white text-center">
-                                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                                                        <p className="text-sm">Modern scanner hazırlanıyor...</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                        <ModernBarcodeScanner
+                                            onDetected={handleDetected}
+                                            onCancel={handleCancel}
+                                            className="w-full"
+                                        />
                                     </div>
 
                                     <div className="text-center">

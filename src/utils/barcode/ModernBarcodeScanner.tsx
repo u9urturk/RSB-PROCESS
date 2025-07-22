@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { X, Zap, ZapOff, RotateCcw, Scan } from "lucide-react";
+import { X, Zap, ZapOff, RotateCcw } from "lucide-react";
 import "./modern-scanner.css";
 
 interface ModernBarcodeScannerProps {
@@ -128,7 +128,7 @@ export default function ModernBarcodeScanner({
     onCancel,
     onClose,
     facingMode = "environment",
-    className = "",
+    className = "rounded-md shadow-lg",
     showTorch = true,
     showCancel = true,
     autoStart = true,
@@ -355,12 +355,12 @@ export default function ModernBarcodeScanner({
     }
     
     return (
-        <div className={`modern-scanner-container ${theme} ${className}`}>
+        <div className={`modern-scanner-container  ${theme} ${className}`}>
             <div className="scanner-header">
-                <div className="scanner-title">
+                {/* <div className="scanner-title">
                     <Scan size={20} />
                     <span>Barkod Tarayıcı</span>
-                </div>
+                </div> */}
                 
                 <div className="scanner-controls">
                     {showTorch && torchSupported && (
@@ -372,7 +372,7 @@ export default function ModernBarcodeScanner({
                             {torchEnabled ? <Zap size={18} /> : <ZapOff size={18} />}
                         </button>
                     )}
-                    
+{/*                     
                     {showCancel && (
                         <button
                             onClick={handleCancel}
@@ -381,7 +381,7 @@ export default function ModernBarcodeScanner({
                         >
                             <X size={18} />
                         </button>
-                    )}
+                    )} */}
                 </div>
             </div>
             
