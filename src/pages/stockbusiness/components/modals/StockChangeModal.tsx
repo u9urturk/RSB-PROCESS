@@ -16,8 +16,8 @@ export default function StockChangeModal({ open, onClose, item, type, onSubmit }
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 backdrop-blur-sm  flex items-center justify-center z-50">
+            <div className="bg-gray-200 shadow-2xl mx-4 rounded-lg p-6 w-full max-w-md">
                 <h2 className="text-xl font-semibold mb-4">
                     {type === "add" ? "Stok Ekle" : "Stok Çıkar"} - {item.name}
                 </h2>

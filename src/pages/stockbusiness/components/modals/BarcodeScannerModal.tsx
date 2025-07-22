@@ -16,12 +16,13 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
     const [permissionChecked, setPermissionChecked] = useState(false);
 
     const handleDetected = useCallback((result: string) => {
-        console.log('BarcodeScannerModal - handleDetected called with:', result);
-        
+        const audio = new Audio('/bip.mp3');
+        audio.play();
+
         // Single scan mode - immediately set result
         setScanResult(result);
         onResult(result);
-        
+
         // 2 saniye sonra modal'ı kapat
         setTimeout(() => {
             handleClose();
@@ -30,14 +31,14 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
 
     const handleClose = useCallback(() => {
         console.log('BarcodeScannerModal - Closing modal and cleaning up camera...');
-        
+
         // Scanner'ı gizle (ModernBarcodeScanner component'inin unmount olmasını sağla)
         setShowScanner(false);
-        
+
         // State'i reset et (permission durumunu koruyoruz)
         setScanResult(null);
         setError(null);
-        
+
         // Kısa bir gecikme ile modal'ı kapat (camera cleanup için)
         setTimeout(() => {
             onClose();
@@ -53,7 +54,7 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
         setScanResult(null);
         setError(null);
         setShowScanner(false);
-        
+
         // Kısa bir gecikme ile scanner'ı tekrar aç
         setTimeout(() => {
             setShowScanner(true);
@@ -118,7 +119,7 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
             setShowScanner(false);
             setError(null);
             setScanResult(null);
-            
+
             // Kamera izni kontrolü yap
             checkCameraPermission();
         }
@@ -241,7 +242,7 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
                                             )}
                                         </div>
                                     </div>
-                                    
+
                                     <div className="text-center">
                                         <div className="flex gap-3">
                                             <button

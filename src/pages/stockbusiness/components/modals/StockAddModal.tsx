@@ -27,7 +27,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd, ini
         unitPrice: 0,
         minQuantity: 0,
         maxQuantity: 0,
-        barcode: initialBarcode, // barcode burada başlatılıyor
+        barcode: initialBarcode, 
         description: ""
     });
 
@@ -51,8 +51,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd, ini
         <AnimatePresence>
             {open && (
                 <motion.div
-                    className="fixed inset-0 flex items-center justify-center z-50"
-                    style={{ background: "rgba(255,152,0,0.08)" }}
+                    className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50"
                     initial="hidden"
                     animate="visible"
                     exit="exit"
@@ -60,9 +59,8 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd, ini
                     transition={{ duration: 0.25 }}
                 >
                     <div
-                        className="rounded-xl shadow-2xl w-full max-w-lg"
+                        className="rounded-xl bg-gray-100 mx-4 shadow-2xl w-full max-w-lg"
                         style={{
-                            background: "#fff",
                             padding: "2rem",
                             border: `2px solid ${orange}`,
                         }}
@@ -169,7 +167,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd, ini
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="minQuantity" className="block text-sm font-semibold mb-1" style={{ color: orangeDark }}>
+                                    <label htmlFor="minQuantity" className="block truncate text-sm font-semibold mb-1" style={{ color: orangeDark }}>
                                         Minimum Miktar*
                                     </label>
                                     <input
@@ -186,7 +184,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd, ini
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="maxQuantity" className="block text-sm font-semibold mb-1" style={{ color: orangeDark }}>
+                                    <label htmlFor="maxQuantity" className="block truncate text-sm font-semibold mb-1" style={{ color: orangeDark }}>
                                         Maksimum Miktar
                                     </label>
                                     <input

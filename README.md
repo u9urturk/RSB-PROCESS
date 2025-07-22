@@ -1,12 +1,14 @@
 # 🍽️ Restaurant Management System (RMS)
 
-A comprehensive restaurant management system built with modern web technologies, featuring real-time table management, order processing, inventory tracking, and staff coordination.
+A comprehensive restaurant management system built with modern web technologies, featuring real-time table management, order processing, inventory tracking, barcode scanning, and staff coordination.
 
 ![React](https://img.shields.io/badge/React-19.0.0-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)
 ![Electron](https://img.shields.io/badge/Electron-34.3.0-brightgreen.svg)
 ![Vite](https://img.shields.io/badge/Vite-6.2.0-orange.svg)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4.0.9-38bdf8.svg)
+
+---
 
 ## 🚀 Features
 
@@ -17,7 +19,7 @@ A comprehensive restaurant management system built with modern web technologies,
 - **Table Transfer**: Seamlessly transfer orders between tables
 - **Payment Processing**: Handle cash and card payments with detailed receipts
 
-### � Menu Management
+### 🍔 Menu Management
 - **Dynamic Menu System**: Add, edit, and remove menu items
 - **Category Management**: Organize menu items by categories
 - **Pricing Control**: Flexible pricing system with special offers
@@ -26,6 +28,9 @@ A comprehensive restaurant management system built with modern web technologies,
 ### 📦 Inventory Management
 - **Stock Tracking**: Monitor inventory levels with low-stock alerts
 - **Barcode Scanner**: Integrated barcode scanning for quick item identification
+    - **Barcode Search**: Scan barcode to search for products
+    - **Auto-Add Modal**: If barcode not found, opens add-stock modal with barcode pre-filled
+    - **Bip Sound**: Successful scan triggers a bip sound for user feedback
 - **Supplier Management**: Track suppliers and purchase orders
 - **Automatic Reordering**: Set minimum stock levels for automatic reorder alerts
 
@@ -34,6 +39,8 @@ A comprehensive restaurant management system built with modern web technologies,
 - **Performance Metrics**: Track waiter performance and table turnover
 - **Revenue Tracking**: Real-time revenue monitoring
 - **Customer Insights**: Analyze customer behavior and preferences
+
+---
 
 ## 🛠️ Tech Stack
 
@@ -64,14 +71,16 @@ A comprehensive restaurant management system built with modern web technologies,
 - **Autoprefixer**: CSS vendor prefixing
 - **PostCSS**: CSS processing
 
+---
+
 ## 📁 Project Structure
 
 ```
 src/
 ├── components/           # Reusable UI components
-│   ├── Card.tsx         # Generic card component
-│   ├── Navbar.tsx       # Navigation bar
-│   ├── Menu.tsx         # Menu component
+│   ├── Card.tsx
+│   ├── Navbar.tsx
+│   ├── Menu.tsx
 │   └── ...
 ├── context/             # React Context providers
 │   └── provider/
@@ -79,18 +88,20 @@ src/
 │       ├── RestaurantProvider.tsx
 │       └── NotificationProvider.tsx
 ├── pages/               # Page components
-│   ├── DashBoard.tsx    # Main dashboard
-│   ├── Login.tsx        # Authentication
-│   ├── restaurantstatus/ # Restaurant management
-│   ├── menubusiness/    # Menu management
-│   └── stockbusiness/   # Inventory management
+│   ├── DashBoard.tsx
+│   ├── Login.tsx
+│   ├── restaurantstatus/
+│   ├── menubusiness/
+│   └── stockbusiness/
 ├── types/               # TypeScript type definitions
 ├── utils/               # Utility functions
 ├── assets/              # Static assets
 └── api/                 # API client configuration
 ```
 
-## 🚀 Getting Started
+---
+
+## 🚦 Getting Started
 
 ### Prerequisites
 - Node.js (v18 or higher)
@@ -113,6 +124,8 @@ src/
    ```bash
    npm run dev
    ```
+   - To allow access from other devices on your network, Vite is configured with `host: '0.0.0.0'` in `vite.config.js`.
+   - Access the app via your local IP (e.g. `http://192.168.1.5:5173`) from other devices.
 
 4. **Run as Electron app**
    ```bash
@@ -131,73 +144,38 @@ src/
    npm run preview
    ```
 
+---
+
 ## 🔧 Development Mode - Auth Bypass
 
 **During development, the auth system is temporarily disabled.**
 
-### How it works:
 - `src/config/dev.ts` file with `AUTH_BYPASS: true` setting bypasses auth control
 - Application redirects directly to dashboard
 - Mock user information is automatically set
 
-### Production transition:
-Make the following changes in `src/config/dev.ts`:
-```typescript
-export const DEV_CONFIG = {
-    AUTH_BYPASS: false, // Change from true to false
-    SPLASH_DELAY: 2000, // Normal splash delay
-};
-```
+**Production transition:**  
+Change `AUTH_BYPASS` to `false` in `src/config/dev.ts`.
 
-### Affected files:
-- `src/context/provider/AuthProvider.tsx` - Mock user and token
-- `src/utils/routeUtils.tsx` - PrivateRoute bypass
-- `src/pages/Login.tsx` - Login page bypass
-- `src/pages/SplashScreen.tsx` - Direct dashboard redirect
+---
 
 ## 🏗️ Architecture
 
-### Component Architecture
 - **Atomic Design**: Components organized by complexity (atoms, molecules, organisms)
 - **Custom Hooks**: Reusable business logic
 - **Context Providers**: Global state management
 - **Type Safety**: Comprehensive TypeScript integration
 
-### State Management
-- **React Context**: Global application state
-- **Local State**: Component-specific state with hooks
-- **Persistent Storage**: Local storage for user preferences
-
-### Routing
-- **React Router**: Client-side routing
-- **Protected Routes**: Authentication-based route protection
-- **Nested Routes**: Hierarchical routing structure
+---
 
 ## 🎨 Design System
 
-### Color Palette
-- **Primary**: Blue gradient themes
-- **Secondary**: Green, purple, orange accents
-- **Status Colors**: Red (occupied), Blue (reserved), Green (available)
-- **Neutral**: Gray scale for backgrounds and text
+- **Color Palette**: Orange primary, blue/green/purple accents, status colors (red, green, blue), neutral grays
+- **Typography**: System fonts, responsive sizing, bold/semibold weights
+- **Animations**: Framer Motion for transitions, hover/micro-interactions, loading states
+- **Responsive Design**: Mobile-first, tablet and desktop layouts, cross-browser support
 
-### Typography
-- **Font Family**: System fonts for optimal performance
-- **Font Weights**: 400 (normal), 600 (semibold), 700 (bold)
-- **Responsive Sizing**: Adaptive font sizes across devices
-
-### Animations
-- **Framer Motion**: Smooth page transitions
-- **Hover Effects**: Interactive feedback
-- **Loading States**: Skeleton screens and spinners
-- **Micro-interactions**: Button states and form feedback
-
-## 📱 Responsive Design
-
-- **Mobile First**: Optimized for mobile devices
-- **Tablet Support**: Adapted layouts for tablets
-- **Desktop**: Full-featured desktop experience
-- **Cross-browser**: Compatible with modern browsers
+---
 
 ## 🔒 Security Features
 
@@ -206,11 +184,15 @@ export const DEV_CONFIG = {
 - **Input Validation**: Form validation and sanitization
 - **XSS Protection**: Secure coding practices
 
+---
+
 ## 🧪 Testing
 
 - **Type Safety**: TypeScript compile-time checks
 - **ESLint**: Code quality and consistency
 - **Manual Testing**: Comprehensive feature testing
+
+---
 
 ## 📈 Performance Optimization
 
@@ -218,6 +200,8 @@ export const DEV_CONFIG = {
 - **Code Splitting**: Lazy loading of components
 - **Image Optimization**: Optimized asset delivery
 - **Caching**: Efficient caching strategies
+
+---
 
 ## 🚀 Deployment
 
@@ -231,6 +215,8 @@ export const DEV_CONFIG = {
 2. Create installers for Windows, macOS, Linux
 3. Auto-update capabilities
 
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -239,14 +225,20 @@ export const DEV_CONFIG = {
 4. Push to branch: `git push origin feature/new-feature`
 5. Submit a pull request
 
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
 
 ## 👥 Team
 
 - **Developer**: [@u9urturk](https://github.com/u9urturk)
 - **Repository**: [RSB-PROCESS](https://github.com/u9urturk/RSB-PROCESS)
+
+---
 
 ## 📞 Support
 
