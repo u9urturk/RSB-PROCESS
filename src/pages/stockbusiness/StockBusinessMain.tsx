@@ -35,6 +35,7 @@ export default function StockBusinessMain() {
     const [search, setSearch] = useState<string>("");
     const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
     const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState<boolean>(false);
+    const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
 
     useEffect(() => {
         setActivePath('/dashboard/stockbusiness');
@@ -53,7 +54,14 @@ export default function StockBusinessMain() {
     const handleBarcodeResult = useCallback((barcode: string) => {
         setSearch(barcode);
         setIsBarcodeModalOpen(false);
-    }, []);
+
+        // Barcode ile eşleşen ürün var mı?
+        const found = stocks.some(stock => stock.barcode === barcode);
+        if (!found) {
+            setPendingBarcode(barcode); // barcode'ı sakla
+            setIsAddModalOpen(true);    // ekleme modalını aç
+        }
+    }, [stocks]);
 
     const handleStockChange = useCallback((id: string, amount: number, type: "add" | "remove") => {
         setStocks(prev => prev.map(stock => {
@@ -75,6 +83,7 @@ export default function StockBusinessMain() {
     const handleAddStock = useCallback((newStock: StockItem) => {
         setStocks(prev => [...prev, newStock]);
         setIsAddModalOpen(false);
+        setPendingBarcode(null); // barcode eklenince temizle
     }, []);
 
     const filteredStocks = stocks.filter(stock => 
@@ -88,7 +97,15 @@ export default function StockBusinessMain() {
     );
 
     const ModalComponent = ({ open, onClose, onSubmit }: StockAddModalProps) => (
-        <StockAddModal open={open} onClose={onClose} onAdd={onSubmit} />
+        <StockAddModal
+            open={open}
+            onClose={() => {
+                onClose();
+                setPendingBarcode(null); // modal kapatılırsa barcode temizle
+            }}
+            onAdd={onSubmit}
+            initialBarcode={pendingBarcode || ""}
+        />
     );
 
     // Stok kartları

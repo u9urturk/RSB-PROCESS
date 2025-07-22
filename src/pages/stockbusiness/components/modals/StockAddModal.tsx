@@ -1,13 +1,24 @@
 import { useState } from "react";
 import { StockItem } from "../../../../types";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface StockAddModalProps {
     open: boolean;
     onClose: () => void;
     onAdd: (newStock: StockItem) => void;
+    initialBarcode?: string; // yeni prop
 }
 
-const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd }) => {
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.95 }
+};
+
+const orange = "#ff9800";
+const orangeDark = "#f57c00";
+
+const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd, initialBarcode = "" }) => {
     const [formData, setFormData] = useState<Partial<StockItem>>({
         name: "",
         category: "",
@@ -16,7 +27,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd }) =
         unitPrice: 0,
         minQuantity: 0,
         maxQuantity: 0,
-        barcode: "",
+        barcode: initialBarcode, // barcode burada başlatılıyor
         description: ""
     });
 
@@ -24,7 +35,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd }) =
         e.preventDefault();
         onAdd({
             ...formData,
-            id: Date.now().toString(), // Geçici ID üretimi
+            id: Date.now().toString(),
             lastUpdated: new Date().toISOString(),
             quantity: formData.quantity || 0,
             minQuantity: formData.minQuantity || 0,
@@ -34,162 +45,231 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd }) =
         onClose();
     };
 
-    if (!open) return null;
+
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-                <h2 className="text-xl font-semibold mb-4">Yeni Stok Ekle</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                            Ürün Adı*
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            required
-                            value={formData.name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-
-                    <div>
-                        <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                            Kategori*
-                        </label>
-                        <input
-                            type="text"
-                            id="category"
-                            required
-                            value={formData.category}
-                            onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                            className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-                                Miktar*
-                            </label>
-                            <input
-                                type="number"
-                                id="quantity"
-                                required
-                                min="0"
-                                value={formData.quantity}
-                                onChange={(e) => setFormData(prev => ({ ...prev, quantity: Number(e.target.value) }))}
-                                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="unit" className="block text-sm font-medium text-gray-700">
-                                Birim*
-                            </label>
-                            <input
-                                type="text"
-                                id="unit"
-                                required
-                                value={formData.unit}
-                                onChange={(e) => setFormData(prev => ({ ...prev, unit: e.target.value }))}
-                                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="minQuantity" className="block text-sm font-medium text-gray-700">
-                                Minimum Miktar*
-                            </label>
-                            <input
-                                type="number"
-                                id="minQuantity"
-                                required
-                                min="0"
-                                value={formData.minQuantity}
-                                onChange={(e) => setFormData(prev => ({ ...prev, minQuantity: Number(e.target.value) }))}
-                                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label htmlFor="maxQuantity" className="block text-sm font-medium text-gray-700">
-                                Maksimum Miktar
-                            </label>
-                            <input
-                                type="number"
-                                id="maxQuantity"
-                                min="0"
-                                value={formData.maxQuantity}
-                                onChange={(e) => setFormData(prev => ({ ...prev, maxQuantity: Number(e.target.value) }))}
-                                className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label htmlFor="unitPrice" className="block text-sm font-medium text-gray-700">
-                            Birim Fiyat*
-                        </label>
-                        <input
-                            type="number"
-                            id="unitPrice"
-                            required
-                            min="0"
-                            step="0.01"
-                            value={formData.unitPrice}
-                            onChange={(e) => setFormData(prev => ({ ...prev, unitPrice: Number(e.target.value) }))}
-                            className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-
-                    <div>
-                        <label htmlFor="barcode" className="block text-sm font-medium text-gray-700">
-                            Barkod
-                        </label>
-                        <input
-                            type="text"
-                            id="barcode"
-                            value={formData.barcode}
-                            onChange={(e) => setFormData(prev => ({ ...prev, barcode: e.target.value }))}
-                            className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                            Açıklama
-                        </label>
-                        <textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            rows={3}
-                            className="mt-1 w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-
-                    <div className="mt-6 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+        <AnimatePresence>
+            {open && (
+                <motion.div
+                    className="fixed inset-0 flex items-center justify-center z-50"
+                    style={{ background: "rgba(255,152,0,0.08)" }}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    variants={modalVariants}
+                    transition={{ duration: 0.25 }}
+                >
+                    <div
+                        className="rounded-xl shadow-2xl w-full max-w-lg"
+                        style={{
+                            background: "#fff",
+                            padding: "2rem",
+                            border: `2px solid ${orange}`,
+                        }}
+                    >
+                        <h2
+                            className="text-2xl font-bold text-center"
+                            style={{ color: orange }}
                         >
-                            İptal
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                            Kaydet
-                        </button>
+                            Yeni Stok Ekle
+                        </h2>
+                        <form onSubmit={handleSubmit} className="space-y-1">
+                            <div className="grid grid-cols-3 gap-x-4">
+                                <div>
+                                    <label htmlFor="barcode" className="block text-sm font-semibold " style={{ color: orangeDark }}>
+                                        Barkod
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="barcode"
+                                        value={formData.barcode}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, barcode: e.target.value }))}
+                                        className="w-full p-1 px-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
+                                        style={{
+                                            borderColor: orange,
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="name" className="block text-sm font-semibold " style={{ color: orangeDark }}>
+                                        Ürün Adı*
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="name"
+                                        required
+                                        value={formData.name}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                        className="w-full p-1 px-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
+                                        style={{
+                                            borderColor: orange
+                                        }}
+                                    />
+                                </div>
+                                <div >
+                                    <label htmlFor="category" className="block text-sm w-full font-semibold mb-1" style={{ color: orangeDark }}>
+                                        Kategori*
+                                    </label>
+                                    <select
+                                        id="category"
+                                        required
+                                        value={formData.category}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                                        className="w-full p-1 px-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
+                                        style={{
+                                            borderColor: orange,
+                                        }}
+                                    >
+                                        <option value="">Kategori Seçiniz</option>
+                                        <option value="Gıda">Gıda</option>
+                                        <option value="İçecek">İçecek</option>
+                                        <option value="Temizlik">Temizlik</option>
+                                        <option value="Diğer">Diğer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="quantity" className="block text-sm font-semibold mb-1" style={{ color: orangeDark }}>
+                                        Miktar*
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="quantity"
+                                        required
+                                        min="0"
+                                        value={formData.quantity}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, quantity: Number(e.target.value) }))}
+                                        className="w-full p-1 px-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
+                                        style={{
+                                            borderColor: orange,
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="unit" className="block text-sm font-semibold mb-1" style={{ color: orangeDark }}>
+                                        Birim*
+                                    </label>
+                                    <select
+                                        id="unit"
+                                        required
+                                        value={formData.unit}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, unit: e.target.value }))}
+                                        className="w-full p-1 px-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
+                                        style={{
+                                            borderColor: orange,
+                                        }}
+                                    >
+                                        <option value="adet">Adet</option>
+                                        <option value="kg">Kilogram</option>
+                                        <option value="gr">Gram</option>
+                                        <option value="lt">Litre</option>
+                                        <option value="ml">Mililitre</option>
+                                        <option value="paket">Paket</option>
+                                        <option value="kutu">Kutu</option>
+                                        <option value="şişe">Şişe</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="minQuantity" className="block text-sm font-semibold mb-1" style={{ color: orangeDark }}>
+                                        Minimum Miktar*
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="minQuantity"
+                                        required
+                                        min="0"
+                                        value={formData.minQuantity}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, minQuantity: Number(e.target.value) }))}
+                                        className="w-full p-1 px-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
+                                        style={{
+                                            borderColor: orange,
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="maxQuantity" className="block text-sm font-semibold mb-1" style={{ color: orangeDark }}>
+                                        Maksimum Miktar
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="maxQuantity"
+                                        min="0"
+                                        value={formData.maxQuantity}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, maxQuantity: Number(e.target.value) }))}
+                                        className="w-full p-1 px-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
+                                        style={{
+                                            borderColor: orange,
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="unitPrice" className="block text-sm font-semibold mb-1" style={{ color: orangeDark }}>
+                                        Birim Fiyat*
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="unitPrice"
+                                        required
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.unitPrice}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, unitPrice: Number(e.target.value) }))}
+                                        className="w-full p-1 px-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
+                                        style={{
+                                            borderColor: orange,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label htmlFor="description" className="block text-sm font-semibold mb-1" style={{ color: orangeDark }}>
+                                    Açıklama
+                                </label>
+                                <textarea
+                                    id="description"
+                                    value={formData.description}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                                    rows={3}
+                                    className="w-full p-1 px-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2"
+                                    style={{
+                                        borderColor: orange,
+                                    }}
+                                />
+                            </div>
+                            <div className="mt-8 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="px-5 py-2 rounded-lg font-semibold"
+                                    style={{
+                                        background: "#fff3e0",
+                                        color: orangeDark,
+                                        border: `1px solid ${orange}`,
+                                        transition: "background 0.2s",
+                                    }}
+                                >
+                                    İptal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-5 py-2 rounded-lg font-semibold"
+                                    style={{
+                                        background: orange,
+                                        color: "#fff",
+                                        border: `1px solid ${orangeDark}`,
+                                        boxShadow: `0 2px 8px ${orange}33`,
+                                        transition: "background 0.2s",
+                                    }}
+                                >
+                                    Kaydet
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
-            </div>
-        </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
-}
+};
 
 export default StockAddModal;
