@@ -36,13 +36,13 @@ const OrderDetail = ({ table, onClose }: OrderDetailProps) => {
     };
 
     return (
-        <div className="flex relative flex-col h-full bg-gray-50 rounded-2xl">
+        <div className="flex flex-col bg-gray-50 rounded-2xl">
             <div className="w-full sticky top-0 z-10 bg-white">
                 <TableModalHeader table={table} onClose={onClose} />
 
             </div>
             <div className="p-6 border-b border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {table.waiterName && (
                         <InfoCard
                             title={<span className="flex items-center gap-2"><User size={20} className="text-purple-600" /> Garson</span>}
@@ -65,7 +65,7 @@ const OrderDetail = ({ table, onClose }: OrderDetailProps) => {
                 </div>
             </div>
 
-            <div className="flex-1 p-2">
+            <div className="overflow-y-auto no-scrollbar h-60 md:h-[32rem] p-2">
                 <div className="mb-4">
                     <h3 className="text-lg font-bold text-gray-800 mb-2">Sipariş İçeriği</h3>
                     <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium inline-block">

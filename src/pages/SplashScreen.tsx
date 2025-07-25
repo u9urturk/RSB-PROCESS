@@ -25,7 +25,8 @@ const SplashScreen: React.FC = () => {
     }, [navigate, isAuthenticated]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-orange-500 to-red-600 flex items-center
+         justify-center">
             <motion.div
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}

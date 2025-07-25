@@ -13,9 +13,7 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <ConfirmProvider>
-            <div className="scale-[0.75] origin-top-left w-[133.33vw] h-[133.33vh]">
-              <App />
-            </div>
+            <App />
           </ConfirmProvider>
         </AuthProvider>
       </BrowserRouter>

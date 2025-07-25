@@ -13,7 +13,6 @@ const Layout: React.FC<LayoutProps> = () => {
     const location = useLocation();
     const { isAuthenticated } = useAuth();
     const { activePath } = useNavigation();
-    console.log(isAuthenticated, 'isAuthenticated in Layout');
 
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;

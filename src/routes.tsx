@@ -14,7 +14,7 @@ interface CustomRouteObject {
     element?: ReactNode;
     auth?: boolean;
     admin?: boolean;
-    index?: boolean;
+    index?: any;
     children?: CustomRouteObject[];
 }
 
@@ -34,23 +34,23 @@ const routes: CustomRouteObject[] = [
         children: [
             {
                 index: true,
-                element: <DashBoard></DashBoard>
+                element: <DashBoard />
             },
             {
-                path: '/dashboard/onlineorders',
-                element: <OnlineOrders></OnlineOrders>
+                path: 'onlineorders',
+                element: <OnlineOrders />
             },
             {
-                path: '/dashboard/restaurantstatus',
-                element: <RestaurantStatusMain></RestaurantStatusMain>
+                path: 'restaurantstatus',
+                element: <RestaurantStatusMain />
             },
             {
-                path: '/dashboard/stockbusiness',
-                element: <StockBusinessMain></StockBusinessMain>
+                path: 'stockbusiness',
+                element: <StockBusinessMain />
             },
             {
-                path: '/dashboard/menubusiness',
-                element: <MenuBusinessMain></MenuBusinessMain>
+                path: 'menubusiness',
+                element: <MenuBusinessMain />
             }
         ]
     },

@@ -81,13 +81,13 @@ const NoteModal = ({ open, onClose, onSave, initialNote = [], suggestions }: Not
                 transition={{ duration: 0.2 }}
                 className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 relative"
             >
-                <button 
-                    className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors" 
+                <button
+                    className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
                     onClick={onClose}
                 >
                     <X size={20} className="text-gray-600" />
                 </button>
-                
+
                 <div className="mb-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full">
@@ -95,7 +95,7 @@ const NoteModal = ({ open, onClose, onSave, initialNote = [], suggestions }: Not
                         </div>
                         <h3 className="text-xl font-bold text-gray-800">Ürün Notunu Güncelle</h3>
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-2 mb-4">
                         {note.map((tag, i) => (
                             <span key={i} className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 text-sm px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
@@ -110,7 +110,7 @@ const NoteModal = ({ open, onClose, onSave, initialNote = [], suggestions }: Not
                             </span>
                         ))}
                     </div>
-                    
+
                     <input
                         type="text"
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none transition-colors"
@@ -120,7 +120,7 @@ const NoteModal = ({ open, onClose, onSave, initialNote = [], suggestions }: Not
                         onKeyDown={handleInputKeyDown}
                         autoFocus
                     />
-                    
+
                     <div className="flex flex-wrap gap-2 mt-4">
                         {suggestions.map((s, i) => (
                             <button
@@ -134,7 +134,7 @@ const NoteModal = ({ open, onClose, onSave, initialNote = [], suggestions }: Not
                         ))}
                     </div>
                 </div>
-                
+
                 <button
                     className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl px-4 py-3 font-semibold transition-all duration-200 shadow-lg"
                     onClick={() => { onSave(note); }}
@@ -154,22 +154,22 @@ const PaymentPanel = ({
 }: PaymentPanelProps) => {
     // RestaurantProvider'dan metotları al
     const { updateOrderInTable, removeOrderFromTable } = useRestaurant();
-    
+
     const [selectedPayment, setSelectedPayment] = useState<"cash" | "card">("cash");
     const [noteModal, setNoteModal] = useState<{ open: boolean; item: CartItem | null }>({ open: false, item: null });
 
     // Sepet işlemleri - Sadece RestaurantProvider üzerinden güncelleme
     const handleQtyChange = (item: CartItem, delta: number) => {
         const newQuantity = Math.max(1, item.quantity + delta);
-        
+
         console.log("PaymentPanel handleQtyChange:", {
             tableId: table.id,
             orderItemId: item.id,
             currentQuantity: item.quantity,
             newQuantity: newQuantity
         });
-        
-       
+
+
         updateOrderInTable(table.id, item.id, { quantity: newQuantity });
     };
 
@@ -212,9 +212,10 @@ const PaymentPanel = ({
                 initialNote={noteModal.item?.note || []}
                 suggestions={noteSuggestions}
             />
-            <div className="h-full flex flex-col">
+            <div className="h-auto flex flex-col overflow-y-auto no-scrollbar">
                 {/* Modern Header with Gradient */}
-                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-2xl mb-6 shadow-lg">
+                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-3 rounded-t-xl mb-3 shadow-lg
+                sticky top-0 z-20  ">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-white/20 rounded-full">
@@ -235,10 +236,10 @@ const PaymentPanel = ({
                     </div>
                 </div>
 
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="flex-1 grid grid-cols-1 px-4  md:px-6 py-1 md:py-8 lg:grid-cols-3 gap-6">
                     {/* Sol: Sipariş Özeti */}
-                    <div className="lg:col-span-2">
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 h-full">
+                    <div className="lg:col-span-2 overflow-y-auto no-scrollbar">
+                        <div className="bg-white rounded-t-2xl shadow-lg border border-gray-100 h-full">
                             <div className="p-6 border-b border-gray-100">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-blue-100 rounded-full">
@@ -256,14 +257,14 @@ const PaymentPanel = ({
                                         <p className="text-gray-500">Sepet boş</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <div className="space-y-4 w-full">
                                         {cart.map((item: CartItem, i: number) => (
                                             <motion.div
                                                 key={i}
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ duration: 0.3, delay: i * 0.1 }}
-                                                className="bg-gray-50 rounded-xl p-4 border border-gray-100"
+                                                className="bg-gray-50 rounded-xl w-full p-4 border border-gray-100"
                                             >
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex-1">
@@ -330,19 +331,25 @@ const PaymentPanel = ({
                     </div>
 
                     {/* Sağ: Ödeme Paneli */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 h-full">
-                            <div className="p-6 border-b border-gray-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-green-100 rounded-full">
-                                        <Wallet size={20} className="text-green-600" />
+                    <div className="lg:col-span-1 sticky top-0 z-20 lg:order-none">
+                        <div className="bg-white rounded-lg md:rounded-2xl shadow-lg border border-gray-100 h-full">
+                            <div className=" p-2 md:p-6 border-b border-gray-100">
+                                <div className="flex items-center w-full justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-green-100 rounded-full">
+                                            <Wallet size={20} className="text-green-600" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-gray-800">Ödeme</h3>
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-800">Ödeme</h3>
+                                    <div className="bg-gradient-to-r from-green-50 to-green-100  md:hidden rounded-xl
+                                     p-2 px-8 border border-green-200">
+                                        <p className="text-2xl font-bold text-green-800">{total}₺</p>
+                                    </div>
                                 </div>
                             </div>
                             <div className="p-6 space-y-6">
                                 {/* Toplam Tutar */}
-                                <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                                <div className="bg-gradient-to-r from-green-50 to-green-100 hidden md:block rounded-xl p-4 border border-green-200">
                                     <p className="text-sm text-green-700 mb-1">Toplam Tutar</p>
                                     <p className="text-3xl font-bold text-green-800">{total}₺</p>
                                 </div>
@@ -354,18 +361,16 @@ const PaymentPanel = ({
                                         {paymentOptions.map(opt => (
                                             <button
                                                 key={opt.key}
-                                                className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                                                    selectedPayment === opt.key
-                                                        ? "bg-blue-50 border-blue-500 text-blue-700"
-                                                        : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
-                                                }`}
+                                                className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${selectedPayment === opt.key
+                                                    ? "bg-blue-50 border-blue-500 text-blue-700"
+                                                    : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                                                    }`}
                                                 onClick={() => setSelectedPayment(opt.key as "cash" | "card")}
                                             >
-                                                <div className={`p-2 rounded-full ${
-                                                    selectedPayment === opt.key
-                                                        ? "bg-blue-100"
-                                                        : "bg-gray-200"
-                                                }`}>
+                                                <div className={`p-2 rounded-full ${selectedPayment === opt.key
+                                                    ? "bg-blue-100"
+                                                    : "bg-gray-200"
+                                                    }`}>
                                                     {opt.icon}
                                                 </div>
                                                 <span className="font-medium">{opt.label}</span>

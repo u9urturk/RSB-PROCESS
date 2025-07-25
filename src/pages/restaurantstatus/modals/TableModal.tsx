@@ -211,12 +211,15 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
             {isOpen && (
                 <div
 
-                    className="fixed  inset-0 flex items-center  justify-center backdrop-blur-xs z-10 "
+                    className="fixed  inset-0 flex items-center h-screen justify-center backdrop-blur-xs z-10 "
                     onClick={handleOverlayClick}
                 >
                     <div
-                        className={`bg-white/95 backdrop-blur-xl    shadow-2xl border  overflow-auto no-scrollbar border-white/20 flex flex-col max-h-screen   rounded-2xl
-                            ${(showOrderPanel || showPaymentPanel) ? "w-[calc(100%-3rem)] py-0  h-screen " : showOrderDetail ? "w-[calc(100%-3rem)] sm:w-full md:max-w-[calc(50%)] h-auto " : "w-[calc(100%-3rem)] sm:w-full max-w-2xl h-auto"}`}
+                        className={`bg-white/95 backdrop-blur-xl    shadow-2xl border 
+                             border-white/20 flex flex-col rounded-2xl
+                            ${(showOrderPanel || showPaymentPanel) ? "w-[calc(100%-2rem)] py-0  h-auto max-h-[calc(100vh-6rem)] " :
+                                showOrderDetail ? "w-[calc(100%-3rem)] sm:w-full max-h-[calc(100vh-6rem)] md:max-w-[calc(50%)] py-0 " :
+                                    "w-[calc(100%-3rem)] sm:w-full max-w-2xl"}`}
 
                     >
                         {showOrderPanel ? (
@@ -241,16 +244,18 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                             <div>
                                 <div className="fixed right-0 top-1/2 z-[1] translate-y-[-50%] flex flex-col items-end">
                                     <button
-                                        className={`transition-all duration-200 flex items-center justify-center w-12 h-12 rounded-full shadow-lg border border-gray-200 bg-gradient-to-br ${showOrderDetail
+                                        className={`transition-all duration-200 flex items-center justify-center w-12 h-12
+                                             rounded-l-full shadow-lg border border-gray-200 bg-gradient-to-br ${showOrderDetail
                                             ? "from-gray-700 to-gray-600 text-white"
                                             : "from-blue-600 to-blue-500 text-white"}
-                                            hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 relative`}
+                                            hover:scale-105 `}
                                         onClick={() => setShowOrderDetail((v) => !v)}
                                         aria-label={showOrderDetail ? "Sipariş Detayını Kapat" : "Sipariş Detayını Göster"}
                                     >
                                         <List size={24} />
                                         {!showOrderDetail && table.orders && table.orders.length > 0 && (
-                                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white"></span>
+                                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-l-full border-2
+                                             border-white"></span>
                                         )}
                                     </button>
 
@@ -271,7 +276,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                             />
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-6">
+                                        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 px-4 sm:mb-6">
                                             <InfoCard
                                                 title="Durum"
                                                 value={<div className="scale-75 sm:scale-100 origin-left"><StatusBadge table={table} /></div>}
@@ -317,7 +322,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                                 value={<span className="text-xs sm:text-sm font-bold text-gray-800 truncate">{table.waiterName}</span>}
                                                 bgGradient="linear-gradient(135deg, rgba(139, 69, 19, 0.1) 0%, rgba(92, 51, 23, 0.1) 100%)"
                                                 boxShadow="0 8px 32px rgba(139, 69, 19, 0.1)"
-                                                className="mb-3 sm:mb-6 p-3 sm:p-5"
+                                                className="mb-3 sm:mb-6 mx-2 p-3 sm:p-5"
                                                 icon={<User size={10} className="text-amber-600 sm:w-[14px] sm:h-[14px]" />}
                                             >
                                                 <div className="min-w-0 flex-1">
@@ -337,7 +342,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                     </div>
                                 )}
 
-                                <div className="sticky bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-200 p-3 sm:p-1 z-10">
+                                <div className=" bg-white/90 backdrop-blur-sm border-t border-gray-200 p-3 sm:p-1 z-10">
                                     <NavigationPanel
                                         buttons={NAV_BUTTONS}
                                         isEmpty={isEmpty}
