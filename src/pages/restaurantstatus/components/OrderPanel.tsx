@@ -183,36 +183,36 @@ interface ProductCardProps {
 
 // Ürün kartı bileşeni - Modern responsive tasarım
 const ProductCard = ({ product, onAdd, onAddWithNote }: ProductCardProps) => (
-    <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden group hover:shadow-xl hover:scale-[1.02] transition-all duration-300 hover:border-blue-200">
+    <div className="bg-white rounded-xl shadow border border-gray-100 overflow-hidden group hover:shadow-lg hover:scale-[1.01] transition-all duration-200 hover:border-blue-200 min-w-[120px] max-w-[160px] mx-auto">
         {/* Ürün Resmi */}
         <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden group-hover:from-blue-50 group-hover:to-blue-100 transition-all">
             <img
                 src={product.image}
                 alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300"></div>
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200"></div>
         </div>
 
         {/* Ürün Bilgileri */}
-        <div className="p-3 sm:p-4">
-            <h4 className="font-bold text-gray-800 text-sm sm:text-base mb-1 line-clamp-2">{product.name}</h4>
-            <p className="text-blue-600 font-bold text-lg sm:text-xl mb-3">₺{product.price.toFixed(2)}</p>
+        <div className="p-2 sm:p-3">
+            <h4 className="font-bold text-gray-800 text-xs sm:text-sm mb-1 line-clamp-2">{product.name}</h4>
+            <p className="text-blue-600 font-bold text-base sm:text-lg mb-2">₺{product.price.toFixed(2)}</p>
 
             {/* Butonlar */}
-            <div className="flex gap-2">
+            <div className="flex gap-1">
                 <button
-                    className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold text-sm hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg shadow-blue-500/25"
+                    className="flex-1 px-2 py-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold text-xs hover:from-blue-600 hover:to-blue-700 transition-all shadow shadow-blue-500/10"
                     onClick={onAdd}
                 >
                     Ekle
                 </button>
                 <button
-                    className="px-3 py-2 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors"
+                    className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
                     onClick={onAddWithNote}
                     title="Notla Ekle"
                 >
-                    <Plus size={16} />
+                    <Plus size={14} />
                 </button>
             </div>
         </div>
@@ -228,7 +228,7 @@ interface ProductGridProps {
 // Ürün grid bileşeni - Modern responsive tasarım
 const ProductGrid = ({ products, onAddToCart, onAddToCartWithNote }: ProductGridProps) => (
     <div className="h-full overflow-y-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-4 pb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 pb-2">
             {products.map((product: Product) => (
                 <ProductCard
                     key={product.id}
@@ -239,10 +239,10 @@ const ProductGrid = ({ products, onAddToCart, onAddToCartWithNote }: ProductGrid
             ))}
         </div>
         {products.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                <div className="text-6xl mb-4">🍽️</div>
-                <p className="text-lg font-medium">Ürün bulunamadı</p>
-                <p className="text-sm">Farklı bir kategori seçin veya arama teriminizi değiştirin</p>
+            <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+                <div className="text-4xl mb-2">🍽️</div>
+                <p className="text-base font-medium">Ürün bulunamadı</p>
+                <p className="text-xs">Farklı bir kategori seçin veya arama teriminizi değiştirin</p>
             </div>
         )}
     </div>
@@ -282,6 +282,10 @@ const CartPanel = ({ cart, setCart, table, onConfirm, onUpdateExistingOrder, onR
 
     console.log(existingOrders)
 
+    // Mobilde accordion state'leri
+    const [showOrdersMobile, setShowOrdersMobile] = useState(true);
+    const [showCartMobile, setShowCartMobile] = useState(true);
+
     return (
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 flex flex-col h-full">
             {/* Sepet Header - Genel Toplam */}
@@ -300,9 +304,17 @@ const CartPanel = ({ cart, setCart, table, onConfirm, onUpdateExistingOrder, onR
                 </div>
             </div>
 
+            {/* Mevcut Siparişler - Mobilde açılıp kapanır */}
             {existingOrders.length > 0 && (
                 <div className="border-b border-gray-200">
-                    <div className="p-3 bg-gray-50">
+                    <button
+                        className="w-full flex items-center justify-between px-3 py-2 bg-gray-100 rounded-t-xl sm:hidden"
+                        onClick={() => setShowOrdersMobile(v => !v)}
+                    >
+                        <span className="font-semibold text-gray-700 text-sm">Mevcut Siparişler</span>
+                        <span className="text-xs text-gray-500">{showOrdersMobile ? 'Kapat' : 'Aç'}</span>
+                    </button>
+                    <div className={`p-3 bg-gray-50 ${showOrdersMobile ? '' : 'hidden'} sm:block`}> 
                         <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-semibold text-gray-700">Mevcut Siparişler</h4>
                             <span className="text-sm font-bold text-gray-600">₺{existingTotal.toFixed(2)}</span>
@@ -373,67 +385,77 @@ const CartPanel = ({ cart, setCart, table, onConfirm, onUpdateExistingOrder, onR
                 </div>
             )}
 
+            {/* Sepet Alanı - Mobilde açılıp kapanır */}
             <div className="flex-1 overflow-y-auto p-4">
-                {cart.length === 0 ? (
-                    <div className="text-center py-12">
-                        <div className="text-gray-400 text-6xl mb-4">🛒</div>
-                        <p className="text-gray-500 font-medium">Sepet boş</p>
-                        <p className="text-sm text-gray-400">Ürün ekleyerek siparişe başlayın</p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {cart.map((item: CartItem) => (
-                            <div key={item.id} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <h4 className="font-semibold text-gray-800 text-sm">{item.productName}</h4>
-                                        {item.note && item.note.length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mt-2">
-                                                {item.note.map((tag: string, idx: number) => (
-                                                    <span key={idx} className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
-                                                        {tag}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
+                <button
+                    className="w-full flex items-center justify-between px-3 py-2 bg-gray-100 rounded-t-xl sm:hidden mb-2"
+                    onClick={() => setShowCartMobile(v => !v)}
+                >
+                    <span className="font-semibold text-gray-700 text-sm">Sepet</span>
+                    <span className="text-xs text-gray-500">{showCartMobile ? 'Kapat' : 'Aç'}</span>
+                </button>
+                <div className={`${showCartMobile ? '' : 'hidden'} sm:block`}>
+                    {cart.length === 0 ? (
+                        <div className="text-center py-12">
+                            <div className="text-gray-400 text-6xl mb-4">🛒</div>
+                            <p className="text-gray-500 font-medium">Sepet boş</p>
+                            <p className="text-sm text-gray-400">Ürün ekleyerek siparişe başlayın</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-wrap gap-3">
+                            {cart.map((item: CartItem) => (
+                                <div key={item.id} className="bg-gray-50 rounded-xl p-3 border border-gray-100 min-w-[180px] max-w-[220px] flex-1">
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex-1">
+                                            <h4 className="font-semibold text-gray-800 text-sm">{item.productName}</h4>
+                                            {item.note && item.note.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                    {item.note.map((tag: string, idx: number) => (
+                                                        <span key={idx} className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="text-right ml-2">
+                                            <p className="font-bold text-gray-800 text-sm">₺{(item.price * item.quantity).toFixed(2)}</p>
+                                            <p className="text-xs text-gray-500">₺{item.price.toFixed(2)} x {item.quantity}</p>
+                                        </div>
                                     </div>
-                                    <div className="text-right ml-2">
-                                        <p className="font-bold text-gray-800 text-sm">₺{(item.price * item.quantity).toFixed(2)}</p>
-                                        <p className="text-xs text-gray-500">₺{item.price.toFixed(2)} x {item.quantity}</p>
-                                    </div>
-                                </div>
 
-                                <div className="flex items-center justify-between mt-3">
-                                    <div className="flex items-center gap-2">
-                                        {item.quantity === 1 ? (
-                                            <button
-                                                className="w-7 h-7 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center"
-                                                onClick={() => handleRemove(item.id)}
-                                                title="Ürünü sepetten çıkar"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        ) : (
+                                    <div className="flex items-center justify-between mt-3">
+                                        <div className="flex items-center gap-2">
+                                            {item.quantity === 1 ? (
+                                                <button
+                                                    className="w-7 h-7 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center"
+                                                    onClick={() => handleRemove(item.id)}
+                                                    title="Ürünü sepetten çıkar"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    className="w-7 h-7 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center text-sm font-bold"
+                                                    onClick={() => handleQtyChange(item.id, -1)}
+                                                >
+                                                    -
+                                                </button>
+                                            )}
+                                            <span className="min-w-[1.5rem] text-center font-semibold text-sm">{item.quantity}</span>
                                             <button
                                                 className="w-7 h-7 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center text-sm font-bold"
-                                                onClick={() => handleQtyChange(item.id, -1)}
+                                                onClick={() => handleQtyChange(item.id, 1)}
                                             >
-                                                -
+                                                +
                                             </button>
-                                        )}
-                                        <span className="min-w-[1.5rem] text-center font-semibold text-sm">{item.quantity}</span>
-                                        <button
-                                            className="w-7 h-7 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center text-sm font-bold"
-                                            onClick={() => handleQtyChange(item.id, 1)}
-                                        >
-                                            +
-                                        </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="p-4 border-t border-gray-200 space-y-3">
@@ -620,17 +642,15 @@ const OrderPanel = ({ table, onClose }: OrderPanelProps) => {
                 suggestions={noteSuggestions}
             />
 
-            <div className="flex flex-col h-full bg-gray-50 rounded-2xl overflow-hidden">
-                {/* Modern Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 relative">
+            <div className="flex flex-col h-full bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg">
+                {/* Minimalist Header */}
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 sm:p-6 rounded-t-2xl shadow-md">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h2 className="text-2xl font-bold">Masa {table.number}</h2>
-                            <p className="text-blue-100 mt-1">Sipariş Girişi</p>
+                            <h2 className="text-lg sm:text-2xl font-bold">Masa {table.number}</h2>
+                            <p className="text-blue-100 text-xs sm:text-sm">Sipariş Girişi</p>
                             {openTime && (
-                                <p className="text-blue-200 text-sm mt-1">
-                                    🕒 Açık: {elapsed}
-                                </p>
+                                <p className="text-blue-200 text-xs mt-1">🕒 Açık: {elapsed}</p>
                             )}
                         </div>
                         <button
@@ -638,71 +658,67 @@ const OrderPanel = ({ table, onClose }: OrderPanelProps) => {
                             onClick={onClose}
                             aria-label="Sipariş Panelini Kapat"
                         >
-                            <X size={24} className="text-white" />
+                            <X size={20} className="text-white" />
                         </button>
                     </div>
                 </div>
 
-                {/* Content Area - Modern Responsive Layout */}
-                <div className="flex-1 overflow-hidden">
-                    <div className="flex flex-col xl:flex-row h-full">
-                        {/* Ürünler Bölümü */}
-                        <div className="flex-1 flex flex-col p-4 sm:p-6 overflow-hidden">
-                            {/* Kategori + Arama - Mobile İyileştirmesi */}
-                            <div className="space-y-4 mb-6">
-                                <CategoryTabs
-                                    categories={activeCategories}
-                                    selected={selectedCategory}
-                                    onSelect={setSelectedCategory}
-                                />
-
-                                {/* Modern Arama Çubuğu */}
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Ürün, kategori ara..."
-                                        value={search}
-                                        onChange={e => setSearch(e.target.value)}
-                                        className="block w-full pl-10 pr-3 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white shadow-sm"
-                                    />
-                                    {search && (
-                                        <button
-                                            onClick={() => setSearch("")}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                                        >
-                                            <X size={20} />
-                                        </button>
-                                    )}
+                {/* Content Area - Minimalist Responsive Layout */}
+                <div className="flex-1 flex flex-col xl:flex-row overflow-hidden">
+                    {/* Ürünler Bölümü */}
+                    <div className="flex-1 flex flex-col p-2 sm:p-4 overflow-hidden bg-gray-50">
+                        {/* Kategori + Arama */}
+                        <div className="space-y-2 mb-4">
+                            <CategoryTabs
+                                categories={activeCategories}
+                                selected={selectedCategory}
+                                onSelect={setSelectedCategory}
+                            />
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
                                 </div>
-                            </div>
-
-                            {/* Ürün Grid - Full Height */}
-                            <div className="flex-1 overflow-hidden">
-                                <ProductGrid
-                                    products={filteredProducts}
-                                    onAddToCart={product => handleAddToCart(product)}
-                                    onAddToCartWithNote={handleAddToCartWithNote}
+                                <input
+                                    type="text"
+                                    placeholder="Ürün, kategori ara..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white shadow-sm text-sm"
                                 />
+                                {search && (
+                                    <button
+                                        onClick={() => setSearch("")}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                )}
                             </div>
                         </div>
-
-                        <div className="xl:w-96 flex-shrink-0 border-t xl:border-t-0 xl:border-l border-gray-200">
-                            <CartPanel
-                                cart={cart}
-                                setCart={setCart}
-                                table={currentTable}
-                                onConfirm={handleConfirmOrder}
-                                onUpdateExistingOrder={handleUpdateExistingOrder}
-                                onRemoveExistingOrder={handleRemoveExistingOrder}
-                                onClearCart={handleClearCart}
-                                onClose={onClose}
+                        {/* Ürün Grid - Full Height */}
+                        <div className="flex-1 overflow-y-auto no-scrollbar">
+                            <ProductGrid
+                                products={filteredProducts}
+                                onAddToCart={product => handleAddToCart(product)}
+                                onAddToCartWithNote={handleAddToCartWithNote}
                             />
                         </div>
+                    </div>
+
+                    {/* Sepet Paneli */}
+                    <div className="xl:w-80 flex-shrink-0 border-t xl:border-t-0 xl:border-l border-gray-200 bg-white">
+                        <CartPanel
+                            cart={cart}
+                            setCart={setCart}
+                            table={currentTable}
+                            onConfirm={handleConfirmOrder}
+                            onUpdateExistingOrder={handleUpdateExistingOrder}
+                            onRemoveExistingOrder={handleRemoveExistingOrder}
+                            onClearCart={handleClearCart}
+                            onClose={onClose}
+                        />
                     </div>
                 </div>
             </div>

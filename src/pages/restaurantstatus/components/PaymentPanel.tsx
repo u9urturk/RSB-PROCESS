@@ -214,8 +214,9 @@ const PaymentPanel = ({
             />
             <div className="h-auto flex flex-col overflow-y-auto no-scrollbar">
                 {/* Modern Header with Gradient */}
-                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-3 rounded-t-xl mb-3 shadow-lg
-                sticky top-0 z-20  ">
+                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-3
+                 rounded-t-xl md:rounded-t-2xl mb-3 shadow-lg
+                sticky top-0 z-50 ">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-white/20 rounded-full">

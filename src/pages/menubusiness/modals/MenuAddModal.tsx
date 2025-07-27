@@ -14,6 +14,8 @@ export default function MenuAddModal({ open, onClose, onAdd, categories }: MenuA
     const [loading, setLoading] = useState<boolean>(false);
     const { showNotification } = useNotification();
 
+    console.log(name, category, price, status, description, images);
+
     const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (images.length + files.length > 3) {

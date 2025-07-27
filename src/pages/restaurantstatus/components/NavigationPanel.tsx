@@ -37,7 +37,8 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
 }) => (
     <nav
-        className="z-50 w-full overflow-hidden rounded-lg sm:rounded-xl p-1 backdrop-blur-md border border-white/20"
+        className="w-full overflow-hidden rounded-lg sm:rounded-xl p-1 backdrop-blur-md border
+         border-white/20"
         style={{
             background:
                 "linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)",
@@ -108,14 +109,14 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
                             )}
 
                             <div
-                                className={`p-1 sm:p-2 rounded-md sm:rounded-lg mb-1 sm:mb-2 ${isDisabled ? "bg-gray-400/50" : "bg-white/20"
+                                className={`p-1  rounded-md sm:rounded-lg  ${isDisabled ? "bg-gray-400/50" : "bg-white/20"
                                     }`}
                             >
                                 <div className="w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center">
                                     {btn.icon}
                                 </div>
                             </div>
-                            <span className="text-xs font-semibold text-center leading-tight">
+                            <span className="text-[8px] font-semibold text-center leading-tight">
                                 {btn.label}
                             </span>
                         </button>

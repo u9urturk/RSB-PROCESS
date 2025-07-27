@@ -10,7 +10,7 @@ interface TableModalHeaderProps {
 const TableModalHeader: React.FC<TableModalHeaderProps> = ({ table, onClose, onHint }) => {
     return (
         <div
-            className="relative overflow-hidden rounded-t-xl sm:rounded-t--2xl p-3 sm:p-6 mb-3 sm:mb-6"
+            className="relative overflow-hidden rounded-t-xl sm:rounded-t-2xl p-3 sm:p-6 "
             style={{
                 background: "linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%)",
                 backdropFilter: "blur(20px)",

@@ -215,11 +215,12 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                     onClick={handleOverlayClick}
                 >
                     <div
-                        className={`bg-white/95 backdrop-blur-xl    shadow-2xl border 
-                             border-white/20 flex flex-col rounded-2xl
-                            ${(showOrderPanel || showPaymentPanel) ? "w-[calc(100%-2rem)] py-0  h-auto max-h-[calc(100vh-6rem)] " :
-                                showOrderDetail ? "w-[calc(100%-3rem)] sm:w-full max-h-[calc(100vh-6rem)] md:max-w-[calc(50%)] py-0 " :
-                                    "w-[calc(100%-3rem)] sm:w-full max-w-2xl"}`}
+                        className={`bg-white/95 backdrop-blur-xl shadow-2xl border max-h-[calc(100vh-1rem)] border-white/20 flex flex-col rounded-2xl
+                            ${(showOrderPanel || showPaymentPanel)
+                                ? "w-[calc(100%-2rem)] py-0 h-auto max-h-[calc(100vh-6rem)]"
+                                : showOrderDetail
+                                    ? "w-[calc(100%-3rem)] md:max-h-[calc(100vh-1rem)] max-h-[calc(100vh-2rem)] md:max-w-[calc(50%)] py-0 flex flex-col overflow-hidden"
+                                    : "w-[calc(100%-3rem)] sm:w-full max-w-2xl"}`}
 
                     >
                         {showOrderPanel ? (
@@ -276,7 +277,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                             />
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 px-4 sm:mb-6">
+                                        <div className="grid grid-cols-2 gap-2 py-4 sm:gap-2 px-4 ">
                                             <InfoCard
                                                 title="Durum"
                                                 value={<div className="scale-75 sm:scale-100 origin-left"><StatusBadge table={table} /></div>}
@@ -342,7 +343,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                     </div>
                                 )}
 
-                                <div className=" bg-white/90 backdrop-blur-sm border-t border-gray-200 p-3 sm:p-1 z-10">
+                                <div className=" bg-white/90 backdrop-blur-sm border-t border-gray-200   z-10">
                                     <NavigationPanel
                                         buttons={NAV_BUTTONS}
                                         isEmpty={isEmpty}
