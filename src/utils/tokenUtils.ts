@@ -29,13 +29,16 @@ export const decodeToken = (token: string): JWTPayload | null => {
  * Token'ın süresi dolmuş mu kontrol eder
  */
 export const isTokenExpired = (token: string): boolean => {
-    const payload = decodeToken(token);
-    if (!payload || !payload.exp) {
+    if (!token) return true;
+    
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const expiry = payload.exp * 1000; // saniyeden milisaniyeye çevir
+        return Date.now() > expiry;
+    } catch (e) {
+        console.error('Error parsing token:', e);
         return true;
     }
-
-    const currentTime = Math.floor(Date.now() / 1000);
-    return payload.exp < currentTime;
 };
 
 /**

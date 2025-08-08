@@ -1,91 +1,205 @@
-import httpClient from "./httpClient";
+import { AxiosResponse } from 'axios';
+import httpClient from './httpClient';
+import { ErrorHandlerService } from '../utils/ErrorHandlerService';
+import { User } from '../types';
+import { JWTUtil } from '../utils/jtwUtils';
 
-// API Response türleri
-interface LoginResponse {
-    status: "success" | "error";
-    message: string;
-    sessionId?: string;
-    userId?: string;
+// API Response Types
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
 }
 
-interface VerifyOtpResponse {
-    access_token: string;
-    refresh_token: string;
-    user: {
-        id: string;
-        phone: string;
-        name?: string; // Optional - backend'den gelmeyebilir
-        role?: "admin" | "user"; // Optional - backend'den gelmeyebilir
-    };
+interface RegisterData {
+  message: string;
+  qrCode: string;
+  recoveryCode: string;
+  secret: string;
 }
 
-interface VerifyOtpRequest {
-    phoneNumber: string;
-    otpCode: string;
-    deviceId?: string;
+interface LoginData {
+  message: string;
+  access_token: string;
 }
 
-// Global değişkenler - session state için
-let currentPhoneNumber: string | null = null;
-let currentSessionId: string | null = null;
+interface RecoveryLoginData {
+  message: string;
+  access_token: string;
+  newRecoveryCode: string;
+}
 
-// Telefon numarası ile OTP başlatma
-export const loginWithPhone = async (phone: string): Promise<LoginResponse> => {
-    const res = await httpClient.post("/auth/login", { phoneNumber: phone });
-    console.log("loginWithPhone response:", res);
-    
-    // Session bilgilerini sakla
-    currentPhoneNumber = phone;
-    currentSessionId = res.data.sessionId || null;
-    
-    return res.data;
+// Request Types
+interface RegisterRequest {
+  username: string;
+}
+
+interface LoginRequest {
+  username: string;
+  token: string;
+}
+
+interface RecoveryLoginRequest {
+  username: string;
+  recoveryCode: string;
+}
+
+// Auth API Service (Single Responsibility + Open/Closed Principle)
+class AuthApiService {
+  // Register user
+  async register(userData: RegisterRequest): Promise<RegisterData> {
+    try {
+      const response: AxiosResponse<ApiResponse<RegisterData>> = await httpClient.post(
+        '/auth/register',
+        userData
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.data?.message || 'Registration failed');
+      }
+
+      return response.data.data;
+    } catch (error) {
+      // Handle specific errors
+      if (ErrorHandlerService.isConflictError(error)) {
+        throw new Error('User already exists');
+      }
+      
+      // Use global error handler
+      const handledError = ErrorHandlerService.handleError(error, 'AuthApi.register');
+      throw new Error(handledError.userMessage);
+    }
+  }
+
+  // Login with OTP
+  async login(credentials: LoginRequest): Promise<{ user: User; token: string }> {
+    try {
+      const response: AxiosResponse<ApiResponse<LoginData>> = await httpClient.post(
+        '/auth/login',
+        credentials
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.data?.message || 'Login failed');
+      }
+
+      const user = JWTUtil.parseToken(response.data.data.access_token);
+      if (!user) {
+        throw new Error('Invalid token received');
+      }
+
+      return {
+        user,
+        token: response.data.data.access_token,
+      };
+    } catch (error) {
+      // Use global error handler
+      const handledError = ErrorHandlerService.handleError(error, 'AuthApi.login');
+      throw new Error(handledError.userMessage);
+    }
+  }
+
+  // Login with recovery code
+  async loginWithRecovery(credentials: RecoveryLoginRequest): Promise<{
+    user: User;
+    token: string;
+    newRecoveryCode: string;
+  }> {
+    try {
+      const response: AxiosResponse<ApiResponse<RecoveryLoginData>> = await httpClient.post(
+        '/auth/login-recovery',
+        credentials
+      );
+
+      if (!response.data.success) {
+        throw new Error(response.data.data?.message || 'Recovery login failed');
+      }
+
+      const user = JWTUtil.parseToken(response.data.data.access_token);
+      if (!user) {
+        throw new Error('Invalid token received');
+      }
+
+      return {
+        user,
+        token: response.data.data.access_token,
+        newRecoveryCode: response.data.data.newRecoveryCode,
+      };
+    } catch (error) {
+      // Use global error handler
+      const handledError = ErrorHandlerService.handleError(error, 'AuthApi.loginWithRecovery');
+      throw new Error(handledError.userMessage);
+    }
+  }
+
+  // Logout (if needed for API call)
+  async logout(): Promise<void> {
+    try {
+      await httpClient.post('/auth/logout');
+    } catch (error) {
+      // Don't throw logout errors, just log them
+      ErrorHandlerService.logError(error, 'AuthApi.logout');
+    }
+  }
+
+  // Refresh token (future use)
+  async refreshToken(): Promise<{ token: string; user: User }> {
+    try {
+      const response: AxiosResponse<ApiResponse<LoginData>> = await httpClient.post(
+        '/auth/refresh'
+      );
+
+      if (!response.data.success) {
+        throw new Error('Token refresh failed');
+      }
+
+      const user = JWTUtil.parseToken(response.data.data.access_token);
+      if (!user) {
+        throw new Error('Invalid token received');
+      }
+
+      return {
+        user,
+        token: response.data.data.access_token,
+      };
+    } catch (error) {
+      // Use global error handler
+      const handledError = ErrorHandlerService.handleError(error, 'AuthApi.refreshToken');
+      throw new Error(handledError.userMessage);
+    }
+  }
+
+  // Verify token (check if token is still valid)
+  async verifyToken(): Promise<User> {
+    try {
+      const response: AxiosResponse<ApiResponse<{ user: User }>> = await httpClient.get(
+        '/auth/verify'
+      );
+
+      if (!response.data.success) {
+        throw new Error('Token verification failed');
+      }
+
+      return response.data.data.user;
+    } catch (error) {
+      // Use global error handler
+      const handledError = ErrorHandlerService.handleError(error, 'AuthApi.verifyToken');
+      throw new Error(handledError.userMessage);
+    }
+  }
+}
+
+// Export singleton instance
+export const authApiService = new AuthApiService();
+
+// Export types
+export type {
+  RegisterRequest,
+  LoginRequest,
+  RecoveryLoginRequest,
+  RegisterData,
+  LoginData,
+  RecoveryLoginData,
+  User,
+  ApiResponse,
 };
-
-// OTP ile giriş/doğrulama
-export const verifyOtpWithApi = async (otp: string): Promise<VerifyOtpResponse> => {
-    if (!currentPhoneNumber) {
-        throw new Error("Telefon numarası bulunamadı. Lütfen tekrar giriş yapın.");
-    }
-
-    const requestData: VerifyOtpRequest = {
-        phoneNumber: currentPhoneNumber,
-        otpCode: otp,
-        deviceId: generateDeviceId()
-    };
-
-    // Session ID varsa ekle
-    if (currentSessionId) {
-        (requestData as any).sessionId = currentSessionId;
-    }
-
-    console.log("verifyOtp request:", requestData);
-    
-    const res = await httpClient.post("/auth/verify-login", requestData);
-    console.log("verifyOtp response:", res);
-    
-    // Başarılı giriş sonrası session bilgilerini temizle
-    currentPhoneNumber = null;
-    currentSessionId = null;
-    
-    return res.data;
-};
-
-// Device ID üretme fonksiyonu
-function generateDeviceId(): string {
-    // Browser fingerprint oluştur
-    const userAgent = navigator.userAgent;
-    const screenRes = `${screen.width}x${screen.height}`;
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    const fingerprint = `${userAgent}-${screenRes}-${timezone}`;
-    
-    // Basit hash fonksiyonu
-    let hash = 0;
-    for (let i = 0; i < fingerprint.length; i++) {
-        const char = fingerprint.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // 32bit integer'a dönüştür
-    }
-    
-    return `device_${Math.abs(hash)}_${Date.now()}`;
-}

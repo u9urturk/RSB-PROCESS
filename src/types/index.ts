@@ -2,105 +2,104 @@ import React from 'react';
 
 // Auth Types
 export interface User {
-  id: string;
-  name?: string;
-  phone: string;
-  role?: 'admin' | 'user'; // Optional - backend'den gelmeyebilir
+    id: string;
+    username: string;
+    roles: string[];
 }
 
 export interface AuthState {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  loading: boolean;
+    user: User | null;
+    token: string | null;
+    isAuthenticated: boolean;
+    loading: boolean;
 }
 
 // Waiter (Garson) Types
 export interface Waiter {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  shift: 'morning' | 'afternoon' | 'evening' | 'night';
-  isActive: boolean;
-  performanceScore?: number;
-  assignedTables: string[]; // Atanmış masa ID'leri
-  currentOrdersCount: number;
-  joiningDate: string;
-  avatar?: string;
+    id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    shift: 'morning' | 'afternoon' | 'evening' | 'night';
+    isActive: boolean;
+    performanceScore?: number;
+    assignedTables: string[]; // Atanmış masa ID'leri
+    currentOrdersCount: number;
+    joiningDate: string;
+    avatar?: string;
 }
 
 export interface WaiterPerformance {
-  waiterId: string;
-  waiterName: string;
-  totalOrders: number;
-  completedOrders: number;
-  avgServiceTime: number; // dakika cinsinden
-  customerRating: number; // 1-5 arası
-  efficiency: number; // yüzde olarak
+    waiterId: string;
+    waiterName: string;
+    totalOrders: number;
+    completedOrders: number;
+    avgServiceTime: number; // dakika cinsinden
+    customerRating: number; // 1-5 arası
+    efficiency: number; // yüzde olarak
 }
 
 // Restaurant Types
 export interface MenuItem {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  description?: string;
-  image?: string;
-  available: boolean;
+    id: string;
+    name: string;
+    price: number;
+    category: string;
+    description?: string;
+    image?: string;
+    available: boolean;
 }
 
 export interface OrderItem {
-  id: string;
-  menuItem: MenuItem;
-  quantity: number;
-  notes?: string;
+    id: string;
+    menuItem: MenuItem;
+    quantity: number;
+    notes?: string;
 }
 
 export interface Order {
-  id: string;
-  items: OrderItem[];
-  total: number;
-  status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
-  tableNumber?: number;
-  customerName?: string;
-  createdAt: Date;
-  updatedAt: Date;
+    id: string;
+    items: OrderItem[];
+    total: number;
+    status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+    tableNumber?: number;
+    customerName?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 // Chart Types
 export interface ChartData {
-  name: string;
-  value: number;
-  color?: string;
+    name: string;
+    value: number;
+    color?: string;
 }
 
 // Component Props Types
 export interface CardProps {
-  value: number | string;
-  title: string;
-  icon: React.ReactNode;
-  type?: 'price' | 'str';
-  targetProgress?: number;
-  duration?: number;
+    value: number | string;
+    title: string;
+    icon: React.ReactNode;
+    type?: 'price' | 'str';
+    targetProgress?: number;
+    duration?: number;
 }
 
 // Circle Types
 export interface CircleProps {
-  index?: number;
-  label: string;
-  info?: string;
-  value: number;
-  duration?: number;
+    index?: number;
+    label: string;
+    info?: string;
+    value: number;
+    duration?: number;
 }
 
 // Select Types
 export interface SelectProps {
-  options: string[];
-  defaultValue?: string;
-  onChange?: (value: string) => void;
-  placeholder?: string;
+    options: string[];
+    defaultValue?: string;
+    onChange?: (value: string) => void;
+    placeholder?: string;
 }
 
 // GenericSearchBar Types
@@ -279,7 +278,7 @@ export interface OverviewChartProps {
 
 // Page Types
 export interface LoginFormData {
-    phone: string;
+    username: string;
     otp?: string;
 }
 
@@ -324,22 +323,61 @@ export interface StockBusinessState {
     searchQuery: string;
 }
 
-// Context Types
+export interface UserProfile {
+    userId: number;
+    username: string;
+    roles: string[];
+    // Ek kullanıcı bilgileri
+    email?: string;
+    phone?: string;
+    fullName?: string;
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
+    isActive: boolean;
+    lastLoginAt?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    // Permissions
+    permissions?: string[];
+    // Restaurant specific
+    restaurantId?: number;
+    restaurantName?: string;
+    // User preferences
+    preferences?: {
+        theme?: 'light' | 'dark';
+        language?: string;
+        timezone?: string;
+        notifications?: boolean;
+    };
+}
+
+
 export interface AuthContextType {
-    user: {
-        id: string;
-        name?: string;
-        phone: string;
-        role?: 'admin' | 'user'; // Optional - backend'den gelmeyebilir
-    } | null;
+    user: UserProfile | null;
     token: string | null;
-    isAuthenticated: boolean;
     loading: boolean;
-    initializing: boolean; // localStorage'dan veri yükleniyor mu?
-    login: (phone: string) => Promise<void>;
-    verifyOtp: (otp: string) => Promise<void>;
-    setUserData: (userData: any, authToken: string) => void;
+    initializing: boolean;
+    setUserData: (userData: UserProfile, authToken: string) => void;
     logout: () => void;
+    // Role ve Permission kontrolleri
+    hasRole: (role: string) => boolean;
+    hasAnyRole: (roles: string[]) => boolean;
+    hasAllRoles: (roles: string[]) => boolean;
+    hasPermission: (permission: string) => boolean;
+    hasAnyPermission: (permissions: string[]) => boolean;
+    // Role checks - shortcuts
+    isAdmin: () => boolean;
+    isManager: () => boolean;
+    isUser: () => boolean;
+    isRestaurantOwner: () => boolean;
+    isWaiter: () => boolean;
+    isCashier: () => boolean;
+    // Utility functions
+    refreshToken: () => Promise<string | null>;
+    isAuthenticated: boolean;
+    getUserDisplayName: () => string;
+    getUserInitials: () => string;
 }
 
 export interface NotificationContextType {
@@ -376,7 +414,7 @@ export interface RestaurantContextType {
     tables: TableData[];
     setTables: React.Dispatch<React.SetStateAction<TableData[]>>;
     loading: boolean;
-    
+
     // Garson yönetimi
     waiters: Waiter[];
     setWaiters: React.Dispatch<React.SetStateAction<Waiter[]>>;
@@ -384,7 +422,7 @@ export interface RestaurantContextType {
     unassignWaiterFromTable: (tableId: string) => void;
     getWaiterById: (waiterId: string) => Waiter | undefined;
     getAvailableWaiters: () => Waiter[];
-    
+
     // Kategori verisi
     categories: Array<{
         id: string;
@@ -397,26 +435,26 @@ export interface RestaurantContextType {
             image?: string;
         }>;
     }>;
-    
+
     // Masa yönetimi metotları
     updateTable: (tableId: string, updateData: any) => void;
     openTable: (tableId: string, waiterData?: { waiterId?: string; waiterName?: string }) => void;
     closeTable: (tableId: string) => void;
     cleanTable: (tableId: string) => void;
-    
+
     // Sipariş yönetimi metotları
     addOrderToTable: (tableId: string, orderItems: any[]) => void;
     updateOrderInTable: (tableId: string, orderItemId: string, updateData: any) => void;
     removeOrderFromTable: (tableId: string, orderItemId: string) => void;
     updateOrderStatus: (tableId: string, orderId: string, status: 'pending' | 'preparing' | 'ready' | 'delivered') => void;
-    
+
     // Ödeme yönetimi metotları
     calculateTableTotal: (tableId: string) => number;
     processPayment: (tableId: string, paymentMethod: 'cash' | 'card', amount?: number) => void;
-    
+
     // Transfer işlemleri
     transferOrder: (fromTableId: string, toTableId: string) => void;
-    
+
     // Geriye uyumluluk için eski metotlar
     updateOrder: (tableId: string, orderId: string, updateData: any) => void;
     updateTableStatus: (tableId: string, status: 'available' | 'occupied' | 'reserved') => void;
@@ -520,18 +558,18 @@ export interface TableData {
     reservedAt?: string;
     orderStatus?: string;
     totalAmount?: number;
-    
+
     // Garson bilgileri
     waiterId?: string;
     waiterName?: string;
-    
+
     name?: string;
     occupied?: boolean;
     reserved?: boolean;
     cleanStatus?: boolean;
     lastOrderTime?: string;
     serviceStartTime?: string; // Garsonun masaya başlama zamanı
-    
+
     orders?: Array<{
         id: string;
         productName?: string;

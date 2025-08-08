@@ -1,8 +1,7 @@
 import React from 'react';
-import { Outlet, useLocation, Navigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
-import { useAuth } from '../context/provider/AuthProvider';
 import { useNavigation } from '../context/provider/NavigationProvider';
 
 interface LayoutProps {
@@ -11,13 +10,9 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = () => {
     const location = useLocation();
-    const { isAuthenticated } = useAuth();
     const { activePath } = useNavigation();
 
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
-
+ 
     const getTitle = (): string => {
         switch (activePath) {
             case '/dashboard':

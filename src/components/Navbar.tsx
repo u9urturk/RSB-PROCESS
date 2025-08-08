@@ -3,6 +3,7 @@ import { IoFastFoodOutline } from 'react-icons/io5';
 import { FiBell, FiMessageSquare, FiSettings, FiMenu, FiX } from 'react-icons/fi';
 import Menu from './Menu';
 import { NavbarProps } from '../types';
+import { useAuth } from '../context/provider/AuthProvider';
 
 const Navbar: React.FC<NavbarProps> = ({ 
     title = "Başlık", 
@@ -10,6 +11,7 @@ const Navbar: React.FC<NavbarProps> = ({
     className = ''
 }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const { logout } = useAuth();
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -38,7 +40,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     <div className='cursor-pointer hover:scale-125 transition-all'>
                         <FiMessageSquare size={22} />
                     </div>
-                    <div className='cursor-pointer hover:scale-125 transition-all'>
+                    <div onClick={logout} className='cursor-pointer hover:scale-125 transition-all'>
                         <FiSettings size={22} />
                     </div>
                     

@@ -1,136 +1,342 @@
-import React, { useState, useCallback, useEffect, useContext, createContext } from 'react';
-import { AuthContextType } from '../../types';
-import { isTokenExpired } from '../../utils/tokenUtils';
-import { DEV_CONFIG } from '../../config/dev';
+import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { authApiService } from '../../api/authApi';
+import type { 
+  RegisterRequest, 
+  LoginRequest, 
+  RecoveryLoginRequest, 
+  RegisterData, 
+  User 
+} from '../../api/authApi';
+import { JWTUtil } from '../../utils/jtwUtils';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
-};
-
-interface AuthProviderProps {
-    children: React.ReactNode;
+// Auth State Interface
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  error: string | null;
+  registrationData: RegisterData | null;
+  newRecoveryCode: string | null;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    // 🔧 DEV MODE: Auth bypass for development
-    const DEV_MODE_AUTH_BYPASS = DEV_CONFIG.AUTH_BYPASS;
+// Context Type
+interface AuthContextType extends AuthState {
+  login: (credentials: LoginRequest) => Promise<void>;
+  loginWithRecovery: (credentials: RecoveryLoginRequest) => Promise<string>;
+  register: (userData: RegisterRequest) => Promise<RegisterData>;
+  logout: () => void;
+  clearError: () => void;
+  clearRegistrationData: () => void;
+  clearNewRecoveryCode: () => void;
+}
+
+// Action Types
+type AuthAction =
+  | { type: 'AUTH_START' }
+  | { type: 'AUTH_SUCCESS'; payload: { user: User; token: string } }
+  | { type: 'AUTH_FAILURE'; payload: string }
+  | { type: 'REGISTER_SUCCESS'; payload: RegisterData }
+  | { type: 'RECOVERY_LOGIN_SUCCESS'; payload: { user: User; token: string; newRecoveryCode: string } }
+  | { type: 'LOGOUT' }
+  | { type: 'CLEAR_ERROR' }
+  | { type: 'CLEAR_REGISTRATION_DATA' }
+  | { type: 'CLEAR_NEW_RECOVERY_CODE' }
+  | { type: 'SET_LOADING'; payload: boolean };
+
+// Storage Service (Single Responsibility Principle)
+class StorageService {
+  private static readonly TOKEN_KEY = 'access_token';
+
+  static getToken(): string | null {
+    try {
+      return localStorage.getItem(this.TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  static setToken(token: string): void {
+    try {
+      localStorage.setItem(this.TOKEN_KEY, token);
+    } catch (error) {
+      console.error('Failed to save token:', error);
+    }
+  }
+
+  static removeToken(): void {
+    try {
+      localStorage.removeItem(this.TOKEN_KEY);
+    } catch (error) {
+      console.error('Failed to remove token:', error);
+    }
+  }
+}
+
+// Initial State
+const initialState: AuthState = {
+  user: null,
+  token: StorageService.getToken(),
+  isLoading: false,
+  isAuthenticated: false,
+  error: null,
+  registrationData: null,
+  newRecoveryCode: null,
+};
+
+// Reducer
+const authReducer = (state: AuthState, action: AuthAction): AuthState => {
+  switch (action.type) {
+    case 'AUTH_START':
+      return {
+        ...state,
+        isLoading: true,
+        error: null,
+      };
     
-    const [user, setUser] = useState<AuthContextType['user']>(
-        DEV_MODE_AUTH_BYPASS ? DEV_CONFIG.MOCK_USER : null
-    );
-    const [token, setToken] = useState<string | null>(
-        DEV_MODE_AUTH_BYPASS ? DEV_CONFIG.MOCK_TOKEN : null
-    );
-    const [loading, setLoading] = useState(false);
-    const [initializing, setInitializing] = useState(!DEV_MODE_AUTH_BYPASS); // Dev mode'da hemen hazır
+    case 'AUTH_SUCCESS':
+      return {
+        ...state,
+        isLoading: false,
+        isAuthenticated: true,
+        user: action.payload.user,
+        token: action.payload.token,
+        error: null,
+      };
+    
+    case 'AUTH_FAILURE':
+      return {
+        ...state,
+        isLoading: false,
+        isAuthenticated: false,
+        user: null,
+        token: null,
+        error: action.payload,
+      };
+    
+    case 'REGISTER_SUCCESS':
+      return {
+        ...state,
+        isLoading: false,
+        registrationData: action.payload,
+        error: null,
+      };
+    
+    case 'RECOVERY_LOGIN_SUCCESS':
+      return {
+        ...state,
+        isLoading: false,
+        isAuthenticated: true,
+        user: action.payload.user,
+        token: action.payload.token,
+        newRecoveryCode: action.payload.newRecoveryCode,
+        error: null,
+      };
+    
+    case 'LOGOUT':
+      return {
+        ...state,
+        user: null,
+        token: null,
+        isAuthenticated: false,
+        error: null,
+        newRecoveryCode: null,
+      };
+    
+    case 'CLEAR_ERROR':
+      return {
+        ...state,
+        error: null,
+      };
+    
+    case 'CLEAR_REGISTRATION_DATA':
+      return {
+        ...state,
+        registrationData: null,
+      };
+    
+    case 'CLEAR_NEW_RECOVERY_CODE':
+      return {
+        ...state,
+        newRecoveryCode: null,
+      };
+    
+    case 'SET_LOADING':
+      return {
+        ...state,
+        isLoading: action.payload,
+      };
+    
+    default:
+      return state;
+  }
+};
 
-    // Component mount olduğunda localStorage'dan kullanıcı bilgilerini yükle
-    useEffect(() => {
-        // 🔧 DEV MODE: Skip localStorage check in development
-        if (DEV_MODE_AUTH_BYPASS) {
-            setInitializing(false);
-            return;
-        }
-        
-        const savedToken = localStorage.getItem('auth_token');
-        const savedUserData = localStorage.getItem('user_data');
-        
-        if (savedToken && savedUserData) {
-            try {
-                // Token'ın süresi dolmuş mu kontrol et
-                if (isTokenExpired(savedToken)) {
-                    console.log('Token expired, clearing localStorage');
-                    localStorage.removeItem('auth_token');
-                    localStorage.removeItem('user_data');
-                } else {
-                    // Token geçerli, kullanıcı bilgilerini yükle
-                    const userData = JSON.parse(savedUserData);
-                    setUser(userData);
-                    setToken(savedToken);
-                    console.log('User restored from localStorage:', userData);
-                }
-            } catch (error) {
-                console.error('Error parsing saved user data:', error);
-                // Bozuk veri varsa temizle
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('user_data');
-            }
-        }
-        
-        // Yükleme tamamlandı
-        setInitializing(false);
-    }, []);
+// Context
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-    const login = useCallback(async (phone: string) => {
-        try {
-            setLoading(true);
-            // Bu artık useLogin hook'u tarafından hallediliyor
-            console.log('Login attempt with phone:', phone);
-        } catch (error) {
-            console.error('Login error:', error);
-            throw error;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+// Provider Component
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [state, dispatch] = useReducer(authReducer, {
+    ...initialState,
+    isAuthenticated: initialState.token ? !JWTUtil.isTokenExpired(initialState.token) : false,
+  });
 
-    const verifyOtp = useCallback(async (otp: string) => {
-        try {
-            setLoading(true);
-            // Bu artık useLogin hook'u tarafından hallediliyor
-            console.log('OTP verification with:', otp);
-        } catch (error) {
-            console.error('OTP error:', error);
-            throw error;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+  // Auto-logout when token expires
+  useEffect(() => {
+    if (state.token && JWTUtil.isTokenExpired(state.token)) {
+      logout();
+    }
+  }, [state.token]);
 
-    // Manuel kullanıcı setleme - useLogin hook'u tarafından çağrılacak
-    const setUserData = useCallback((userData: any, authToken: string) => {
-        // Backend'den role bilgisi gelmiyorsa varsayılan olarak 'user' ata
-        const userWithRole = {
-            ...userData,
-            role: (userData.role as 'user' | 'admin') || 'user' // Type assertion ile düzelt
-        };
-        
-        setUser(userWithRole);
-        setToken(authToken);
-        localStorage.setItem('auth_token', authToken);
-        localStorage.setItem('user_data', JSON.stringify(userWithRole));
-        console.log('User data set in AuthContext:', userWithRole);
-    }, []);
+  // Restore user from token on app start
+  useEffect(() => {
+    if (state.token && !state.user && !JWTUtil.isTokenExpired(state.token)) {
+      const user = JWTUtil.parseToken(state.token);
+      if (user) {
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: { user, token: state.token },
+        });
+      }
+    }
+  }, [state.token, state.user]);
 
-    const logout = useCallback(() => {
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        console.log('User logged out');
-    }, []);
+  // Register function
+  const register = useCallback(async (userData: RegisterRequest): Promise<RegisterData> => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      const registrationData = await authApiService.register(userData);
+      
+      dispatch({ 
+        type: 'REGISTER_SUCCESS', 
+        payload: registrationData 
+      });
 
-    const value: AuthContextType = {
-        user,
-        token,
-        loading,
-        initializing,
-        login,
-        verifyOtp,
-        setUserData,
-        logout,
-        isAuthenticated: !!user && !!token
-    };
+      return registrationData;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
+  }, []);
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
+  // Login function
+  const login = useCallback(async (credentials: LoginRequest): Promise<void> => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      const loginData = await authApiService.login(credentials);
+      
+      StorageService.setToken(loginData.token);
+      dispatch({ 
+        type: 'AUTH_SUCCESS', 
+        payload: loginData
+      });
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
+  }, []);
+
+  // Recovery login function
+  const loginWithRecovery = useCallback(async (credentials: RecoveryLoginRequest): Promise<string> => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      const recoveryData = await authApiService.loginWithRecovery(credentials);
+      
+      StorageService.setToken(recoveryData.token);
+      dispatch({ 
+        type: 'RECOVERY_LOGIN_SUCCESS', 
+        payload: recoveryData
+      });
+
+      return recoveryData.newRecoveryCode;
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Recovery login failed';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
+  }, []);
+
+  // Logout function
+  const logout = useCallback(async (): Promise<void> => {
+    try {
+      // Call API logout (optional)
+      await authApiService.logout();
+    } catch (error) {
+      // Don't block logout for API errors
+      console.warn('Logout API call failed:', error);
+    } finally {
+      // Always clean local storage and state
+      StorageService.removeToken();
+      dispatch({ type: 'LOGOUT' });
+    }
+  }, []);
+
+  // Clear error function
+  const clearError = useCallback((): void => {
+    dispatch({ type: 'CLEAR_ERROR' });
+  }, []);
+
+  // Clear registration data function
+  const clearRegistrationData = useCallback((): void => {
+    dispatch({ type: 'CLEAR_REGISTRATION_DATA' });
+  }, []);
+
+  // Clear new recovery code function
+  const clearNewRecoveryCode = useCallback((): void => {
+    dispatch({ type: 'CLEAR_NEW_RECOVERY_CODE' });
+  }, []);
+
+  // Memoized context value
+  const contextValue: AuthContextType = React.useMemo(() => ({
+    ...state,
+    login,
+    loginWithRecovery,
+    register,
+    logout,
+    clearError,
+    clearRegistrationData,
+    clearNewRecoveryCode,
+  }), [
+    state,
+    login,
+    loginWithRecovery,
+    register,
+    logout,
+    clearError,
+    clearRegistrationData,
+    clearNewRecoveryCode,
+  ]);
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Custom Hook (Interface Segregation Principle)
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+// Export types for external use
+export type { 
+  RegisterRequest, 
+  LoginRequest, 
+  RecoveryLoginRequest,
+  RegisterData, 
+  User, 
+  AuthState 
 };

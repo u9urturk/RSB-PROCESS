@@ -217,6 +217,48 @@ Change `AUTH_BYPASS` to `false` in `src/config/dev.ts`.
 
 ---
 
+## 📋 Changelog
+
+### Version 1.1.0 - 08.08.2025
+
+#### 🔐 Authentication System Overhaul
+- **Complete JWT Authentication Implementation**: Full JWT-based authentication system with token parsing and validation
+- **Enhanced AuthProvider**: Clean code architecture following SOLID principles with comprehensive state management
+- **Smart Authentication Flow**: Multi-step authentication including username input, QR code setup, and OTP verification
+- **Recovery System**: Backup authentication using recovery codes for emergency access
+
+#### 🛡️ Advanced Authorization & Route Protection
+- **Permission-based Access Control**: Fine-grained permission system with role-based authorization
+- **Enhanced Route Guards**: Comprehensive route protection with custom permission checks
+- **User Management System**: Advanced user hook with permission calculations and role management
+- **Unauthorized Handling**: Beautiful error pages with detailed feedback and navigation options
+
+#### 🔧 Service Architecture Improvements
+- **Modular API Services**: Separated authentication APIs into dedicated service files
+- **Global Error Handling**: Centralized error handling service with user-friendly Turkish error messages
+- **JWT Utilities**: Dedicated JWT utility service for token parsing, validation, and expiration checks
+- **HTTP Client Integration**: Seamless integration with Axios interceptors for automatic token management
+
+#### 🎨 UI/UX Enhancements
+- **Responsive QR Code Layout**: Optimized QR code step for horizontal screens with side-by-side layout
+- **Enhanced Splash Screen**: Professional loading animation with progress tracking and dynamic messages
+- **Improved Login Flow**: Smooth multi-step authentication with beautiful animations and transitions
+- **Better Error Messaging**: Context-aware error messages with actionable feedback
+
+#### ⚡ Performance & Code Quality
+- **Clean Architecture**: Implemented separation of concerns with single responsibility principle
+- **Type Safety**: Enhanced TypeScript implementation with comprehensive type definitions
+- **Memory Optimization**: Proper cleanup of timers and intervals to prevent memory leaks
+- **Memoization**: Strategic use of React.useMemo and useCallback for performance optimization
+
+#### 🔒 Security Enhancements
+- **Token Expiration Handling**: Automatic logout on token expiration with proper cleanup
+- **Secure Storage**: Enhanced localStorage management with error handling
+- **Route-level Security**: Multi-layered security with role and permission validation
+- **Input Validation**: Comprehensive form validation and sanitization
+
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository

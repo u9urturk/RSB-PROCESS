@@ -1,11 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
+import App from './App'
 import { BrowserRouter } from 'react-router-dom'
-import { AuthProvider } from './context/provider/AuthProvider.tsx'
-import { NotificationProvider } from './context/provider/NotificationProvider.tsx'
-import { ConfirmProvider } from './context/provider/ConfirmProvider.tsx'
+import { NotificationProvider } from './context/provider/NotificationProvider'
+import { ConfirmProvider } from './context/provider/ConfirmProvider'
+import { AuthProvider } from './context/provider/AuthProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -13,8 +13,8 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <ConfirmProvider>
-            <App />
-          </ConfirmProvider>
+          <App />
+        </ConfirmProvider>
         </AuthProvider>
       </BrowserRouter>
     </NotificationProvider>

@@ -8,13 +8,14 @@ import CustomerMap from '../components/CustomerMap';
 import TotalRevenueChart from '../components/TotalRevenueChart';
 import OverviewChart from '../components/OverviewChart';
 import { useNavigation } from '../context/provider/NavigationProvider';
-import { 
-    DashboardCard, 
-    TopSellingItem, 
+import {
+    DashboardCard,
+    TopSellingItem,
     CustomerMapData,
     DashboardOverviewData,
     DashboardRevenueData
 } from '../types';
+import { useUser } from '../customHook/useUser';
 
 const dashboardCards: DashboardCard[] = [
     { title: "Toplam Sipariş", value: 42, type: "str", icon: <FaRegRectangleList size={20} /> },
@@ -63,10 +64,14 @@ const revenueData: DashboardRevenueData[] = [
 const Dashboard: React.FC = () => {
     const { setActivePath } = useNavigation();
     const [isLoading, setIsLoading] = useState(true);
+    const { user } = useUser();
+
+    console.log("Dashboard user:", user);
+
 
     useEffect(() => {
         setActivePath('/dashboard');
-        
+
         // Simulate loading
         const timer = setTimeout(() => {
             setIsLoading(false);
@@ -138,8 +143,8 @@ const Dashboard: React.FC = () => {
                 {/* Stat Cards */}
                 <div className='grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8'>
                     {dashboardCards.map((card, index) => (
-                        <div 
-                            key={index} 
+                        <div
+                            key={index}
                             className='group'
                             style={{ animationDelay: `${index * 0.1}s` }}
                         >
@@ -174,7 +179,7 @@ const Dashboard: React.FC = () => {
                             <OverviewChart data={overviewData} />
                         </div>
                     </div>
-                    
+
                     <div className='lg:col-span-1'>
                         <div className='bg-white rounded-2xl p-6 shadow-lg border border-gray-100'>
                             <h3 className='text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2'>
@@ -184,7 +189,7 @@ const Dashboard: React.FC = () => {
                             <OrderSummary />
                         </div>
                     </div>
-                    
+
                     <div className='lg:col-span-1'>
                         <div className='bg-white rounded-2xl p-6 shadow-lg border border-gray-100'>
                             <h3 className='text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2'>
@@ -205,7 +210,7 @@ const Dashboard: React.FC = () => {
                         </h3>
                         <CustomerMap data={customerLocations} />
                     </div>
-                    
+
                     <div className='bg-white rounded-2xl p-6 shadow-lg border border-gray-100'>
                         <h3 className='text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2'>
                             <div className='w-2 h-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-full'></div>
