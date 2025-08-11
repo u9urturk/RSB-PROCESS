@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { X, Info, ShoppingCart, RefreshCw, CreditCard, CornerDownRight, List, User, Clock, MapPin, Utensils, Sparkles } from "lucide-react";
+import React, { useState } from "react";
+import { ShoppingCart, RefreshCw, CreditCard, CornerDownRight, List, User, Clock, MapPin } from "lucide-react";
 import { FaBroom } from "react-icons/fa";
 import InfoBalloon from "../../../components/InfoBalloon";
 import { useNotification } from "../../../context/provider/NotificationProvider";
@@ -11,11 +11,10 @@ import { TableData } from "../../../types";
 import TableModalHeader from "../components/TableModalHeader";
 import InfoCard from "../components/InfoCard";
 import NavigationPanel from "../components/NavigationPanel";
+import TableStatusBadge from "../components/shared/TableStatusBadge";
+import { useScrollLock } from "../hooks/useScrollLock";
 
-interface StatusBadgeProps {
-    table: TableData;
-}
-
+// Shared badge now imported (TableStatusBadge)
 interface TableModalProps {
     tableId: string;
     isOpen: boolean;
@@ -31,102 +30,13 @@ interface NavButton {
 }
 
 
-function StatusBadge({ table }: StatusBadgeProps) {
-    const getStatusConfig = () => {
-        // Eğer masa dolu ve temizlenmemişse (cleanStatus false), temizlik gerektiriyor
-        if (table.status === "occupied" && table.cleanStatus === false) {
-            return {
-                bg: "bg-gradient-to-r from-yellow-500 to-orange-500",
-                text: "text-white",
-                icon: <FaBroom size={12} />,
-                label: "Temizlenecek",
-                glow: "shadow-lg shadow-yellow-500/25"
-            };
-        }
-
-        switch (table.status) {
-            case "occupied":
-                return {
-                    bg: "bg-gradient-to-r from-red-500 to-pink-500",
-                    text: "text-white",
-                    icon: <User size={12} className="animate-pulse" />,
-                    label: "Dolu",
-                    glow: "shadow-lg shadow-red-500/25"
-                };
-            case "reserved":
-                return {
-                    bg: "bg-gradient-to-r from-blue-500 to-purple-500",
-                    text: "text-white",
-                    icon: <Clock size={12} />,
-                    label: "Rezerve",
-                    glow: "shadow-lg shadow-blue-500/25"
-                };
-            case "available":
-                return {
-                    bg: "bg-gradient-to-r from-green-500 to-emerald-500",
-                    text: "text-white",
-                    icon: <Sparkles size={12} className="animate-pulse" />,
-                    label: "Müsait",
-                    glow: "shadow-lg shadow-green-500/25"
-                };
-            default:
-                return {
-                    bg: "bg-gradient-to-r from-green-500 to-emerald-500",
-                    text: "text-white",
-                    icon: <Sparkles size={12} className="animate-pulse" />,
-                    label: "Müsait",
-                    glow: "shadow-lg shadow-green-500/25"
-                };
-        }
-    };
-
-    const config = getStatusConfig();
-
-    return (
-        <span
-            className={`${config.bg} ${config.text} ${config.glow} px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 sm:gap-1.5 backdrop-blur-sm border border-white/20`}
-        >
-            <span
-                className="w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center"
-            >
-                {config.icon}
-            </span>
-            <span className="">{config.label}</span>
-        </span>
-    );
-}
 
 const NAV_BUTTONS: NavButton[] = [
-    {
-        key: "order",
-        icon: <ShoppingCart size={16} />,
-        label: "Sipariş",
-        info: "Yeni sipariş oluşturmak için tıklayın.",
-    },
-    {
-        key: "update",
-        icon: <RefreshCw size={16} />,
-        label: "Güncelle",
-        info: "Mevcut siparişi güncellemek için tıklayın.",
-    },
-    {
-        key: "pay",
-        icon: <CreditCard size={16} />,
-        label: "Ödeme",
-        info: "Ödeme almak için tıklayın.",
-    },
-    {
-        key: "clean",
-        icon: <FaBroom size={14} />,
-        label: "Temizle",
-        info: "Masayı temizlendi olarak işaretleyin.",
-    },
-    {
-        key: "transfer",
-        icon: <CornerDownRight size={16} />,
-        label: "Aktar",
-        info: "Masayı başka bir masaya aktarın.",
-    },
+    { key: "order", icon: <ShoppingCart size={16} />, label: "Sipariş", info: "Yeni sipariş oluşturmak için tıklayın." },
+    { key: "update", icon: <RefreshCw size={16} />, label: "Güncelle", info: "Mevcut siparişi güncellemek için tıklayın." },
+    { key: "pay", icon: <CreditCard size={16} />, label: "Ödeme", info: "Ödeme almak için tıklayın." },
+    { key: "clean", icon: <FaBroom size={14} />, label: "Temizle", info: "Masayı temizlendi olarak işaretleyin." },
+    { key: "transfer", icon: <CornerDownRight size={16} />, label: "Aktar", info: "Masayı başka bir masaya aktarın." },
 ];
 
 const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onStartTransfer }) => {
@@ -138,23 +48,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
     const [showOrderDetail, setShowOrderDetail] = useState(false);
     const [balloonStep, setBalloonStep] = useState(0);
 
-    useEffect(() => {
-        if (isOpen) {
-            const scrollY = window.scrollY;
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${scrollY}px`;
-            document.body.style.width = '100%';
-            document.body.style.overflow = 'hidden';
-
-            return () => {
-                document.body.style.position = '';
-                document.body.style.top = '';
-                document.body.style.width = '';
-                document.body.style.overflow = '';
-                window.scrollTo(0, scrollY);
-            };
-        }
-    }, [isOpen]);
+    useScrollLock(isOpen);
 
     const table = tables.find(t => t.id === tableId);
 
@@ -282,7 +176,7 @@ const TableModal: React.FC<TableModalProps> = ({ tableId, isOpen, onClose, onSta
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                                                 <InfoCard
                                                     title="Durum"
-                                                    value={<div className="transform scale-90 sm:scale-100 origin-left"><StatusBadge table={table} /></div>}
+                                                    value={<div className="transform scale-90 sm:scale-100 origin-left"><TableStatusBadge table={table} /></div>}
                                                     icon={<MapPin size={16} className="text-purple-600" />}
                                                     bgGradient="linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%)"
                                                     boxShadow="0 8px 32px rgba(0, 0, 0, 0.1)"

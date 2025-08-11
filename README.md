@@ -2,6 +2,7 @@
 
 A comprehensive restaurant management system built with modern web technologies, featuring real-time table management, order processing, inventory tracking, barcode scanning, and staff coordination.
 
+![Version](https://img.shields.io/badge/Version-1.2.0-purple.svg)
 ![React](https://img.shields.io/badge/React-19.0.0-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)
 ![Electron](https://img.shields.io/badge/Electron-34.3.0-brightgreen.svg)
@@ -48,8 +49,7 @@ A comprehensive restaurant management system built with modern web technologies,
 - **React 19.0.0**: Latest React with concurrent features
 - **TypeScript 5.8.3**: Type-safe development
 - **Vite 6.2.0**: Lightning-fast build tool
-- **Tailwind CSS 4.0.9**: Utility-first CSS framework
-- **Framer Motion 12.5.0**: Smooth animations and transitions
+- **Tailwind CSS 4.0.9**: Utility-first CSS framework (custom keyframes & transitions used, no external animation lib in core dashboards)
 
 ### Desktop Application
 - **Electron 34.3.0**: Cross-platform desktop application
@@ -63,7 +63,7 @@ A comprehensive restaurant management system built with modern web technologies,
 ### State Management & Routing
 - **React Router DOM 7.2.0**: Client-side routing
 - **React Context API**: Global state management
-- **Custom Hooks**: Reusable state logic
+- **Custom Hooks**: Reusable state logic (scroll lock, table transfer, auth, etc.)
 
 ### Development Tools
 - **ESLint**: Code linting and formatting
@@ -170,10 +170,11 @@ Change `AUTH_BYPASS` to `false` in `src/config/dev.ts`.
 
 ## 🎨 Design System
 
-- **Color Palette**: Orange primary, blue/green/purple accents, status colors (red, green, blue), neutral grays
+- **Color Palette**: Orange primary, blue/green/purple accents, semantic status colors, balanced neutrals
 - **Typography**: System fonts, responsive sizing, bold/semibold weights
-- **Animations**: Framer Motion for transitions, hover/micro-interactions, loading states
-- **Responsive Design**: Mobile-first, tablet and desktop layouts, cross-browser support
+- **UI Tokens / Utilities**: Reusable utility classes (surface-panel, chip-base, focus-ring, card-elevate-hover) for consistent look
+- **Animations**: Lightweight Tailwind-powered keyframes & transitions (removed dependency on external animation libs in dashboard modules)
+- **Responsive Design**: Mobile-first, adaptive layouts for tablet & desktop
 
 ---
 
@@ -218,6 +219,33 @@ Change `AUTH_BYPASS` to `false` in `src/config/dev.ts`.
 ---
 
 ## 📋 Changelog
+
+### Version 1.2.0 - 11.08.2025
+
+#### 🧩 Architecture & Refactors
+- Centralized status style/label logic (tables & orders) in a single status map utility
+- Unified Order & Table status badges into dedicated reusable components
+- Extracted reusable NoteModal and resolved note input interaction issues
+- Refactored Order panel into smaller components (ProductGrid, CartPanel) & introduced table transfer hook
+- Added formatting utilities (currency, time, occupancy duration) & table calculation helpers
+- Implemented scroll lock hook for modals (replacing manual body style manipulation)
+- Introduced reusable UI utility classes for surfaces, chips, focus, elevation
+
+#### 🎨 UI / UX
+- Modernized dashboard panels with cleaner spacing & consistent card heights
+- Simplified gradients & reduced visual noise; unified badge styling
+- Improved accessibility attributes (aria-pressed on toggle elements, descriptive labels)
+
+#### 🛠️ Code Quality
+- Reduced duplication in status handling & formatting
+- Clear separation of concerns: logic moved to hooks/utilities, presentational components simplified
+
+#### � Build Traceability
+- Build artık kısa Git SHA içeriyor (ör: 1.2.0 (a1b2c3d)) ve Splash Screen'de gösteriliyor; hata ayıklama ve sürüm izlenebilirliği kolaylaştı.
+
+#### �🐞 Fixes
+- Fixed Note modal not accepting free-form or suggested notes
+- Resolved style build issues by replacing unsupported @apply patterns with raw CSS utilities
 
 ### Version 1.1.0 - 08.08.2025
 

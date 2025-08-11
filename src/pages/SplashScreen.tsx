@@ -5,7 +5,7 @@ import { useAuth } from "../context/provider/AuthProvider";
 
 const SplashScreen: React.FC = () => {
     const navigate = useNavigate();
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated } = useAuth();
     const [progress, setProgress] = useState(0);
     const [currentMessage, setCurrentMessage] = useState("Sistem başlatılıyor...");
 
@@ -204,7 +204,7 @@ const SplashScreen: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 2, duration: 0.5 }}
             >
-                <p>Versiyon 1.1.0 | © 2025 Trend Restoran</p>
+                <p>Versiyon {import.meta.env.APP_VERSION} ({import.meta.env.GIT_SHA}) | © 2025 Trend Restoran</p>
             </motion.div>
         </div>
     );

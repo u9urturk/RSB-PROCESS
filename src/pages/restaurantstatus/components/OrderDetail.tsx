@@ -1,4 +1,5 @@
 import { Clock, User, Receipt } from "lucide-react";
+import { formatHHMM, formatCurrencyTRY } from "../utils/format";
 import OrderCard from "./OrderCard";
 import { TableData } from "../../../types";
 import TableModalHeader from "./TableModalHeader";
@@ -15,25 +16,6 @@ const OrderDetail = ({ table, onClose }: OrderDetailProps) => {
         ? table.orders.reduce((sum, order) => sum + (order.price * order.quantity), 0)
         : 0;
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'preparing': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'ready': return 'bg-green-100 text-green-800 border-green-200';
-            case 'delivered': return 'bg-gray-100 text-gray-800 border-gray-200';
-            default: return 'bg-gray-100 text-gray-800 border-gray-200';
-        }
-    };
-
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'pending': return 'Beklemede';
-            case 'preparing': return 'Hazırlanıyor';
-            case 'ready': return 'Hazır';
-            case 'delivered': return 'Teslim Edildi';
-            default: return 'Belirsiz';
-        }
-    };
 
     return (
         <div className="flex flex-col bg-gray-50  rounded-2xl">
@@ -56,7 +38,7 @@ const OrderDetail = ({ table, onClose }: OrderDetailProps) => {
                     {table.occupiedAt && (
                         <InfoCard
                             title={<span className="flex items-center gap-2"><Clock size={20} className="text-green-600" /> Açılış Saati</span>}
-                            value={<span className="font-semibold text-gray-800">{new Date(table.occupiedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>}
+                            value={<span className="font-semibold text-gray-800">{formatHHMM(table.occupiedAt)}</span>}
                             bgGradient="linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%)"
                             boxShadow="0 2px 8px rgba(16, 185, 129, 0.08)"
                             className="p-4"
@@ -82,8 +64,6 @@ const OrderDetail = ({ table, onClose }: OrderDetailProps) => {
                                     ...order,
                                     productName: order.productName || "Ürün"
                                 }}
-                                getStatusColor={getStatusColor}
-                                getStatusText={getStatusText}
                             />
                         ))}
                     </div>
@@ -99,7 +79,7 @@ const OrderDetail = ({ table, onClose }: OrderDetailProps) => {
             {table.orders && table.orders.length > 0 && (
                 <InfoCard
                     title={<span className="flex items-center gap-2"><Receipt size={20} className="text-green-600" /> Toplam Tutar</span>}
-                    value={<span className="text-2xl font-bold text-green-600">{total}₺</span>}
+                    value={<span className="text-2xl font-bold text-green-600">{formatCurrencyTRY(total)}</span>}
                     desc={<span className="text-xs text-gray-500">{table.orders.length} ürün • KDV Dahil</span>}
                     bgGradient="linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%)"
                     boxShadow="0 2px 8px rgba(16, 185, 129, 0.08)"

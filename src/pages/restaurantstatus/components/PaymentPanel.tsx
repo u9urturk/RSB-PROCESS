@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { X, CreditCard, Edit2, Receipt, Banknote, Wallet, Check, Minus, Plus } from "lucide-react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { X, CreditCard, Receipt, Banknote, Wallet, Check, Minus, Plus } from "lucide-react";
 import { useRestaurant } from "../../../context/context";
+import NoteModal from "./shared/NoteModal";
 
 interface CartItem {
     id: string;
@@ -40,111 +40,7 @@ const noteSuggestions: string[] = [
     "#az pişmiş"
 ];
 
-interface NoteModalProps {
-    open: boolean;
-    onClose: () => void;
-    onSave: (notes: string[]) => void;
-    initialNote?: string[];
-    suggestions: string[];
-}
-
-// Not güncelleme modalı
-const NoteModal = ({ open, onClose, onSave, initialNote = [], suggestions }: NoteModalProps) => {
-    const [note, setNote] = useState<string[]>(initialNote);
-    const [input, setInput] = useState<string>("");
-    useEffect(() => {
-        setNote(initialNote);
-    }, [initialNote, open]);
-    if (!open) return null;
-
-    const handleAddTag = (tag: string) => {
-        if (!note.includes(tag)) setNote([...note, tag]);
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value);
-
-    const handleInputKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter" && input.trim()) {
-            handleAddTag(input.trim());
-            setInput("");
-        }
-    };
-
-    const handleRemoveTag = (tag: string) => setNote(note.filter(n => n !== tag));
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.2 }}
-                className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 relative"
-            >
-                <button
-                    className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
-                    onClick={onClose}
-                >
-                    <X size={20} className="text-gray-600" />
-                </button>
-
-                <div className="mb-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full">
-                            <Edit2 size={20} />
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-800">Ürün Notunu Güncelle</h3>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {note.map((tag, i) => (
-                            <span key={i} className="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 text-sm px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
-                                {tag}
-                                <button
-                                    className="text-blue-500 hover:text-red-500 transition-colors"
-                                    onClick={() => handleRemoveTag(tag)}
-                                    type="button"
-                                >
-                                    <X size={14} />
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-
-                    <input
-                        type="text"
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:outline-none transition-colors"
-                        placeholder="Not giriniz veya #etiket ekleyin..."
-                        value={input}
-                        onChange={handleInputChange}
-                        onKeyDown={handleInputKeyDown}
-                        autoFocus
-                    />
-
-                    <div className="flex flex-wrap gap-2 mt-4">
-                        {suggestions.map((s, i) => (
-                            <button
-                                key={i}
-                                className="bg-gray-100 hover:bg-blue-100 text-gray-700 text-sm px-3 py-1.5 rounded-full transition-colors"
-                                onClick={() => handleAddTag(s)}
-                                type="button"
-                            >
-                                {s}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <button
-                    className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl px-4 py-3 font-semibold transition-all duration-200 shadow-lg"
-                    onClick={() => { onSave(note); }}
-                >
-                    Kaydet
-                </button>
-            </motion.div>
-        </div>
-    );
-};
+// NoteModal imported (shared)
 
 const PaymentPanel = ({
     table,
@@ -161,14 +57,6 @@ const PaymentPanel = ({
     // Sepet işlemleri - Sadece RestaurantProvider üzerinden güncelleme
     const handleQtyChange = (item: CartItem, delta: number) => {
         const newQuantity = Math.max(1, item.quantity + delta);
-
-        console.log("PaymentPanel handleQtyChange:", {
-            tableId: table.id,
-            orderItemId: item.id,
-            currentQuantity: item.quantity,
-            newQuantity: newQuantity
-        });
-
 
         updateOrderInTable(table.id, item.id, { quantity: newQuantity });
     };
@@ -211,28 +99,29 @@ const PaymentPanel = ({
                 onSave={handleNoteSave}
                 initialNote={noteModal.item?.note || []}
                 suggestions={noteSuggestions}
+                mode="edit"
+                title="Ürün Notunu Güncelle"
+                saveButtonLabel="Kaydet"
             />
             <div className="h-auto flex flex-col overflow-y-auto no-scrollbar">
-                {/* Modern Header with Gradient */}
-                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-3
-                 rounded-t-xl md:rounded-t-2xl mb-3 shadow-lg
-                sticky top-0 z-50 ">
+                {/* Header (soft) */}
+                <div className="bg-white border-b border-gray-200 p-3 rounded-t-xl md:rounded-t-2xl mb-3 shadow-sm sticky top-0 z-50">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-white/20 rounded-full">
-                                <CreditCard size={24} className="text-white" />
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center shadow-sm">
+                                <CreditCard size={20} />
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-bold">Ödeme Paneli</h2>
-                                <p className="text-green-100">Sipariş ödemesini tamamlayın</p>
+                            <div className="leading-tight">
+                                <h2 className="text-xl font-semibold text-gray-800">Ödeme Paneli</h2>
+                                <p className="text-gray-500 text-xs">Sipariş ödemesini tamamlayın</p>
                             </div>
                         </div>
                         <button
-                            className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
                             onClick={onClose}
                             aria-label="Ödeme Panelini Kapat"
                         >
-                            <X size={24} />
+                            <X size={20} />
                         </button>
                     </div>
                 </div>
@@ -260,12 +149,10 @@ const PaymentPanel = ({
                                 ) : (
                                     <div className="space-y-4 w-full">
                                         {cart.map((item: CartItem, i: number) => (
-                                            <motion.div
+                                            <div
                                                 key={i}
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.3, delay: i * 0.1 }}
-                                                className="bg-gray-50 rounded-xl w-full p-4 border border-gray-100"
+                                                className="bg-gray-50 rounded-xl w-full p-4 border border-gray-100 animate-fade-in-up"
+                                                style={{ animationDelay: `${i * 60}ms` }}
                                             >
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex-1">
@@ -278,11 +165,11 @@ const PaymentPanel = ({
                                                                     </span>
                                                                 ))}
                                                                 <button
-                                                                    className="text-blue-500 hover:text-blue-700 p-1 rounded-full hover:bg-blue-50"
+                                                                    className="text-blue-500 hover:text-blue-700 px-2 py-1 rounded-full hover:bg-blue-50 text-xs font-medium border border-blue-200"
                                                                     onClick={() => handleEditNote(item)}
                                                                     title="Notu güncelle"
                                                                 >
-                                                                    <Edit2 size={14} />
+                                                                    Düzenle
                                                                 </button>
                                                             </div>
                                                         )}
@@ -323,7 +210,7 @@ const PaymentPanel = ({
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </motion.div>
+                                            </div>
                                         ))}
                                     </div>
                                 )}
@@ -350,9 +237,9 @@ const PaymentPanel = ({
                             </div>
                             <div className="p-6 space-y-6">
                                 {/* Toplam Tutar */}
-                                <div className="bg-gradient-to-r from-green-50 to-green-100 hidden md:block rounded-xl p-4 border border-green-200">
-                                    <p className="text-sm text-green-700 mb-1">Toplam Tutar</p>
-                                    <p className="text-3xl font-bold text-green-800">{total}₺</p>
+                                <div className="bg-gray-50 hidden md:block rounded-xl p-4 border border-gray-200">
+                                    <p className="text-sm text-gray-600 mb-1">Toplam Tutar</p>
+                                    <p className="text-3xl font-semibold text-gray-800">{total}₺</p>
                                 </div>
 
                                 {/* Ödeme Seçenekleri */}
@@ -387,7 +274,7 @@ const PaymentPanel = ({
 
                                 {/* Ödeme Butonu */}
                                 <button
-                                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-colors shadow disabled:opacity-50 disabled:cursor-not-allowed"
                                     onClick={handlePayment}
                                     disabled={cart.length === 0}
                                 >

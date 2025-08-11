@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
+import useCountUp from "../../customHook/useCountUp";
 import { Users, CheckCircle, XCircle, Filter } from "lucide-react";
 import Circle from "../../components/Circle";
 import { useNavigation } from "../../context/provider/NavigationProvider";
@@ -27,62 +28,15 @@ const STATUS_FILTERS = [
   { key: "dirty", label: "Temizlenecek" },
 ] as const;
 
-// Custom hook for animated counter
-const useAnimatedCounter = (targetValue: number, duration: number = 1500) => {
-  const [currentValue, setCurrentValue] = useState(0);
-  const animationRef = useRef<number | null>(null); // null başlangıç değeri ve tip tanımı
-  const startTimeRef = useRef<number | null>(null); // null başlangıç değeri ve tip tanımı
-
-  useEffect(() => {
-    const animate = (timestamp: number) => {
-      if (!startTimeRef.current) {
-        startTimeRef.current = timestamp;
-      }
-
-      const elapsed = timestamp - startTimeRef.current;
-      const progress = Math.min(elapsed / duration, 1);
-
-      // Easing function for smooth animation
-      const easeOutCubic = 1 - Math.pow(1 - progress, 3);
-      const animatedValue = Math.floor(easeOutCubic * targetValue);
-
-      setCurrentValue(animatedValue);
-
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    // Reset animation when target value changes
-    startTimeRef.current = null; // undefined yerine null
-    setCurrentValue(0);
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current !== null) { // null kontrolü
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [targetValue, duration]);
-
-  return currentValue;
-};
-
-// Animated Number Component
+// Animated Number Component (using shared hook)
 const AnimatedNumber: React.FC<{ value: number; className?: string }> = ({ value, className = "" }) => {
-  const animatedValue = useAnimatedCounter(value);
-  
-  return (
-    <span className={className}>
-      {animatedValue}
-    </span>
-  );
+  const animatedValue = useCountUp(value, { duration: 1200, start: 0 });
+  return <span className={className}>{animatedValue}</span>;
 };
 
-// Animated Circle Component (wrapper for Circle with animated value)
+// Animated Circle Component
 const AnimatedCircle: React.FC<{ label: string; value: number }> = ({ label, value }) => {
-  const animatedValue = useAnimatedCounter(value);
-  
+  const animatedValue = useCountUp(value, { duration: 1200, start: 0 });
   return <Circle label={label} value={animatedValue} />;
 };
 

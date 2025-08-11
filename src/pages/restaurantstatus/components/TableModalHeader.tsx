@@ -9,61 +9,35 @@ interface TableModalHeaderProps {
 
 const TableModalHeader: React.FC<TableModalHeaderProps> = ({ table, onClose, onHint }) => {
     return (
-        <div
-            className="relative overflow-hidden rounded-t-xl sm:rounded-t-2xl p-3 sm:p-6 "
-            style={{
-                background: "linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(147, 51, 234, 0.9) 100%)",
-                backdropFilter: "blur(20px)",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-            }}
-        >
-            <div
-
-                className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl"
-            />
-            <div
-
-                className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-xl"
-            />
-
-            <div className="relative z-10 flex justify-between items-center">
-                <div>
-                    <h2 className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3"
-                    >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full">
-                            <Utensils size={18} className="sm:w-6 sm:h-6" />
-                        </div>
-                        Masa {table.number}
-                    </h2>
-                    <p
-
-                        className="text-white/80 text-xs sm:text-sm mt-1 hidden sm:block"
-                    >
-                        Masa Yönetim Paneli
-                    </p>
-                </div>
-                <div className="flex items-center gap-2 sm:gap-3">
-                    <div
-
-                        onClick={onHint}
-                        className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20"
-                        aria-label="İpucu Göster"
-                    >
-                        <div>
-                            <Info size={14} className="text-white sm:w-[18px] sm:h-[18px]" />
-                        </div>
+        <div className="relative rounded-t-xl sm:rounded-t-2xl p-3 sm:p-5 bg-white border-b border-gray-200">
+            <div className="flex justify-between items-center">
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
+                        <Utensils size={18} className="sm:w-5 sm:h-5" />
                     </div>
+                    <div>
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 flex items-center gap-2">
+                            Masa {table.number}
+                        </h2>
+                        <p className="text-gray-500 text-xs sm:text-sm mt-0.5 hidden sm:block">Masa Yönetim Paneli</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 sm:gap-2.5">
                     <button
-
-                        onClick={onClose}
-                        className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20"
-                        aria-label="Kapat"
+                        onClick={onHint}
+                        className="p-2 sm:p-2.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
+                        aria-label="İpucu Göster"
+                        type="button"
                     >
-                        <div
-                        >
-                            <X size={14} className="text-white sm:w-[18px] sm:h-[18px]" />
-                        </div>
+                        <Info size={16} />
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="p-2 sm:p-2.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
+                        aria-label="Kapat"
+                        type="button"
+                    >
+                        <X size={16} />
                     </button>
                 </div>
             </div>
