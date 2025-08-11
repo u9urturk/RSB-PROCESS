@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StockChangeModalProps } from "../../../../types";
 import { Plus, Minus, X, TrendingUp, Package } from "lucide-react";
 
 export default function StockChangeModal({ open, onClose, item, type, onSubmit }: StockChangeModalProps) {
     const [amount, setAmount] = useState<number>(0);
+    const [render, setRender] = useState(open);
+    useEffect(() => { if (open) setRender(true); }, [open]);
+    useEffect(() => { if (!open && render) { const t = setTimeout(() => setRender(false), 180); return () => clearTimeout(t);} }, [open, render]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -14,7 +17,7 @@ export default function StockChangeModal({ open, onClose, item, type, onSubmit }
         }
     };
 
-    if (!open) return null;
+    if (!render) return null;
 
     const isAdd = type === "add";
     const icon = isAdd ? <Plus size={24} /> : <Minus size={24} />;
@@ -23,9 +26,11 @@ export default function StockChangeModal({ open, onClose, item, type, onSubmit }
     const gradientColor = isAdd ? "from-green-500 to-green-600" : "from-red-500 to-red-600";
     const hoverGradientColor = isAdd ? "hover:from-green-600 hover:to-green-700" : "hover:from-red-600 hover:to-red-700";
 
+    const overlayCls = `fixed inset-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-200 ${open ? 'bg-black/60 opacity-100' : 'bg-black/0 opacity-0 pointer-events-none'}`;
+    const panelCls = `bg-white rounded-2xl shadow-2xl w-full max-w-md transition-all duration-200 ${open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`;
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-300">
+        <div className={overlayCls}>
+            <div className={panelCls}>
                 {/* Header */}
                 <div className={`bg-gradient-to-r ${gradientColor} text-white p-6 rounded-t-2xl`}>
                     <div className="flex items-center justify-between">

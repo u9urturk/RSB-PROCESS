@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StockItem } from "../../../../types";
 import { Package, X, Save } from "lucide-react";
 
@@ -36,13 +36,18 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd, ini
         onClose();
     };
 
-    if (!open) return null;
+    const [render, setRender] = useState(open);
+    useEffect(() => { if (open) setRender(true); }, [open]);
+    useEffect(() => { if (!open && render) { const t = setTimeout(() => setRender(false), 200); return () => clearTimeout(t);} }, [open, render]);
+    if (!render) return null;
 
 
 
+    const overlayCls = `fixed inset-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-200 ${open ? 'bg-black/60 opacity-100' : 'bg-black/0 opacity-0 pointer-events-none'}`;
+    const panelCls = `bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transition-all duration-200 ${open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`;
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300">
+        <div className={overlayCls}>
+            <div className={panelCls}>
                 {/* Header */}
                 <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6 rounded-t-2xl">
                     <div className="flex items-center justify-between">

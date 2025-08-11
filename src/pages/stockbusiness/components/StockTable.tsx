@@ -6,9 +6,12 @@ import { StockItem } from "../../../types";
 interface StockTableProps {
     items: StockItem[];
     onStockChange: (id: string, amount: number, type: "add" | "remove") => void;
+    onOpenAdd: (item: StockItem) => void;
+    onOpenRemove: (item: StockItem) => void;
+    onOpenDetail: (item: StockItem) => void;
 }
 
-function StockTable({ items, onStockChange }: StockTableProps) {
+function StockTable({ items, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }: StockTableProps) {
     if (items.length === 0) {
         return (
             <div className="bg-white rounded-2xl p-12 shadow-lg border border-gray-100 text-center">
@@ -46,9 +49,12 @@ function StockTable({ items, onStockChange }: StockTableProps) {
                         className="animate-fade-in"
                         style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                        <StockRow 
-                            item={item} 
+                        <StockRow
+                            item={item}
                             onStockChange={onStockChange || (() => {})}
+                            onOpenAdd={onOpenAdd}
+                            onOpenRemove={onOpenRemove}
+                            onOpenDetail={onOpenDetail}
                         />
                     </div>
                 ))}

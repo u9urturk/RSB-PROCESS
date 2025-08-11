@@ -4,6 +4,8 @@ import StockTable from "./components/StockTable";
 import StockSearchBar from "./components/StockSearchBar";
 import StockAddModal from "./components/modals/StockAddModal";
 import BarcodeScannerModal from "./components/modals/BarcodeScannerModal";
+import StockChangeModal from "./components/modals/StockChangeModal";
+import StockDetailModal from "./components/modals/StockDetailModal";
 import PageTransition from "../../components/PageTransition";
 import { StockItem } from "../../types";
 import { useNavigation } from "../../context/provider/NavigationProvider";
@@ -36,6 +38,8 @@ export default function StockBusinessMain() {
     const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
     const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState<boolean>(false);
     const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
+    const [activeDetail, setActiveDetail] = useState<StockItem | null>(null);
+    const [activeChange, setActiveChange] = useState<{ item: StockItem; type: 'add' | 'remove' } | null>(null);
 
     useEffect(() => {
         setActivePath('/dashboard/stockbusiness');
@@ -93,7 +97,13 @@ export default function StockBusinessMain() {
     );
 
     const TableComponent = ({ items, onStockChange }: StockTableProps) => (
-        <StockTable items={items} onStockChange={onStockChange} />
+        <StockTable
+            items={items}
+            onStockChange={onStockChange}
+            onOpenAdd={(item) => setActiveChange({ item, type: 'add' })}
+            onOpenRemove={(item) => setActiveChange({ item, type: 'remove' })}
+            onOpenDetail={(item) => setActiveDetail(item)}
+        />
     );
 
     const ModalComponent = ({ open, onClose, onSubmit }: StockAddModalProps) => (
@@ -224,12 +234,30 @@ export default function StockBusinessMain() {
                 onClose={() => setIsAddModalOpen(false)}
                 onSubmit={handleAddStock}
             />
-            
             <BarcodeScannerModal
                 open={isBarcodeModalOpen}
                 onClose={() => setIsBarcodeModalOpen(false)}
                 onResult={handleBarcodeResult}
             />
+            {activeChange && (
+                <StockChangeModal
+                    open={true}
+                    onClose={() => setActiveChange(null)}
+                    item={activeChange.item}
+                    type={activeChange.type}
+                    onSubmit={(amt) => {
+                        handleStockChange(activeChange.item.id, amt, activeChange.type);
+                        setActiveChange(null);
+                    }}
+                />
+            )}
+            {activeDetail && (
+                <StockDetailModal
+                    open={true}
+                    onClose={() => setActiveDetail(null)}
+                    item={activeDetail}
+                />
+            )}
         </PageTransition>
     );
 }

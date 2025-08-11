@@ -1,33 +1,31 @@
-import { useState, memo, useCallback } from "react";
+import { memo, useCallback } from "react";
 import { Package, Plus, Minus, AlertTriangle, Eye, TrendingUp, Clock, Zap } from "lucide-react";
-import StockChangeModal from "./modals/StockChangeModal";
-import StockDetailModal from "./modals/StockDetailModal";
 import { StockItem } from "../../../types";
 
 interface StockRowProps {
     item: StockItem;
-    onStockChange: (id: string, amount: number, type: "add" | "remove") => void;
+    onStockChange: (id: string, amount: number, type: "add" | "remove") => void; // still used for progress updates elsewhere maybe
+    onOpenAdd: (item: StockItem) => void;
+    onOpenRemove: (item: StockItem) => void;
+    onOpenDetail: (item: StockItem) => void;
 }
 
-function StockRow({ item, onStockChange }: StockRowProps) {
-    const [addOpen, setAddOpen] = useState<boolean>(false);
-    const [removeOpen, setRemoveOpen] = useState<boolean>(false);
-    const [detailOpen, setDetailOpen] = useState<boolean>(false);
+function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }: StockRowProps) {
 
     const isLow = item.quantity <= item.minQuantity;
 
     // useCallback ile event handler'lar optimize edildi
     const handleAddOpen = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        setAddOpen(true);
-    }, []);
+        onOpenAdd(item);
+    }, [item, onOpenAdd]);
 
     const handleRemoveOpen = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        setRemoveOpen(true);
-    }, []);
+        onOpenRemove(item);
+    }, [item, onOpenRemove]);
 
-    const handleDetailOpen = useCallback(() => setDetailOpen(true), []);
+    const handleDetailOpen = useCallback(() => onOpenDetail(item), [item, onOpenDetail]);
 
     // Stok değişikliği işleyicileri
     const handleAddSubmit = useCallback((amount: number) => {
@@ -36,8 +34,9 @@ function StockRow({ item, onStockChange }: StockRowProps) {
 
     const handleRemoveSubmit = useCallback((amount: number) => {
         onStockChange(item.id, amount, "remove");
-    }, [item.id, onStockChange]);    return (
-        <>
+    }, [item.id, onStockChange]);
+
+    return (
             <div
                 className={`group relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 cursor-pointer overflow-hidden
                      ${isLow ? "ring-2 ring-red-200 shadow-red-100" : ""}`}
@@ -171,27 +170,6 @@ function StockRow({ item, onStockChange }: StockRowProps) {
                     </button>
                 </div>
             </div>
-            
-            <StockChangeModal
-                open={addOpen}
-                onClose={() => setAddOpen(false)}
-                item={item}
-                type="add"
-                onSubmit={handleAddSubmit}
-            />
-            <StockChangeModal
-                open={removeOpen}
-                onClose={() => setRemoveOpen(false)}
-                item={item}
-                type="remove"
-                onSubmit={handleRemoveSubmit}
-            />
-            <StockDetailModal
-                open={detailOpen}
-                onClose={() => setDetailOpen(false)}
-                item={item}
-            />
-        </>
     );
 }
 

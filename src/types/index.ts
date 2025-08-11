@@ -509,7 +509,8 @@ export interface MenuItemDetailed {
     prepTime?: number; // Hazırlık süresi (dakika)
     isSpecial?: boolean;
     image?: string;
-    images?: string[];
+    // Yeni yapı: her görsel için ana görsel işareti
+    images?: MenuImage[] | string[]; // string[] legacy destek
     status: "active" | "inactive";
     rating?: number; // 1-5 arası puan
     views?: number; // Görüntülenme sayısı
@@ -519,6 +520,12 @@ export interface MenuItemDetailed {
         name: string;
         price: number;
     }[];
+}
+
+// Menü görsel tipi
+export interface MenuImage {
+    url: string;
+    mainPicture?: boolean; // true olan tek bir görsel (opsiyonel)
 }
 
 export interface MenuCategory {

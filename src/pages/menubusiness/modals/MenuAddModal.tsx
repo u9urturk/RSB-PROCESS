@@ -1,343 +1,307 @@
-import { useState, ChangeEvent, FormEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, ImagePlus, Trash2, Pencil, Upload, Camera, Star, DollarSign, Tag, FileText } from "lucide-react";
+import { useState, ChangeEvent, FormEvent, useCallback, useMemo, useEffect } from "react";
+import { X, Trash2, Pencil, Camera, Star, DollarSign, Tag, FileText, Plus } from "lucide-react";
 import { useNotification } from "../../../context/provider/NotificationProvider";
-import { MenuAddModalProps, MenuItemDetailed } from "../../../types";
+import { MenuAddModalProps, MenuItemDetailed, MenuImage } from "../../../types";
+import "../animations.css";
 
 export default function MenuAddModal({ open, onClose, onAdd, categories }: MenuAddModalProps) {
-    const [name, setName] = useState<string>("");
-    const [category, setCategory] = useState<string>("");
-    const [price, setPrice] = useState<string>("");
+    // form state
+    const [name, setName] = useState("");
+    const [category, setCategory] = useState("");
+    const [price, setPrice] = useState("");
     const [status, setStatus] = useState<"active" | "inactive">("active");
-    const [description, setDescription] = useState<string>("");
-    const [images, setImages] = useState<(File | string)[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    const [description, setDescription] = useState("");
+    const [images, setImages] = useState<(File | MenuImage | string)[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
     const { showNotification } = useNotification();
 
-    console.log(name, category, price, status, description, images);
+    // ---------- helpers ----------
+    const baseInput = "w-full border rounded-xl px-4 py-2.5 text-sm md:text-base bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition disabled:opacity-60";
+    const labelCls = "flex items-center gap-1.5 text-xs font-medium text-slate-600";
 
-    const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const previewUrl = useCallback((img: File | MenuImage | string) => {
+        if (typeof img === "string") return img;
+        if (img instanceof File) return URL.createObjectURL(img);
+        return img.url;
+    }, []);
+
+    const normalizeImages = useCallback((): MenuImage[] => {
+        const mapped = images.map((img, i) => {
+            if (typeof img === "string") return { url: img, mainPicture: i === 0 } as MenuImage;
+            if (img instanceof File) return { url: URL.createObjectURL(img), mainPicture: i === 0 } as MenuImage;
+            return { url: img.url, mainPicture: !!img.mainPicture };
+        });
+        // ensure single mainPicture (fallback first)
+        const hasMain = mapped.some(m => m.mainPicture);
+        if (!hasMain && mapped[0]) mapped[0].mainPicture = true;
+        if (hasMain) {
+            let flagged = false;
+            mapped.forEach(m => {
+                if (m.mainPicture) {
+                    if (!flagged) flagged = true; else m.mainPicture = false;
+                }
+            });
+        }
+        return mapped;
+    }, [images]);
+
+    const validate = useCallback(() => {
+        const next: Record<string, string> = {};
+        if (!name.trim()) next.name = "Ürün adı gereklidir";
+        if (!category) next.category = "Kategori seçiniz";
+        if (!price || Number(price) <= 0) next.price = "Geçerli fiyat";
+        if (images.length === 0) next.images = "En az 1 görsel";
+        setErrors(next);
+        return Object.keys(next).length === 0;
+    }, [name, category, price, images.length]);
+
+    // ---------- image handlers ----------
+    const addImages = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
+        if (!files.length) return;
         if (images.length + files.length > 3) {
-            showNotification("error", "En fazla 3 görsel ekleyebilirsiniz.");
+            showNotification("error", "En fazla 3 görsel");
             return;
         }
-        const newImages = files.slice(0, 3 - images.length);
-        setImages([...images, ...newImages]);
-    };
+        setImages(prev => [...prev, ...files.slice(0, 3 - prev.length)]);
+        setErrors(prev => ({ ...prev, images: "" }));
+    }, [images.length, showNotification]);
 
-    const handleRemoveImage = (idx: number): void => {
-        setImages(images.filter((_, i) => i !== idx));
-    };
+    const replaceImage = useCallback((idx: number, file: File) => {
+        setImages(prev => prev.map((img, i) => (i === idx ? file : img)));
+    }, []);
 
-    const handleUpdateImage = (idx: number, file: File): void => {
-        setImages(images.map((img, i) => (i === idx ? file : img)));
-    };
+    const removeImage = useCallback((idx: number) => {
+        setImages(prev => prev.filter((_, i) => i !== idx));
+    }, []);
 
-    const handleUpdateImageClick = (idx: number): void => {
-        const input = document.getElementById(`update-image-input-${idx}`) as HTMLInputElement;
-        if (input) input.click();
-    };
+    const makeMain = useCallback((idx: number) => {
+        setImages(prev => prev.map((img, i) => {
+            if (typeof img === "string" || img instanceof File) {
+                if (i === idx) return { url: previewUrl(img), mainPicture: true } as MenuImage;
+                return img;
+            }
+            return { ...img, mainPicture: i === idx };
+        }));
+    }, [previewUrl]);
 
-    const resetForm = () => {
+    // ---------- submit ----------
+    const reset = useCallback(() => {
         setName("");
         setCategory("");
         setPrice("");
         setStatus("active");
         setDescription("");
         setImages([]);
-    };
+        setErrors({});
+    }, []);
 
-    const handleSubmit = async (e: FormEvent): Promise<void> => {
+    const handleSubmit = useCallback(async (e: FormEvent) => {
         e.preventDefault();
-        
-        if (!name.trim() || !category || !price || images.length === 0) {
-            showNotification("error", "Lütfen tüm zorunlu alanları ve en az bir görsel ekleyin.");
+        if (!validate()) {
+            showNotification("error", "Zorunlu alanları kontrol edin");
             return;
         }
-
-        if (Number(price) <= 0) {
-            showNotification("error", "Fiyat 0'dan büyük olmalıdır.");
-            return;
-        }
-
         setLoading(true);
-        
         try {
-            const newItem: MenuItemDetailed = {
+            const imgs = normalizeImages();
+            const main = imgs.find(i => i.mainPicture) || imgs[0];
+            const item: MenuItemDetailed = {
                 id: Date.now().toString(),
                 name: name.trim(),
                 category,
                 price: Number(price),
                 status,
                 description: description.trim(),
-                image: typeof images[0] === "string" ? images[0] : URL.createObjectURL(images[0] as File),
-                images: images.map(img => typeof img === "string" ? img : URL.createObjectURL(img as File))
+                image: main?.url,
+                images: imgs
             };
-
-            await onAdd(newItem);
-            resetForm();
+            await onAdd(item);
+            reset();
             onClose();
-        } catch (error) {
-            showNotification("error", "Ürün eklenirken bir hata oluştu.");
+            showNotification("success", "Ürün eklendi");
+        } catch (err) {
+            showNotification("error", "Kayıt hatası");
         } finally {
             setLoading(false);
         }
-    };
+    }, [validate, normalizeImages, name, category, price, status, description, onAdd, reset, onClose, showNotification]);
 
-    const handleClose = () => {
-        resetForm();
+    const close = useCallback(() => {
+        reset();
         onClose();
-    };
+    }, [reset, onClose]);
+
+    // Derived boolean to disable submit
+    const canSubmit = useMemo(() => !!name.trim() && !!category && !!price && images.length > 0 && !loading, [name, category, price, images.length, loading]);
+
+    // lock background scroll while open
+    useEffect(() => {
+        if (!open) return;
+        const root = document.documentElement;
+        const prevOverflow = root.style.overflow;
+        const prevPaddingRight = root.style.paddingRight;
+        const scrollBarWidth = window.innerWidth - root.clientWidth;
+        if (scrollBarWidth > 0) root.style.paddingRight = `${scrollBarWidth}px`;
+        root.style.overflow = 'hidden';
+        return () => {
+            root.style.overflow = prevOverflow;
+            root.style.paddingRight = prevPaddingRight;
+        };
+    }, [open]);
+
+    if (!open) return null;
 
     return (
-        <AnimatePresence>
-            {open && (
-                <motion.div
-                    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={(e) => e.target === e.currentTarget && handleClose()}
-                >
-                    <motion.div
-                        className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
-                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        transition={{ type: "spring", duration: 0.4 }}
-                    >
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 relative">
-                            <button
-                                className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors"
-                                onClick={handleClose}
+        <div className="fixed inset-0 z-50 flex justify-items-center items-center justify-center p-2 sm:p-4 bg-black/50" onClick={(e) => e.target === e.currentTarget && close()}>
+            <div
+                className="bg-white w-full h-[80dvh] max-w-full max-h-none rounded-xl md:rounded-2xl md:h-auto md:max-w-2xl md:max-h-[92vh] flex flex-col shadow-xl border border-slate-200/70 overscroll-contain"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b">
+                    <h2 className="text-base sm:text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <Tag size={16} className="text-indigo-500" /> Yeni Ürün
+                    </h2>
+                    <button onClick={close} disabled={loading} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+                        <X size={18} />
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+                {/* Scrollable Content */}
+                <div className="overflow-y-auto px-4 sm:px-6 py-5 space-y-6 flex-1 min-h-0 pb-24 md:pb-5" style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}>
+                    {/* Name */}
+                    <div className="space-y-1.5">
+                        <label className={labelCls}><Tag size={14} className="text-indigo-500" /> Ürün Adı *</label>
+                        <input
+                            className={`${baseInput} ${errors.name ? 'border-red-400 focus:ring-red-400 focus:border-red-400' : 'border-slate-300'}`}
+                            value={name}
+                            placeholder="Örn: Margherita Pizza"
+                            onChange={(e) => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })); }}
+                            disabled={loading}
+                        />
+                        {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+                    </div>
+                    {/* Category / Status */}
+                    <div className="grid gap-6 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                            <label className={labelCls}><FileText size={14} className="text-purple-500" /> Kategori *</label>
+                            <select
+                                className={`${baseInput} ${errors.category ? 'border-red-400 focus:ring-red-400 focus:border-red-400' : 'border-slate-300'}`}
+                                value={category}
+                                onChange={e => { setCategory(e.target.value); setErrors(p => ({ ...p, category: '' })); }}
                                 disabled={loading}
                             >
-                                <X size={24} />
-                            </button>
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 bg-white/20 rounded-2xl">
-                                    <ImagePlus size={24} />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold">Yeni Menü Ürünü</h2>
-                                    <p className="text-orange-100 mt-1">Restoranınıza yeni lezzet ekleyin</p>
-                                </div>
-                            </div>
+                                <option value="">Seçiniz</option>
+                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                            {errors.category && <p className="text-xs text-red-500">{errors.category}</p>}
                         </div>
-
-                        {/* Content */}
-                        <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
-                            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                                {/* Product Name */}
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                        <Tag size={16} />
-                                        Ürün Adı *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all placeholder-gray-400"
-                                        placeholder="Örn: Margherita Pizza"
-                                        value={name}
-                                        onChange={e => setName(e.target.value)}
-                                        required
-                                        disabled={loading}
-                                    />
-                                </div>
-
-                                {/* Category and Status Row */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                            <FileText size={16} />
-                                            Kategori *
-                                        </label>
-                                        <select
-                                            className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all bg-white"
-                                            value={category}
-                                            onChange={e => setCategory(e.target.value)}
-                                            required
-                                            disabled={loading}
-                                        >
-                                            <option value="">Kategori seçiniz</option>
-                                            {categories.map(cat => (
-                                                <option key={cat} value={cat}>
-                                                    {cat}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                            <Star size={16} />
-                                            Durum
-                                        </label>
-                                        <select
-                                            className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all bg-white"
-                                            value={status}
-                                            onChange={e => setStatus(e.target.value as "active" | "inactive")}
-                                            disabled={loading}
-                                        >
-                                            <option value="active">🟢 Aktif</option>
-                                            <option value="inactive">🔴 Pasif</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Price */}
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                        <DollarSign size={16} />
-                                        Fiyat (₺) *
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            min={0}
-                                            step="0.01"
-                                            className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all placeholder-gray-400"
-                                            placeholder="0.00"
-                                            value={price}
-                                            onChange={e => setPrice(e.target.value)}
-                                            required
-                                            disabled={loading}
-                                        />
-                                        <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">₺</span>
-                                    </div>
-                                </div>
-
-                                {/* Description */}
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                        <FileText size={16} />
-                                        Açıklama
-                                    </label>
-                                    <textarea
-                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all placeholder-gray-400 resize-none"
-                                        placeholder="Ürün hakkında detaylar..."
-                                        value={description}
-                                        onChange={e => setDescription(e.target.value)}
-                                        rows={3}
-                                        disabled={loading}
-                                    />
-                                </div>
-
-                                {/* Image Upload */}
-                                <div className="space-y-4">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                        <Camera size={16} />
-                                        Ürün Görselleri * (En az 1, en fazla 3)
-                                    </label>
-                                    
-                                    {/* Image Grid */}
-                                    <div className="grid grid-cols-3 gap-4">
-                                        {images.map((img, idx) => (
-                                            <div key={idx} className="relative group aspect-square">
-                                                <img
-                                                    src={typeof img === "string" ? img : URL.createObjectURL(img)}
-                                                    alt={`Ürün görseli ${idx + 1}`}
-                                                    className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                                />
-                                                
-                                                {/* Overlay Actions */}
-                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleUpdateImageClick(idx)}
-                                                        className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
-                                                        title="Güncelle"
-                                                        disabled={loading}
-                                                    >
-                                                        <Pencil size={16} className="text-orange-600" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveImage(idx)}
-                                                        className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors"
-                                                        title="Sil"
-                                                        disabled={loading}
-                                                    >
-                                                        <Trash2 size={16} className="text-red-600" />
-                                                    </button>
-                                                </div>
-                                                
-                                                {/* Update Input */}
+                        <div className="space-y-1.5">
+                            <label className={labelCls}><Star size={14} className="text-amber-500" /> Durum</label>
+                            <select
+                                className={`${baseInput} border-slate-300`}
+                                value={status}
+                                onChange={e => setStatus(e.target.value as 'active' | 'inactive')}
+                                disabled={loading}
+                            >
+                                <option value="active">Aktif</option>
+                                <option value="inactive">Pasif</option>
+                            </select>
+                        </div>
+                    </div>
+                    {/* Price */}
+                    <div className="space-y-1.5">
+                        <label className={labelCls}><DollarSign size={14} className="text-green-500" /> Fiyat (₺) *</label>
+                        <div className="relative">
+                            <input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                className={`${baseInput} pr-10 ${errors.price ? 'border-red-400 focus:ring-red-400 focus:border-red-400' : 'border-slate-300'}`}
+                                value={price}
+                                placeholder="0.00"
+                                onChange={e => { setPrice(e.target.value); setErrors(p => ({ ...p, price: '' })); }}
+                                disabled={loading}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">₺</span>
+                        </div>
+                        {errors.price && <p className="text-xs text-red-500">{errors.price}</p>}
+                    </div>
+                    {/* Description */}
+                    <div className="space-y-1.5">
+                        <label className={labelCls}><FileText size={14} className="text-blue-500" /> Açıklama</label>
+                        <textarea
+                            rows={3}
+                            className={`${baseInput} resize-none border-slate-300`}
+                            value={description}
+                            placeholder="Ürün hakkında kısa açıklama"
+                            onChange={e => setDescription(e.target.value)}
+                            disabled={loading}
+                        />
+                    </div>
+                    {/* Images */}
+                    <div className="space-y-2">
+                        <label className={labelCls}><Camera size={14} className="text-pink-500" /> Görseller * (max 3)</label>
+                        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                            {images.map((img, idx) => {
+                                const url = previewUrl(img);
+                                const isMain = ((): boolean => {
+                                    if (typeof img === 'string' || img instanceof File) return idx === 0; // provisional first
+                                    return !!img.mainPicture;
+                                })();
+                                return (
+                                    <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border bg-slate-50">
+                                        <img src={url} alt="ürün" className="w-full h-full object-cover" />
+                                        {isMain && <span className="absolute top-1 left-1 bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">ANA</span>}
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                                            <button type="button" onClick={() => makeMain(idx)} disabled={isMain || loading} className="p-2 rounded bg-white/90 hover:bg-white text-slate-700 text-xs font-medium">
+                                                {isMain ? 'Ana' : 'Ana Yap'}
+                                            </button>
+                                            <button type="button" onClick={() => removeImage(idx)} disabled={loading} className="p-2 rounded bg-white/90 hover:bg-white text-red-600">
+                                                <Trash2 size={14} />
+                                            </button>
+                                            <label className="p-2 rounded bg-white/90 hover:bg-white text-indigo-600 cursor-pointer">
+                                                <Pencil size={14} />
                                                 <input
-                                                    id={`update-image-input-${idx}`}
                                                     type="file"
                                                     accept="image/*"
                                                     className="hidden"
-                                                    onChange={e => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) handleUpdateImage(idx, file);
+                                                    onChange={(e) => {
+                                                        const f = e.target.files?.[0];
+                                                        if (f) replaceImage(idx, f);
                                                     }}
                                                     disabled={loading}
                                                 />
-                                            </div>
-                                        ))}
-                                        
-                                        {/* Add Image Button */}
-                                        {images.length < 3 && (
-                                            <label className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all group">
-                                                <Upload size={24} className="text-gray-400 group-hover:text-orange-500 mb-2" />
-                                                <span className="text-sm text-gray-500 group-hover:text-orange-600 font-medium">
-                                                    Görsel Ekle
-                                                </span>
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    multiple
-                                                    onChange={handleImageChange}
-                                                    className="hidden"
-                                                    disabled={loading || images.length >= 3}
-                                                />
                                             </label>
-                                        )}
+                                        </div>
                                     </div>
-                                    
-                                    <p className="text-xs text-gray-500">
-                                        JPG, PNG formatında, maksimum 5MB boyutunda olmalıdır.
-                                    </p>
-                                </div>
-                            </form>
+                                );
+                            })}
+                            {images.length < 3 && (
+                                <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg text-slate-400 hover:border-indigo-400 hover:text-indigo-500 cursor-pointer text-xs gap-1">
+                                    <Plus size={20} />
+                                    <span>Ekle</span>
+                                    <input type="file" accept="image/*" multiple className="hidden" onChange={addImages} disabled={loading} />
+                                </label>
+                            )}
                         </div>
-
-                        {/* Footer */}
-                        <div className="border-t border-gray-100 p-6 bg-gray-50/50">
-                            <div className="flex gap-3 justify-end">
-                                <button
-                                    type="button"
-                                    onClick={handleClose}
-                                    className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
-                                    disabled={loading}
-                                >
-                                    İptal
-                                </button>
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={loading || !name.trim() || !category || !price || images.length === 0}
-                                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 transition-all font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            Kaydediliyor...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <ImagePlus size={18} />
-                                            Ürünü Kaydet
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+                        {errors.images && <p className="text-xs text-red-500">{errors.images}</p>}
+                        <p className="text-[10px] text-slate-400">JPG/PNG önerilir. İlk görsel varsayılan ana görsel olur.</p>
+                    </div>
+                </div>
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-3 px-4 rounded-xl md:rounded-2xl mb-2 sm:px-6 py-3 border-t bg-slate-50 mt-auto sticky bottom-0 md:static" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+                        <button type="button" onClick={close} disabled={loading} className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-600">İptal</button>
+                        <button type="submit" disabled={!canSubmit} className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                            {loading && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+                            Kaydet
+                        </button>
+                </div>
+                </form>
+            </div>
+        </div>
     );
 }

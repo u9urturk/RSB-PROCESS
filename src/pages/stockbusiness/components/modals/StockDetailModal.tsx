@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { StockDetailModalProps } from "../../../../types";
 import { 
     X, 
@@ -12,15 +13,26 @@ import {
 } from "lucide-react";
 
 export default function StockDetailModal({ open, onClose, item }: StockDetailModalProps) {
-    if (!open) return null;
+    const [render, setRender] = useState(open);
+    // keep mounted during exit
+    useEffect(() => { if (open) setRender(true); }, [open]);
+    useEffect(() => {
+        if (!open && render) {
+            const t = setTimeout(() => setRender(false), 200);
+            return () => clearTimeout(t);
+        }
+    }, [open, render]);
+    if (!render) return null;
 
     const isLowStock = item.quantity <= item.minQuantity;
     const stockPercentage = Math.min(100, (item.quantity / (item.maxQuantity || 100)) * 100);
     const totalValue = item.quantity * item.unitPrice;
 
+    const overlayBase = "fixed inset-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-200";
+    const panelBase = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transition-all duration-200";
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300">
+        <div className={`${overlayBase} ${open ? 'opacity-100 bg-black/60' : 'opacity-0 bg-black/0 pointer-events-none'}`}>            
+            <div className={`${panelBase} ${open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}> 
                 {/* Header */}
                 <div className={`bg-gradient-to-r ${isLowStock ? 'from-red-500 to-red-600' : 'from-orange-500 to-red-600'} text-white p-6 rounded-t-2xl`}>
                     <div className="flex items-center justify-between">

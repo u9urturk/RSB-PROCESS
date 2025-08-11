@@ -12,7 +12,6 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
     const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [scanResult, setScanResult] = useState<string | null>(null);
-    const [showScanner, setShowScanner] = useState(false);
     const [permissionChecked, setPermissionChecked] = useState(false);
 
     const handleDetected = useCallback((result: string) => {
@@ -30,8 +29,6 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
     const handleClose = useCallback(() => {
         console.log('BarcodeScannerModal - Closing modal and cleaning up camera...');
 
-        // Scanner'ı gizle (ModernBarcodeScanner component'inin unmount olmasını sağla)
-        setShowScanner(false);
 
         // State'i reset et (permission durumunu koruyoruz)
         setScanResult(null);
@@ -51,11 +48,11 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
     const handleRetry = useCallback(() => {
         setScanResult(null);
         setError(null);
-        setShowScanner(false);
 
         // Kısa bir gecikme ile scanner'ı tekrar aç
+        // slight delay if needed for re-init
         setTimeout(() => {
-            setShowScanner(true);
+            /* re-init placeholder */
         }, 100);
     }, []);
 
@@ -64,7 +61,7 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             setHasPermission(true);
             setPermissionChecked(true);
-            setShowScanner(true);
+            // ready to render scanner
             // Stream'i hemen kapat, ModernBarcodeScanner kendi stream'ini açacak
             stream.getTracks().forEach(track => track.stop());
         } catch (err) {
@@ -79,7 +76,7 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
         try {
             // Önceden izin verildiyse direkt tarama ekranına geç
             if (hasPermission === true && permissionChecked) {
-                setShowScanner(true);
+                // ready to render scanner
                 return;
             }
 
@@ -89,7 +86,7 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
                 if (permissionStatus.state === 'granted') {
                     setHasPermission(true);
                     setPermissionChecked(true);
-                    setShowScanner(true);
+                    // ready to render scanner
                     return;
                 } else if (permissionStatus.state === 'denied') {
                     setHasPermission(false);
@@ -114,7 +111,7 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
     // Modal açıldığında kamera izni kontrolü yap
     useEffect(() => {
         if (open) {
-            setShowScanner(false);
+            // reset visual states
             setError(null);
             setScanResult(null);
 
@@ -123,11 +120,16 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
         }
     }, [open, checkCameraPermission]);
 
-    if (!open) return null;
+    const [render, setRender] = useState(open);
+    useEffect(() => { if (open) setRender(true); }, [open]);
+    useEffect(() => { if (!open && render) { const t = setTimeout(() => setRender(false), 200); return () => clearTimeout(t);} }, [open, render]);
+    if (!render) return null;
 
+    const overlayCls = `fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm transition-opacity duration-200 ${open ? 'bg-black/50 opacity-100' : 'bg-black/0 opacity-0 pointer-events-none'}`;
+    const panelCls = `bg-white rounded-2xl w-full max-w-md mx-4 overflow-hidden shadow-2xl transition-all duration-200 ${open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`;
     return (
-        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl w-full max-w-md mx-4 overflow-hidden shadow-2xl">
+        <div className={overlayCls}>
+            <div className={panelCls}>
                 {/* Header */}
                 <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6">
                     <div className="flex items-center justify-between">
