@@ -40,11 +40,14 @@ function StockRow({ item, onStockChange }: StockRowProps) {
         <>
             <div
                 className={`group relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 cursor-pointer overflow-hidden
-                     ${isLow ? "ring-2 ring-red-200" : ""}`}
+                     ${isLow ? "ring-2 ring-red-200 shadow-red-100" : ""}`}
                 onClick={handleDetailOpen}
             >
                 {/* Status Indicator */}
                 <div className={`absolute top-0 left-0 w-full h-1 ${isLow ? "bg-gradient-to-r from-red-500 to-red-600" : "bg-gradient-to-r from-green-500 to-green-600"}`}></div>
+                
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 
                 {/* Header */}
                 <div className="flex justify-between items-start mb-4">
@@ -139,29 +142,32 @@ function StockRow({ item, onStockChange }: StockRowProps) {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 relative z-10">
                     <button
-                        className="flex-1 px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                        className="group/btn flex-1 px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
                         onClick={handleAddOpen}
                         type="button"
                     >
-                        <Plus size={16} />
-                        Ekle
+                        <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left"></div>
+                        <Plus size={16} className="relative z-10" />
+                        <span className="relative z-10">Ekle</span>
                     </button>
                     <button
-                        className="flex-1 px-3 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                        className="group/btn flex-1 px-3 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
                         onClick={handleRemoveOpen}
                         type="button"
                     >
-                        <Minus size={16} />
-                        Çıkar
+                        <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left"></div>
+                        <Minus size={16} className="relative z-10" />
+                        <span className="relative z-10">Çıkar</span>
                     </button>
                     <button
-                        className="px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                        className="group/btn px-3 py-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
                         onClick={handleDetailOpen}
                         type="button"
                     >
-                        <Eye size={16} />
+                        <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left"></div>
+                        <Eye size={16} className="relative z-10" />
                     </button>
                 </div>
             </div>

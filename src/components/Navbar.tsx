@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoFastFoodOutline } from 'react-icons/io5';
 import { FiBell, FiMessageSquare, FiSettings, FiMenu, FiX } from 'react-icons/fi';
 import Menu from './Menu';
@@ -11,77 +11,180 @@ const Navbar: React.FC<NavbarProps> = ({
     className = ''
 }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
     const { logout } = useAuth();
+
+    // Scroll efekti için
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 10);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
     };
 
+    // Menu dışına tıklandığında kapat
+    const closeMenu = () => {
+        setIsMenuOpen(false);
+    };
+
     return (
-        <div className={`w-full ${className}`}>
-            <div className="
+        <div className={`w-full ${className} sticky top-0 z-50`}>
+            {/* Navbar */}
+            <div className={`
                 w-full h-16
-                bg-white
-                border-b
+                bg-white/95 backdrop-blur-md
+                border-b border-gray-100
                 flex items-center justify-between
-                px-4 sm:px-8
-            ">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-orange-500 text-white flex items-center justify-center">
-                        <IoFastFoodOutline size={22} />
+                px-4 sm:px-6 lg:px-8
+                transition-all duration-300 ease-out
+                ${isScrolled 
+                    ? 'shadow-lg shadow-orange-500/5 border-orange-100/50' 
+                    : 'shadow-sm'
+                }
+            `}>
+                {/* Logo & Title */}
+                <div className="flex items-center gap-3 group">
+                    <div className="
+                        w-10 h-10 rounded-xl 
+                        bg-gradient-to-br from-orange-500 to-red-500 
+                        text-white flex items-center justify-center
+                        shadow-lg shadow-orange-500/25
+                        transition-all duration-300 ease-out
+                        group-hover:scale-105 group-hover:shadow-xl group-hover:shadow-orange-500/30
+                        relative overflow-hidden
+                    ">
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <IoFastFoodOutline size={22} className="relative z-10" />
                     </div>
-                    <h1 className="font-semibold text-gray-700">{title}</h1>
+                    <h1 className="
+                        font-bold text-gray-800 text-lg
+                        transition-colors duration-300
+                        group-hover:text-orange-600
+                    ">
+                        {title}
+                    </h1>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className='cursor-pointer hover:scale-125 transition-all'>
-                        <FiBell size={22} />
-                    </div>
-                    <div className='cursor-pointer hover:scale-125 transition-all'>
-                        <FiMessageSquare size={22} />
-                    </div>
-                    <div onClick={logout} className='cursor-pointer hover:scale-125 transition-all'>
-                        <FiSettings size={22} />
-                    </div>
+                {/* Action Icons */}
+                <div className="flex items-center gap-2">
+                    {/* Notification */}
+                    <button className="
+                        relative p-2.5 rounded-xl
+                        text-gray-600 hover:text-orange-500
+                        hover:bg-orange-50
+                        transition-all duration-300 ease-out
+                        group
+                    ">
+                        <FiBell size={20} className="transition-transform duration-300 group-hover:scale-110" />
+                        <div className="
+                            absolute -top-1 -right-1 w-3 h-3
+                            bg-red-500 rounded-full
+                            border-2 border-white
+                            animate-pulse
+                        " />
+                    </button>
+
+                    {/* Messages */}
+                    <button className="
+                        relative p-2.5 rounded-xl
+                        text-gray-600 hover:text-orange-500
+                        hover:bg-orange-50
+                        transition-all duration-300 ease-out
+                        group
+                    ">
+                        <FiMessageSquare size={20} className="transition-transform duration-300 group-hover:scale-110" />
+                        <div className="
+                            absolute -top-1 -right-1 w-3 h-3
+                            bg-green-500 rounded-full
+                            border-2 border-white
+                        " />
+                    </button>
+
+                    {/* Settings/Logout */}
+                    <button 
+                        onClick={logout}
+                        className="
+                            p-2.5 rounded-xl
+                            text-gray-600 hover:text-red-500
+                            hover:bg-red-50
+                            transition-all duration-300 ease-out
+                            group
+                        "
+                    >
+                        <FiSettings size={20} className="transition-transform duration-300 group-hover:rotate-90" />
+                    </button>
                     
-                    {/* Menu Toggle Button */}
+                    {/* Menu Toggle */}
                     {showMobileMenu && (
                         <button 
                             onClick={toggleMenu}
-                            className="cursor-pointer hover:scale-125 transition-all p-1"
+                            className={`
+                                p-2.5 rounded-xl
+                                transition-all duration-300 ease-out
+                                group relative overflow-hidden
+                                ${isMenuOpen 
+                                    ? 'text-white bg-orange-500 shadow-lg shadow-orange-500/25' 
+                                    : 'text-gray-600 hover:text-orange-500 hover:bg-orange-50'
+                                }
+                            `}
                         >
-                            {isMenuOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+                            <div className={`
+                                transition-all duration-300 ease-out
+                                ${isMenuOpen ? 'rotate-180 scale-110' : 'rotate-0 scale-100'}
+                            `}>
+                                {isMenuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
+                            </div>
                         </button>
                     )}
                 </div>
             </div>
             
-            {/* Responsive Menu - Animasyonlu açılır kapanır */}
+            {/* Responsive Menu */}
             {showMobileMenu && (
                 <>
-                    {/* Mobil ve Tablet: Alt orta hatta animasyonlu */}
-                    <div className={`lg:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-50 w-[95vw] max-w-md transition-all duration-300 ease-in-out ${
-                        isMenuOpen 
-                            ? 'translate-y-0 opacity-100' 
-                            : 'translate-y-16 opacity-0 pointer-events-none'
-                    }`}>
+                    {/* Mobile & Tablet: Bottom Center */}
+                    <div className={`
+                        lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50
+                        w-[95vw] max-w-md
+                        transition-all duration-500 ease-out
+                        ${isMenuOpen 
+                            ? 'translate-y-0 opacity-100 scale-100' 
+                            : 'translate-y-8 opacity-0 scale-95 pointer-events-none'
+                        }
+                    `}>
                         <Menu />
                     </div>
                     
-                    {/* Desktop: Navbar ortasında animasyonlu */}
-                    <div className={`hidden lg:block fixed top-16 left-1/2 -translate-x-1/2 z-50 w-auto transition-all duration-300 ease-in-out ${
-                        isMenuOpen 
-                            ? 'translate-y-0 opacity-100' 
-                            : '-translate-y-4 opacity-0 pointer-events-none'
-                    }`}>
+                    {/* Desktop: Below Navbar Center */}
+                    <div className={`
+                        hidden lg:block fixed top-20 left-1/2 -translate-x-1/2 z-50
+                        w-auto
+                        transition-all duration-500 ease-out
+                        ${isMenuOpen 
+                            ? 'translate-y-0 opacity-100 scale-100' 
+                            : '-translate-y-4 opacity-0 scale-95 pointer-events-none'
+                        }
+                    `}>
                         <Menu />
                     </div>
                     
-                    {/* Overlay - Menu açıkken arka planı hafif soluklaştırır */}
+                    {/* Enhanced Backdrop Overlay */}
                     {isMenuOpen && (
                         <div 
-                            className="fixed inset-0  backdrop-blur-xs z-40 transition-all duration-300"
-                            onClick={toggleMenu}
+                            className="
+                                fixed inset-0 z-40
+                                bg-black/20 backdrop-blur-sm
+                                transition-all 
+                            "
+                            onClick={closeMenu}
+                            style={{
+                                background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(75,85,99,0.3))'
+                            }}
                         />
                     )}
                 </>

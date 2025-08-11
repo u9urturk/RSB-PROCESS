@@ -115,7 +115,6 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
         hasAllRoles,
         hasPermission,
         hasAnyPermission,
-        hasAllPermissions
     } = useUser();
 
     // Show loading while authentication is being determined

@@ -169,36 +169,25 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Charts Section */}
-                <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8'>
-                    <div className='lg:col-span-1'>
-                        <div className='bg-white rounded-2xl p-6 shadow-lg border border-gray-100'>
-                            <h3 className='text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2'>
-                                <div className='w-2 h-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-full'></div>
-                                Ödeme Dağılımı
-                            </h3>
-                            <OverviewChart data={overviewData} />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8">
+                    {[overviewData, OrderSummary, topSellingItems].map((Component, idx) => (
+                        <div key={idx} className="lg:col-span-1">
+                            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 h-full flex flex-col">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-full"></div>
+                                    {/* Başlıklar dinamik olarak burada yer almalı */}
+                                    {idx === 0 && 'Ödeme Dağılımı'}
+                                    {idx === 1 && 'Sipariş Özeti'}
+                                    {idx === 2 && 'En Çok Satılanlar'}
+                                </h3>
+                                <div className="flex-grow">
+                                    {idx === 0 && <OverviewChart data={overviewData} />}
+                                    {idx === 1 && <OrderSummary />}
+                                    {idx === 2 && <TopSellingItems items={topSellingItems} />}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div className='lg:col-span-1'>
-                        <div className='bg-white rounded-2xl p-6 shadow-lg border border-gray-100'>
-                            <h3 className='text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2'>
-                                <div className='w-2 h-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-full'></div>
-                                Sipariş Özeti
-                            </h3>
-                            <OrderSummary />
-                        </div>
-                    </div>
-
-                    <div className='lg:col-span-1'>
-                        <div className='bg-white rounded-2xl p-6 shadow-lg border border-gray-100'>
-                            <h3 className='text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2'>
-                                <div className='w-2 h-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-full'></div>
-                                En Çok Satılanlar
-                            </h3>
-                            <TopSellingItems items={topSellingItems} />
-                        </div>
-                    </div>
+                    ))}
                 </div>
 
                 {/* Bottom Section */}

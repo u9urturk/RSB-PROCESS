@@ -1,5 +1,7 @@
 import React from 'react';
 
+
+
 // Auth Types
 export interface User {
     id: string;
@@ -154,6 +156,7 @@ export interface MenuItemType {
     icon: React.ReactNode;
     label: string;
     show: boolean;
+    color:string;
 }
 
 export interface MenuProps {

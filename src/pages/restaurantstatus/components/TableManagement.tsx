@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Filter, Users, Clock, DollarSign, ShoppingCart, Sparkles, UserCheck } from "lucide-react";
 import { useConfirm } from "../../../context/provider/ConfirmProvider";
 import { useRestaurant } from "../../../context/context";
 import { useNotification } from "../../../context/provider/NotificationProvider";
@@ -20,68 +21,75 @@ const FilterBar = ({ filters, setFilters }: FilterBarProps) => (
     <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6 border border-gray-100">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="flex items-center gap-2 text-gray-700 font-semibold">
+                <Filter size={20} className="text-orange-500" />
                 <span>Masa Durumu:</span>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3">
                 <button 
                     onClick={() => setFilters({ occupied: null, reserved: false, cleanStatus: null })} 
-                    className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 ${
+                    className={`group px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 relative overflow-hidden ${
                         filters.occupied === null && filters.reserved === false && filters.cleanStatus === null 
-                            ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg" 
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg transform scale-105" 
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105"
                     }`}
                 >
-                    Tümü
+                    <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                    <span className="relative z-10">Tümü</span>
                 </button>
                 <button 
                     onClick={() => setFilters({ ...filters, occupied: filters.occupied ? null : true })} 
-                    className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 ${
+                    className={`group px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 relative overflow-hidden ${
                         filters.occupied === true 
-                            ? "bg-red-500 text-white shadow-lg" 
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-red-500 text-white shadow-lg transform scale-105" 
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105"
                     }`}
                 >
-                    Dolu
+                    <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                    <span className="relative z-10">Dolu</span>
                 </button>
                 <button 
                     onClick={() => setFilters({ ...filters, occupied: filters.occupied === false ? null : false })} 
-                    className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 ${
+                    className={`group px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 relative overflow-hidden ${
                         filters.occupied === false 
-                            ? "bg-green-500 text-white shadow-lg" 
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-green-500 text-white shadow-lg transform scale-105" 
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105"
                     }`}
                 >
-                    Boş
+                    <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                    <span className="relative z-10">Boş</span>
                 </button>
                 <button 
                     onClick={() => setFilters({ ...filters, reserved: !filters.reserved })} 
-                    className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 ${
+                    className={`group px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 relative overflow-hidden ${
                         filters.reserved 
-                            ? "bg-blue-500 text-white shadow-lg" 
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-blue-500 text-white shadow-lg transform scale-105" 
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105"
                     }`}
                 >
-                    Rezerve
+                    <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                    <span className="relative z-10">Rezerve</span>
                 </button>
                 <button 
                     onClick={() => setFilters({ ...filters, cleanStatus: filters.cleanStatus ? null : true })} 
-                    className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 ${
+                    className={`group px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 relative overflow-hidden ${
                         filters.cleanStatus 
-                            ? "bg-emerald-500 text-white shadow-lg" 
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-emerald-500 text-white shadow-lg transform scale-105" 
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105"
                     }`}
                 >
-                    Temiz
+                    <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                    <span className="relative z-10">Temiz</span>
                 </button>
                 <button 
                     onClick={() => setFilters({ ...filters, cleanStatus: filters.cleanStatus === false ? null : false })} 
-                    className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 ${
+                    className={`group px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 relative overflow-hidden ${
                         filters.cleanStatus === false 
-                            ? "bg-yellow-500 text-white shadow-lg" 
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-yellow-500 text-white shadow-lg transform scale-105" 
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105"
                     }`}
                 >
-                    Temizlenecek
+                    <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                    <span className="relative z-10">Temizlenecek</span>
                 </button>
             </div>
         </div>
@@ -307,7 +315,7 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
                     {/* Garson Bilgisi */}
                     {table.waiterName && (
                         <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                            <span className="text-purple-500">👨‍💼</span>
+                            <UserCheck size={12} className="text-purple-500" />
                             <span className="truncate flex-1 font-medium">{table.waiterName}</span>
                         </div>
                     )}
@@ -316,7 +324,7 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
                     <div className="flex items-center justify-between text-xs">
                         {/* Süre/Zaman */}
                         <div className="flex items-center gap-1.5 text-gray-600">
-                            <span className="text-orange-500">🕒</span>
+                            <Clock size={12} className="text-orange-500" />
                             <span className="font-medium">
                                 {getTimeDisplay() || "--:--"}
                             </span>
@@ -324,7 +332,7 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
                         
                         {/* Toplam Tutar */}
                         <div className="flex items-center gap-1.5 text-gray-600">
-                            <span className="text-green-500">💰</span>
+                            <DollarSign size={12} className="text-green-500" />
                             <span className="font-semibold text-green-700">
                                 {totalBill ? `${totalBill.toLocaleString('tr-TR')}₺` : "0₺"}
                             </span>
@@ -335,7 +343,7 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
                     {table.orders && table.orders.length > 0 && (
                         <div className="flex items-center justify-center text-xs">
                             <div className="flex items-center gap-1.5 text-gray-600">
-                                <span className="text-blue-500">🛒</span>
+                                <ShoppingCart size={12} className="text-blue-500" />
                                 <span className="font-medium">{table.orders.length} sipariş</span>
                             </div>
                         </div>
@@ -355,7 +363,7 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
                 {/* Temizlik Durumu İndikator */}
                 {!table.cleanStatus && (
                     <div className="absolute -bottom-1 -left-1 w-6 h-6 bg-yellow-500 rounded-tr-lg rounded-bl-2xl flex items-center justify-center">
-                        <span className="text-white text-xs">🧹</span>
+                        <Sparkles size={12} className="text-white" />
                     </div>
                 )}
 
@@ -363,7 +371,7 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
                 {isTransferTarget && (
                     <div className="absolute inset-0 rounded-2xl bg-blue-400 bg-opacity-10 flex items-center justify-center">
                         <div className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                            <span>🔄</span>
+                            <Users size={12} />
                             Transfer Edilebilir
                         </div>
                     </div>
@@ -378,11 +386,11 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
 
             {/* Aktarım modunda görünecek uyarı ve iptal butonu */}
             {transferMode && (
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-4 sm:p-6 mb-6 shadow-lg">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-4 sm:p-6 mb-6 shadow-lg animate-in slide-in-from-top duration-300">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                                <span className="text-xl">🔄</span>
+                                <Users size={20} className="animate-pulse" />
                             </div>
                             <div>
                                 <h3 className="font-semibold text-lg">Aktarım Modu</h3>
@@ -390,7 +398,7 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
                             </div>
                         </div>
                         <button
-                            className="px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold shadow-lg hover:bg-gray-100 transition-all duration-200"
+                            className="px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold shadow-lg hover:bg-gray-100 transition-all duration-200 hover:scale-105"
                             onClick={() => {
                                 setTransferMode(false);
                                 setSourceTableId(null);
@@ -407,10 +415,10 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
             <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border border-gray-100">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        <span>🏪</span>
+                        <Users size={24} className="text-orange-500" />
                         Masa Durumu
                     </h2>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full">
                         {filteredTables.length} masa gösteriliyor
                     </div>
                 </div>
@@ -446,7 +454,9 @@ const TableManagement = ({ tables: externalTables }: TableManagementProps) => {
                 {/* Boş durum */}
                 {filteredTables.length === 0 && (
                     <div className="text-center py-12">
-                        <div className="text-6xl mb-4">🏪</div>
+                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Users size={32} className="text-gray-400" />
+                        </div>
                         <h3 className="text-lg font-semibold text-gray-600 mb-2">Masa bulunamadı</h3>
                         <p className="text-gray-500">Seçili filtrelere uygun masa bulunmuyor</p>
                     </div>
