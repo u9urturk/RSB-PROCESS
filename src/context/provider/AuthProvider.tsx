@@ -182,6 +182,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: initialState.token ? !JWTUtil.isTokenExpired(initialState.token) : false,
   });
 
+  // DEV ONLY BYPASS (set window.__AUTH_BYPASS__=true or VITE_AUTH_BYPASS=1)
+  useEffect(() => {
+    const bypass = (window as any).__AUTH_BYPASS__ === true || import.meta.env.VITE_AUTH_BYPASS === '1';
+    if (bypass && !state.isAuthenticated) {
+      const dummyUser: User = {
+        id: 'dev-user',
+        username: 'Dev User',
+        roles: ['ADMIN'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      } as any;
+      dispatch({ type: 'AUTH_SUCCESS', payload: { user: dummyUser, token: 'dev-token' } });
+    }
+  }, [state.isAuthenticated]);
+
   // Auto-logout when token expires
   useEffect(() => {
     if (state.token && JWTUtil.isTokenExpired(state.token)) {

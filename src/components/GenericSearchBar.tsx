@@ -13,7 +13,7 @@ const GenericSearchBar: React.FC<GenericSearchBarProps> = ({
     buttonClass = "",
 }) => {
     return (
-        <div className={`flex items-center gap-2 ${containerClass}`}>
+    <div className={`input flex items-center gap-2 ${containerClass}`}>
             <div className="relative flex-1">
                 <input
                     type="text"

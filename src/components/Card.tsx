@@ -37,7 +37,7 @@ const Card: React.FC<CardProps> = ({
     }, [targetProgress, duration]);
 
     return (
-        <div className="flex flex-col items-center justify-center bg-white rounded-2xl shadow-md p-4 min-h-[120px] transition hover:shadow-lg hover:-translate-y-1">
+        <div className={"card flex flex-col items-center justify-center bg-white rounded-2xl shadow-md p-4 min-h-[120px] transition hover:shadow-lg hover:-translate-y-1"}>
             <div className="flex flex-col items-center justify-center gap-3 w-full">
                 <div
                     ref={progressRef}

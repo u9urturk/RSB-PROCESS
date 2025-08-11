@@ -188,3 +188,60 @@
 .card-elevate-hover:hover { box-shadow:0 12px 24px -6px rgba(0,0,0,0.12),0 4px 8px -2px rgba(0,0,0,0.06); }
 .focus-ring { outline:none; }
 .focus-ring:focus { box-shadow:0 0 0 2px rgba(255,255,255,1),0 0 0 4px rgba(251,146,60,0.6); }
+
+/* ===== Compact mode utilities (Stage 6) ===== */
+.compact * {
+    --compact-space-xs: 2px;
+    --compact-space-sm: 4px;
+    --compact-space-md: 8px;
+    --compact-space-lg: 12px;
+    --compact-space-xl: 16px;
+    --compact-radius: 6px;
+    --compact-font-size: 13px;
+}
+
+.compact .card,
+.compact .surface-panel {
+    padding: var(--compact-space-md) var(--compact-space-lg);
+    border-radius: var(--compact-radius);
+    font-size: var(--compact-font-size);
+}
+
+.compact .chip-base {
+    padding: var(--compact-space-xs) var(--compact-space-md);
+    font-size: 10px;
+}
+
+.compact .input,
+.compact input,
+.compact textarea,
+.compact select {
+    padding: var(--compact-space-sm) var(--compact-space-md);
+    font-size: var(--compact-font-size);
+    border-radius: var(--compact-radius);
+}
+
+.compact .navbar,
+.compact .menu {
+    padding: var(--compact-space-sm) var(--compact-space-lg);
+    font-size: var(--compact-font-size);
+}
+
+.compact .btn,
+.compact button {
+    padding: var(--compact-space-xs) var(--compact-space-md);
+    font-size: var(--compact-font-size);
+    border-radius: var(--compact-radius);
+}
+
+.compact .modal {
+    padding: var(--compact-space-lg);
+    border-radius: calc(var(--compact-radius) + 2px);
+}
+
+.compact .table,
+.compact .table th,
+.compact .table td {
+    padding: var(--compact-space-xs) var(--compact-space-md);
+    font-size: var(--compact-font-size);
+}

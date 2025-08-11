@@ -21,7 +21,7 @@ const Select: React.FC<SelectProps> = ({
   };
 
   return (
-    <div className="relative w-40">
+  <div className="input relative w-40">
       <div
         className="w-full p-2 border rounded-lg bg-white flex items-center justify-between cursor-pointer"
         onClick={toggleDropdown}

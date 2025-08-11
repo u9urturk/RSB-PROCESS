@@ -99,6 +99,10 @@ pids/
 # Yarn Integrity file
 .yarn-integrity
 
+# Only allow README.md, ignore all other .md files
+*.md
+!README.md
+
 # parcel-bundler cache
 .cache
 .parcel-cache

@@ -75,7 +75,7 @@ const Menu: React.FC<MenuProps> = ({ className = '' }) => {
     const visibleItems = menuItems.filter(item => item.show);
 
     return (
-        <div className={`
+        <div className={`menu
             w-full p-3 rounded-2xl
             bg-white/95 backdrop-blur-lg
             shadow-2xl shadow-black/10

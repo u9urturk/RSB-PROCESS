@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import { useNavigation } from '../context/provider/NavigationProvider';
+import { useProfile } from '../context/provider/ProfileProvider';
 
 interface LayoutProps {
     children?: React.ReactNode;
@@ -11,8 +12,25 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = () => {
     const location = useLocation();
     const { activePath } = useNavigation();
+    const { profile } = useProfile();
 
- 
+    // Kullanıcı tercihlerine göre <html> class’larını güncelle
+    React.useEffect(() => {
+        const html = document.documentElement;
+        // Tema
+        if (profile?.preferences?.theme === 'dark') {
+            html.classList.add('dark');
+        } else {
+            html.classList.remove('dark');
+        }
+        // Yoğunluk
+        if (profile?.preferences?.density === 'compact') {
+            html.classList.add('compact');
+        } else {
+            html.classList.remove('compact');
+        }
+    }, [profile?.preferences?.theme, profile?.preferences?.density]);
+
     const getTitle = (): string => {
         switch (activePath) {
             case '/dashboard':

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { IoFastFoodOutline } from 'react-icons/io5';
-import { FiBell, FiMessageSquare, FiSettings, FiMenu, FiX } from 'react-icons/fi';
+import { FiBell, FiMessageSquare, FiMenu, FiX, FiUser } from 'react-icons/fi';
+import { LogOut } from 'lucide-react';
 import Menu from './Menu';
 import { NavbarProps } from '../types';
 import { useAuth } from '../context/provider/AuthProvider';
+import { useNavigate } from 'react-router-dom';
 
 const Navbar: React.FC<NavbarProps> = ({ 
     title = "Başlık", 
@@ -12,7 +14,11 @@ const Navbar: React.FC<NavbarProps> = ({
 }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
-    const { logout } = useAuth();
+    const { logout } = useAuth() as any;
+    const navigate = useNavigate();
+    const goProfile = () => {
+        navigate('/dashboard/profile');
+    };
 
     // Scroll efekti için
     useEffect(() => {
@@ -33,7 +39,7 @@ const Navbar: React.FC<NavbarProps> = ({
     };
 
     return (
-        <div className={`w-full ${className} sticky top-0 z-50`}>
+    <div className={`navbar w-full ${className} sticky top-0 z-50`}>
             {/* Navbar */}
             <div className={`
                 w-full h-16
@@ -105,7 +111,16 @@ const Navbar: React.FC<NavbarProps> = ({
                         " />
                     </button>
 
-                    {/* Settings/Logout */}
+                    {/* Profile */}
+                    <button
+                        onClick={goProfile}
+                        className="p-2.5 rounded-xl text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-all duration-300 ease-out group"
+                        aria-label="Profil"
+                    >
+                        <FiUser size={20} className="transition-transform duration-300 group-hover:scale-110" />
+                    </button>
+
+                    {/* Settings/Logout (temp) */}
                     <button 
                         onClick={logout}
                         className="
@@ -115,8 +130,9 @@ const Navbar: React.FC<NavbarProps> = ({
                             transition-all duration-300 ease-out
                             group
                         "
+                        aria-label="Çıkış Yap"
                     >
-                        <FiSettings size={20} className="transition-transform duration-300 group-hover:rotate-90" />
+                        <LogOut size={20} className="transition-transform duration-300 group-hover:rotate-90" />
                     </button>
                     
                     {/* Menu Toggle */}

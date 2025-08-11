@@ -135,60 +135,67 @@ src/
 ### Build for Production
 
 1. **Build web application**
+
+### 👤 Profile Management (NEW)
+- **Profile Dashboard**: View and edit user info, avatar, preferences, sessions, activity log
+- **Preferences Panel**: Live theme, density, language, time zone, notification settings
+- **MFA Setup Wizard**: Secure multi-factor authentication flow
+- **Session Management**: List and revoke active sessions
+- **Activity Log**: Paginated audit log for profile actions
+- **Password Change**: Secure password update with validation
+- **Avatar Upload**: Drag-drop, preview, and upload with validation
+- **Mock Auth Bypass**: Frontend-only test mode for rapid development
    ```bash
-   npm run build
-   ```
 
-2. **Preview production build**
-   ```bash
-   npm run preview
-   ```
+- **Custom Utility Classes**: surface-panel, chip-base, focus-ring, card-elevate-hover, compact mod spacing
 
----
 
-## 🔧 Development Mode - Auth Bypass
-
+- **ProfileProvider**: Dedicated context for profile state, preferences, sessions, MFA, avatar
 **During development, the auth system is temporarily disabled.**
 
 - `src/config/dev.ts` file with `AUTH_BYPASS: true` setting bypasses auth control
 - Application redirects directly to dashboard
 - Mock user information is automatically set
 
+
 **Production transition:**  
 Change `AUTH_BYPASS` to `false` in `src/config/dev.ts`.
 
+
 ---
 
-## 🏗️ Architecture
 
-- **Atomic Design**: Components organized by complexity (atoms, molecules, organisms)
+- **Profile API endpoints are also mocked for frontend-only testing.**
 - **Custom Hooks**: Reusable business logic
-- **Context Providers**: Global state management
-- **Type Safety**: Comprehensive TypeScript integration
 
----
+- **SOLID & Clean Code Refactor**: Multi-stage refactor plan applied to all major modules
+- **Status Mapping**: Centralized status style/label logic for tables & orders
+- **Build Metadata**: Dynamic version and git SHA shown in Splash Screen
 
-## 🎨 Design System
 
-- **Color Palette**: Orange primary, blue/green/purple accents, semantic status colors, balanced neutrals
-- **Typography**: System fonts, responsive sizing, bold/semibold weights
-- **UI Tokens / Utilities**: Reusable utility classes (surface-panel, chip-base, focus-ring, card-elevate-hover) for consistent look
+- **Compact Mode**: Live spacing/density switch for all major UI components
 - **Animations**: Lightweight Tailwind-powered keyframes & transitions (removed dependency on external animation libs in dashboard modules)
-- **Responsive Design**: Mobile-first, adaptive layouts for tablet & desktop
 
----
-
-## 🔒 Security Features
-
-- **Authentication**: JWT-based authentication
+- **Profile module MVP**: Dashboard, edit form, avatar upload, preferences, sessions, activity log, MFA wizard
+- **Compact mod utilities**: All major UI components support live density switching
+- **Live theme/language/timezone**: Preferences panel applies changes instantly
+- **Mocked profile API**: Frontend-only test mode for profile endpoints
+- **Build metadata**: Version and git SHA shown in Splash Screen
 - **Route Protection**: Private route guards
-- **Input Validation**: Form validation and sanitization
-- **XSS Protection**: Secure coding practices
 
+- **Profile page**: Modern, modular, MVP-level with all core features
 ---
 
-## 🧪 Testing
+- **SOLID refactor**: All major modules refactored for single responsibility and testability
 
+
+- **NestJS + PostgreSQL + Prisma + Redis**: Backend profile module context engineering plan eklendi
+- **Domain-driven design**: User, session, activity, preferences, MFA, avatar, audit log
+- **SOLID service layer**: Interface-based, testable, modular
+- **RESTful API**: DTO validation, error handling, JWT auth, rate limit, cache
+- **Edge case & error handling**: All major scenarios covered
+- **Swagger/OpenAPI**: Endpoint documentation
+- Detaylar için: `backendbrief/profileModule-backend-plan.md`
 - **Type Safety**: TypeScript compile-time checks
 - **ESLint**: Code quality and consistency
 - **Manual Testing**: Comprehensive feature testing

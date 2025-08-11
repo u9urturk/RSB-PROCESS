@@ -12,6 +12,7 @@ import OnlineOrders from "./pages/OnlineOrders";
 import RestaurantStatusMain from "./pages/restaurantstatus/RestaurantStatusMain";
 import SplashScreen from "./pages/SplashScreen";
 import StockBusinessMain from "./pages/stockbusiness/StockBusinessMain";
+import Profile from "./pages/Profile";
 
 interface CustomRouteObject {
     path?: string;
@@ -122,7 +123,13 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
         return <RouteLoading />;
     }
 
-    // Redirect to login if not authenticated
+    // TEMP DEV BYPASS (remove when backend ready)
+    const AUTH_BYPASS = (window as any).__AUTH_BYPASS__ === true || import.meta.env.VITE_AUTH_BYPASS === '1';
+    if (AUTH_BYPASS && (!isAuthenticated || !user)) {
+        // fake pass-through
+        return <>{children}</>;
+    }
+    // Redirect to login if not authenticated (normal flow)
     if (!isAuthenticated || !user) {
         return <Navigate to="/login" replace />;
     }
@@ -279,6 +286,13 @@ const routes: CustomRouteObject[] = [
                     const isManagerOrAdmin = user?.roles?.includes('ADMIN') || user?.roles?.includes('MANAGER');
                     return hasMenuPermission && isManagerOrAdmin;
                 }
+            }
+            ,
+            {
+                path: 'profile',
+                element: <Profile />,
+                auth: true,
+                requireAnyRole: ['USER','ADMIN','MANAGER','WAITER','CASHIER']
             }
         ]
     },
