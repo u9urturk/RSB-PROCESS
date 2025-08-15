@@ -1,15 +1,15 @@
-import { 
-  UserProfilePublic,
-  UpdateProfileDTO,
-  UpdatePreferencesDTO,
-  ChangePasswordDTO,
-  StartMFAResponse,
-  VerifyMFARequest,
-  VerifyMFAResponse,
-  UserSessionSummary,
-  PaginatedActivity
+import {
+  ProfileUserPublic as UserProfilePublic,
+  ProfileUpdateProfileDTO as UpdateProfileDTO,
+  ProfileUpdatePreferencesDTO as UpdatePreferencesDTO,
+  ProfileChangePasswordDTO as ChangePasswordDTO,
+  ProfileStartMFAResponse as StartMFAResponse,
+  ProfileVerifyMFARequest as VerifyMFARequest,
+  ProfileVerifyMFAResponse as VerifyMFAResponse,
+  ProfileUserSessionSummary as UserSessionSummary,
+  ProfilePaginatedActivity as PaginatedActivity,
 } from '@/types/profile';
-import httpClient from './httpClient';
+import httpClient, { apiGet } from './httpClient';
 
 function isBypass() {
   return (window as any).__AUTH_BYPASS__ === true || import.meta.env.VITE_AUTH_BYPASS === '1';
@@ -46,7 +46,7 @@ const mockActivity = {
 export const profileService = {
   getProfile: async (): Promise<UserProfilePublic> => {
     if (isBypass()) return mockProfile as any;
-    const { data } = await httpClient.get('/profile');
+    const data = await apiGet<UserProfilePublic>('/profile');
     return data;
   },
   updateProfile: async (payload: UpdateProfileDTO): Promise<UserProfilePublic> => {

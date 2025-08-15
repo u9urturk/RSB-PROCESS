@@ -1,7 +1,8 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
+import type { ProfileApiSuccess, ProfileApiError } from '@/types/profile';
 
 const httpClient: AxiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+    baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1",
     timeout: 10000,
     headers: {
         "Content-Type": "application/json",
@@ -81,3 +82,40 @@ httpClient.interceptors.response.use(
 );
 
 export default httpClient;
+
+// Generic helpers that unwrap backend ApiSuccess<T> wrapper
+export async function apiGet<T = any>(url: string, config?: any): Promise<T> {
+    const response = await httpClient.get<ProfileApiSuccess<T>>(url, config);
+    const payload = response.data as unknown as ProfileApiSuccess<T> | ProfileApiError;
+    if ((payload as ProfileApiError).success === false) {
+        throw payload as ProfileApiError;
+    }
+    return (payload as ProfileApiSuccess<T>).data;
+}
+
+export async function apiPost<T = any>(url: string, body?: any, config?: any): Promise<T> {
+    const response = await httpClient.post<ProfileApiSuccess<T>>(url, body, config);
+    const payload = response.data as unknown as ProfileApiSuccess<T> | ProfileApiError;
+    if ((payload as ProfileApiError).success === false) {
+        throw payload as ProfileApiError;
+    }
+    return (payload as ProfileApiSuccess<T>).data;
+}
+
+export async function apiPut<T = any>(url: string, body?: any, config?: any): Promise<T> {
+    const response = await httpClient.put<ProfileApiSuccess<T>>(url, body, config);
+    const payload = response.data as unknown as ProfileApiSuccess<T> | ProfileApiError;
+    if ((payload as ProfileApiError).success === false) {
+        throw payload as ProfileApiError;
+    }
+    return (payload as ProfileApiSuccess<T>).data;
+}
+
+export async function apiDelete<T = any>(url: string, config?: any): Promise<T> {
+    const response = await httpClient.delete<ProfileApiSuccess<T>>(url, config);
+    const payload = response.data as unknown as ProfileApiSuccess<T> | ProfileApiError;
+    if ((payload as ProfileApiError).success === false) {
+        throw payload as ProfileApiError;
+    }
+    return (payload as ProfileApiSuccess<T>).data;
+}

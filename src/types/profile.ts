@@ -1,15 +1,107 @@
-// Profile domain specific types (initial skeleton)
-export type UserStatus = 'active' | 'pending' | 'suspended' | 'disabled';
-export type UserRole = 'ADMIN' | 'MANAGER' | 'WAITER' | 'CASHIER' | 'USER' | 'OWNER';
-export type ThemePreference = 'light' | 'dark' | 'system';
-export type DensityPreference = 'comfortable' | 'compact';
-export type MFAMethod = 'totp';
+// Types for Profile module (based on PROFILE_MODULE_FRONTEND_BRIEF.md)
 
-export interface UserPreferences {
+export interface ProfileApiSuccess<T> {
+  success: true;
+  data: T;
+  timestamp: string;
+}
+
+export interface ProfileApiError {
+  success: false;
+  timestamp: string;
+  path?: string;
+  method?: string;
+  statusCode: number;
+  error: string;
+  message: string;
+  requestId?: string;
+}
+
+export interface ProfileUserPublic {
+  id: string;
+  username: string;
+  email?: string | null;
+  locale?: string;
+  timeZone?: string;
+  theme?: string;
+  density?: string;
+  notificationEmail: boolean;
+  notificationPush: boolean;
+  avatarUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt?: string | null;
+  lastPasswordChangeAt?: string | null;
+}
+
+export interface ProfileUpdateProfileDTO {
+  email?: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface ProfileUpdatePreferencesDTO {
+  locale?: string;
+  timeZone?: string;
+  theme?: string;
+  density?: string;
+  notificationEmail?: boolean;
+  notificationPush?: boolean;
+}
+
+export interface ProfileChangePasswordDTO {
+  currentPassword?: string;
+  newPassword: string;
+}
+
+export interface ProfileUserSessionSummary {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  ip?: string;
+  userAgent?: string;
+  revokedAt?: string | null;
+  revokedReason?: string | null;
+}
+
+export interface ProfileActivityEntry {
+  id: string;
+  action: string;
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ProfilePaginatedActivity {
+  items: ProfileActivityEntry[];
+  nextCursor?: string | null;
+}
+
+export interface ProfileStartMFAResponse {
+  qrCode?: string; // data:image/png;base64,... (legacy)
+  otpauthUrl?: string; // otpauth URL for authenticator apps
+  qrSvgData?: string;
+}
+
+export interface ProfileVerifyMFARequest {
+  token: string;
+}
+
+export interface ProfileVerifyMFAResponse {
+  recoveryCodes?: string[];
+}
+
+export type ProfileMfaEnableResponse = ProfileStartMFAResponse;
+// Profile domain specific types (initial skeleton)
+export type ProfileUserStatus = 'active' | 'pending' | 'suspended' | 'disabled';
+export type ProfileUserRole = 'ADMIN' | 'MANAGER' | 'WAITER' | 'CASHIER' | 'USER' | 'OWNER';
+export type ProfileThemePreference = 'light' | 'dark' | 'system';
+export type ProfileDensityPreference = 'comfortable' | 'compact';
+export type ProfileMFAMethod = 'totp';
+
+export interface ProfileUserPreferences {
   locale: string;
   timeZone: string;
-  theme: ThemePreference;
-  density: DensityPreference;
+  theme: ProfileThemePreference;
+  density: ProfileDensityPreference;
   notifications: {
     email: boolean;
     sms: boolean;
@@ -17,23 +109,23 @@ export interface UserPreferences {
   };
 }
 
-export interface UserProfilePublic {
+export interface ProfileUserFull {
   id: string;
   username: string;
   displayName: string;
   fullName?: string;
-  email: string;
+  email?: string | null;
   phone?: string;
-  avatarUrl?: string;
-  roles: UserRole[];
+  avatarUrl?: string | null;
+  roles: ProfileUserRole[];
   permissions: string[];
-  status: UserStatus;
+  status: ProfileUserStatus;
   createdAt: string;
   updatedAt: string;
-  lastLoginAt?: string;
-  lastPasswordChangeAt?: string;
+  lastLoginAt?: string | null;
+  lastPasswordChangeAt?: string | null;
   mfaEnabled: boolean;
-  preferences: UserPreferences;
+  preferences: ProfileUserPreferences;
   positionTitle?: string;
   currentShiftId?: string;
   shiftStats?: {
@@ -42,17 +134,17 @@ export interface UserProfilePublic {
   };
 }
 
-export interface UserSessionSummary {
+export interface ProfileUserSessionDetail {
   id: string;
   issuedAt: string;
   lastSeenAt: string;
   ip?: string;
   userAgent?: string;
   current: boolean;
-  revokedAt?: string;
+  revokedAt?: string | null;
 }
 
-export type ActivityType =
+export type ProfileActivityType =
   | 'LOGIN'
   | 'LOGOUT'
   | 'PASSWORD_CHANGE'
@@ -62,58 +154,58 @@ export type ActivityType =
   | 'SESSION_REVOKE'
   | 'PREFERENCE_UPDATE';
 
-export interface UserActivityLogItem {
+export interface ProfileUserActivityLogItem {
   id: string;
-  type: ActivityType;
+  type: ProfileActivityType;
   createdAt: string;
   ip?: string;
   userAgent?: string;
   meta?: Record<string, any>;
 }
 
-export interface PaginatedActivity {
-  items: UserActivityLogItem[];
-  nextCursor?: string;
+export interface ProfilePaginatedActivityFull {
+  items: ProfileUserActivityLogItem[];
+  nextCursor?: string | null;
 }
 
 // Update DTOs
-export interface UpdateProfileDTO {
+export interface ProfileUpdateProfileDTO2 {
   displayName?: string;
   fullName?: string;
   phone?: string;
   positionTitle?: string;
 }
 
-export interface UpdatePreferencesDTO {
+export interface ProfileUpdatePreferencesDTO2 {
   locale?: string;
   timeZone?: string;
-  theme?: ThemePreference;
-  density?: DensityPreference;
-  notifications?: Partial<UserPreferences['notifications']>;
+  theme?: ProfileThemePreference;
+  density?: ProfileDensityPreference;
+  notifications?: Partial<ProfileUserPreferences['notifications']>;
 }
 
-export interface ChangePasswordDTO {
-  currentPassword: string;
+export interface ProfileChangePasswordDTO2 {
+  currentPassword?: string;
   newPassword: string;
 }
 
-export interface StartMFAResponse {
-  otpauthUrl: string; // For QR generation client side if needed
+export interface ProfileStartMFAResponse2 {
+  otpauthUrl?: string; // For QR generation client side if needed
   qrSvgData?: string; // Optional pre-rendered
 }
 
-export interface VerifyMFARequest {
-  code: string;
+export interface ProfileVerifyMFARequest2 {
+  code?: string;
 }
 
-export interface VerifyMFAResponse {
-  recoveryCodes: string[]; // One-time display
+export interface ProfileVerifyMFAResponse2 {
+  recoveryCodes?: string[]; // One-time display
 }
 
 export interface ProfileState {
-  profile: UserProfilePublic | null;
-  sessions: UserSessionSummary[];
-  activity: UserActivityLogItem[];
+  profile: ProfileUserFull | null;
+  sessions: ProfileUserSessionDetail[];
+  activity: ProfileUserActivityLogItem[];
   hasMoreActivity: boolean;
   loadingProfile: boolean;
   loadingSessions: boolean;
