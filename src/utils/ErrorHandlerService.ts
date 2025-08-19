@@ -19,6 +19,16 @@ interface ValidationError {
 
 // Global Error Handler Service (Single Responsibility Principle)
 class ErrorHandlerService {
+    // Optional notifier function registered by UI to show toasts
+    private static notifier: ((type: 'success' | 'error' | 'warning' | 'info', message: string) => void) | null = null;
+
+    static registerNotifier(fn: ((type: 'success' | 'error' | 'warning' | 'info', message: string) => void) | null) {
+        this.notifier = fn;
+    }
+    // Getter used to access notifier in a type-safe way so linter sees the usage
+    static getNotifier() {
+        return this.notifier;
+    }
     /**
      * Extract error message from various error types
      * @param error - Error object from API call
@@ -284,5 +294,15 @@ class ErrorHandlerService {
     }
 }
 
-export { ErrorHandlerService };
+// Backwards-compatible export: convenience wrapper used by UI to map and show toast
+function mapApiErrorToToast(error: any, context?: string) {
+    const handled = ErrorHandlerService.handleError(error, context);
+    const notifier = ErrorHandlerService.getNotifier?.();
+    if (typeof notifier === 'function') {
+        try { notifier('error', handled.userMessage); } catch (e) { /* ignore */ }
+    }
+    return handled;
+}
+
+export { ErrorHandlerService, mapApiErrorToToast };
 export type { ErrorResponse, NetworkError, ValidationError };

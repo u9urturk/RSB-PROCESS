@@ -17,19 +17,21 @@ const Layout: React.FC<LayoutProps> = () => {
     // Kullanıcı tercihlerine göre <html> class’larını güncelle
     React.useEffect(() => {
         const html = document.documentElement;
+        const theme = (profile as any)?.theme ?? (profile as any)?.preferences?.theme;
+        const density = (profile as any)?.density ?? (profile as any)?.preferences?.density;
         // Tema
-        if (profile?.preferences?.theme === 'dark') {
+        if (theme === 'dark') {
             html.classList.add('dark');
         } else {
             html.classList.remove('dark');
         }
         // Yoğunluk
-        if (profile?.preferences?.density === 'compact') {
+        if (density === 'compact') {
             html.classList.add('compact');
         } else {
             html.classList.remove('compact');
         }
-    }, [profile?.preferences?.theme, profile?.preferences?.density]);
+    }, [profile]);
 
     const getTitle = (): string => {
         switch (activePath) {

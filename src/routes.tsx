@@ -12,7 +12,8 @@ import OnlineOrders from "./pages/OnlineOrders";
 import RestaurantStatusMain from "./pages/restaurantstatus/RestaurantStatusMain";
 import SplashScreen from "./pages/SplashScreen";
 import StockBusinessMain from "./pages/stockbusiness/StockBusinessMain";
-import Profile from "./pages/Profile";
+import ProfilePage from "./pages/Profile";
+import UserManagementPage from "./pages/UserManagementPage";
 
 interface CustomRouteObject {
     path?: string;
@@ -286,11 +287,18 @@ const routes: CustomRouteObject[] = [
                     const isManagerOrAdmin = user?.roles?.includes('ADMIN') || user?.roles?.includes('MANAGER');
                     return hasMenuPermission && isManagerOrAdmin;
                 }
+            },
+            {
+                path: 'users',
+                element: <UserManagementPage />,
+                auth: true,
+                requireAnyRole: ['ADMIN', 'MANAGER'],
+                requireAnyPermission: ['canManageUsers', 'canViewUsers']
             }
             ,
             {
                 path: 'profile',
-                element: <Profile />,
+                element: <ProfilePage />,
                 auth: true,
                 requireAnyRole: ['USER','ADMIN','MANAGER','WAITER','CASHIER']
             }

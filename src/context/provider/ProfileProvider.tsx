@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { mapApiErrorToToast } from '../../utils/ErrorHandlerService';
 import { profileService } from '../../api/profileService';
 import type {
   ProfileState,
-  UpdateProfileDTO,
-  UpdatePreferencesDTO,
-  ChangePasswordDTO,
-  PaginatedActivity
+  ProfileUpdateProfileDTO2 as UpdateProfileDTO,
+  ProfileUpdatePreferencesDTO2 as UpdatePreferencesDTO,
+  ProfileChangePasswordDTO2 as ChangePasswordDTO,
+  ProfilePaginatedActivityFull as PaginatedActivity
 } from '@/types/profile';
 
 interface ProfileContextType extends ProfileState {
@@ -15,6 +16,7 @@ interface ProfileContextType extends ProfileState {
   changePassword: (dto: ChangePasswordDTO) => Promise<void>;
   refreshSessions: () => Promise<void>;
   revokeSession: (id: string) => Promise<void>;
+  bulkRevokeOtherSessions: () => Promise<{ revoked: number; errors: number }>;
   loadMoreActivity: () => Promise<void>;
   startMFA: () => Promise<{ otpauthUrl: string; qrSvgData?: string } | null>;
   verifyMFA: (code: string) => Promise<string[] | null>;
@@ -39,7 +41,7 @@ const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<ProfileState>(initialState);
-  const [activityCursor, setActivityCursor] = useState<string | undefined>(undefined);
+  const [activityCursor, setActivityCursor] = useState<string | null | undefined>(undefined);
 
   const setPartial = (patch: Partial<ProfileState>) =>
     setState(prev => ({ ...prev, ...patch }));
@@ -50,7 +52,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const profile = await profileService.getProfile();
       setPartial({ profile, loadingProfile: false });
     } catch (e: any) {
-      setPartial({ error: e.message || 'Profil yüklenemedi', loadingProfile: false });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.fetchProfile');
+      setPartial({ error: handled.userMessage || 'Profil yüklenemedi', loadingProfile: false });
     }
   }, []);
 
@@ -60,7 +63,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const profile = await profileService.updateProfile(dto);
       setPartial({ profile, updating: false });
     } catch (e: any) {
-      setPartial({ error: e.message || 'Profil güncellenemedi', updating: false });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.updateProfile');
+      setPartial({ error: handled.userMessage || 'Profil güncellenemedi', updating: false });
     }
   }, []);
 
@@ -70,7 +74,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const profile = await profileService.updatePreferences(dto);
       setPartial({ profile, updating: false });
     } catch (e: any) {
-      setPartial({ error: e.message || 'Tercihler güncellenemedi', updating: false });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.updatePreferences');
+      setPartial({ error: handled.userMessage || 'Tercihler güncellenemedi', updating: false });
     }
   }, []);
 
@@ -80,7 +85,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       await profileService.changePassword(dto);
       setPartial({ updating: false });
     } catch (e: any) {
-      setPartial({ error: e.message || 'Parola değiştirilemedi', updating: false });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.changePassword');
+      setPartial({ error: handled.userMessage || 'Parola değiştirilemedi', updating: false });
     }
   }, []);
 
@@ -90,7 +96,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const sessions = await profileService.getSessions();
       setPartial({ sessions, loadingSessions: false });
     } catch (e: any) {
-      setPartial({ error: e.message || 'Oturumlar alınamadı', loadingSessions: false });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.refreshSessions');
+      setPartial({ error: handled.userMessage || 'Oturumlar alınamadı', loadingSessions: false });
     }
   }, []);
 
@@ -99,31 +106,63 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       await profileService.revokeSession(id);
       setPartial({ sessions: state.sessions.filter(s => s.id !== id) });
     } catch (e: any) {
-      setPartial({ error: e.message || 'Oturum sonlandırılamadı' });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.revokeSession');
+      setPartial({ error: handled.userMessage || 'Oturum sonlandırılamadı' });
     }
   }, [state.sessions]);
+
+  const bulkRevokeOtherSessions = useCallback(async () => {
+    const now = Date.now();
+    // Heuristic: keep the session with the latest createdAt that is not revoked & not expired as current; revoke others
+    const active = state.sessions.filter(s => !s.revokedAt && (!s.expiresAt || new Date(s.expiresAt).getTime() > now));
+    const sorted = [...active].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const keep = sorted[0]?.id; // assume most recently created is current
+    const candidates = sorted.filter(s => s.id !== keep);
+    console.log('[RT][UI] bulkRevoke start keep=', keep, 'candidates=', candidates.map(c => c.id));
+    let revoked = 0; let errors = 0;
+    for (const sess of candidates) {
+      try {
+        await profileService.revokeSession(sess.id);
+        console.log('[RT][UI] bulk revoke ok', sess.id);
+        revoked++;
+      } catch (e: any) {
+        console.warn('[RT][UI] bulk revoke failed', sess.id, e);
+        errors++;
+      }
+    }
+    try { await refreshSessions(); } catch { /* ignore */ }
+    console.log('[RT][UI] bulkRevoke finished revoked=', revoked, 'errors=', errors);
+    return { revoked, errors };
+  }, [state.sessions, refreshSessions]);
 
   const loadMoreActivity = useCallback(async () => {
     try {
       setPartial({ loadingActivity: true });
-      const res: PaginatedActivity = await profileService.getActivity(activityCursor);
-      setActivityCursor(res.nextCursor);
+      const res: PaginatedActivity = await profileService.getActivity(activityCursor ?? undefined);
+      setActivityCursor(res.nextCursor ?? null);
+
       setPartial({
-        activity: [...state.activity, ...res.items],
+        activity: [...(state.activity || []), ...(res.items || [])],
         hasMoreActivity: Boolean(res.nextCursor),
         loadingActivity: false
       });
     } catch (e: any) {
-      setPartial({ error: e.message || 'Aktivite alınamadı', loadingActivity: false });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.loadMoreActivity');
+      setPartial({ error: handled.userMessage || 'Aktivite alınamadı', loadingActivity: false });
     }
   }, [activityCursor, state.activity]);
 
   const startMFA = useCallback(async () => {
     try {
       const res = await profileService.startMFA();
-      return res;
+      // normalize to older shape { otpauthUrl, qrSvgData }
+      return {
+        otpauthUrl: res?.otpauthUrl || undefined,
+        qrSvgData: res?.qrSvgData
+      } as { otpauthUrl: string; qrSvgData?: string } | null;
     } catch (e: any) {
-      setPartial({ error: e.message || 'MFA başlatılamadı' });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.startMFA');
+      setPartial({ error: handled.userMessage || 'MFA başlatılamadı' });
       return null;
     }
   }, []);
@@ -133,9 +172,10 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const res = await profileService.verifyMFA({ code });
       // profile'ı tekrar çek
       fetchProfile();
-      return res.recoveryCodes;
+      return res?.recoveryCodes ?? null;
     } catch (e: any) {
-      setPartial({ error: e.message || 'MFA doğrulanamadı' });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.verifyMFA');
+      setPartial({ error: handled.userMessage || 'MFA doğrulanamadı' });
       return null;
     }
   }, [fetchProfile]);
@@ -145,7 +185,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       await profileService.disableMFA();
       fetchProfile();
     } catch (e: any) {
-      setPartial({ error: e.message || 'MFA kapatılamadı' });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.disableMFA');
+      setPartial({ error: handled.userMessage || 'MFA kapatılamadı' });
     }
   }, [fetchProfile]);
 
@@ -163,7 +204,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const { avatarUrl } = await profileService.uploadAvatar(file);
       setPartial({ profile: state.profile ? { ...state.profile, avatarUrl } : state.profile });
     } catch (e: any) {
-      setPartial({ error: e.message || 'Avatar yüklenemedi' });
+      const handled = mapApiErrorToToast(e, 'ProfileProvider.uploadAvatar');
+      setPartial({ error: handled.userMessage || 'Avatar yüklenemedi' });
     } finally {
       setUploadingAvatar(false);
     }
@@ -177,6 +219,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     changePassword,
     refreshSessions,
     revokeSession,
+    bulkRevokeOtherSessions,
     loadMoreActivity,
     startMFA,
     verifyMFA,

@@ -1,5 +1,15 @@
 # 🍽️ Restaurant Management System (RMS)
 
+## 🆕 Recent Updates
+
+- All API services are now modular and type-safe (auth, profile, role, activity)
+- New generic HTTP helpers: apiGet, apiPost, apiPut, apiPatch, apiDelete
+- Role management: dynamic role list, update/remove role via API
+- User activity logs: paginated, context-managed, with new service
+- Modernized UI: uniform card sizes, glassmorphism InfoBalloon, improved modals
+- Centralized error handling and JWT utilities
+- SOLID & Clean Code: all modules refactored for single responsibility
+
 A comprehensive restaurant management system built with modern web technologies, featuring real-time table management, order processing, inventory tracking, barcode scanning, and staff coordination.
 
 ![Version](https://img.shields.io/badge/Version-1.2.0-purple.svg)
@@ -127,6 +137,24 @@ src/
    - To allow access from other devices on your network, Vite is configured with `host: '0.0.0.0'` in `vite.config.js`.
    - Access the app via your local IP (e.g. `http://192.168.1.5:5173`) from other devices.
 
+### Environment Variables
+Create a `.env.local` (ignored by git) based on `.env.example`.
+
+Key variables:
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `VITE_API_BASE_URL` | REST API base (HTTP) | `https://localhost:3000` |
+| `VITE_REALTIME_WS_BASE` | WebSocket base (ws/wss) | `ws://localhost:3000` |
+| `VITE_FEATURE_REALTIME_LOGOUT` | Enable realtime logout feature | `true` |
+| `VITE_DEBUG_REALTIME` | Console debug for websocket | `false` |
+| `VITE_APP_NAME` | App display name | `Restaurant Management System` |
+| `VITE_BUILD_VERSION` | Build/version string | `1.2.0` |
+
+If `VITE_REALTIME_WS_BASE` is omitted the client attempts to derive `ws(s)` URL from `VITE_API_BASE_URL`.
+
+After changing env vars restart `npm run dev` (Vite only inlines at build/start).
+
 4. **Run as Electron app**
    ```bash
    npm run start
@@ -227,6 +255,36 @@ Change `AUTH_BYPASS` to `false` in `src/config/dev.ts`.
 
 ## 📋 Changelog
 
+### Version 1.3.0 - 19.08.2025
+
+#### 🆕 Major Features & Refactors
+- Modular API services: roleService, profileService, activityService, authApi
+- New generic HTTP helpers: apiGet, apiPost, apiPut, apiPatch, apiDelete
+- Role management: dynamic role list, update/remove role via API
+- User activity logs: paginated, context-managed, with new service
+- Centralized error handling and JWT utilities
+- SOLID & Clean Code: all modules refactored for single responsibility
+
+#### 🎨 UI / UX Improvements
+- Uniform card sizes across dashboard and management pages
+- InfoBalloon redesigned with glassmorphism effect
+- Improved modal and notification components
+
+#### 🛠️ TypeScript & Architecture
+- Type fixes for User, Role, Activity models (id → userId, roles array, etc.)
+- Context providers updated: AuthProvider, ProfileProvider, ActivityProvider, RestaurantProvider, NotificationProvider
+- Enhanced hooks for login state, user management, and table transfer
+
+#### 🐞 Fixes & Optimizations
+- All major TypeScript errors resolved (roles, status, joined, etc.)
+- Improved error handling and code quality
+- Refactored JWT utility for correct userId mapping
+
+#### 📚 Documentation
+- README.md updated to reflect new features, API changes, and architecture
+
+
+
 ### Version 1.2.0 - 11.08.2025
 
 #### 🧩 Architecture & Refactors
@@ -256,11 +314,12 @@ Change `AUTH_BYPASS` to `false` in `src/config/dev.ts`.
 
 ### Version 1.1.0 - 08.08.2025
 
-#### 🔐 Authentication System Overhaul
-- **Complete JWT Authentication Implementation**: Full JWT-based authentication system with token parsing and validation
-- **Enhanced AuthProvider**: Clean code architecture following SOLID principles with comprehensive state management
-- **Smart Authentication Flow**: Multi-step authentication including username input, QR code setup, and OTP verification
-- **Recovery System**: Backup authentication using recovery codes for emergency access
+### 🔐 Authentication System Overhaul (Updated: Cookie-Only)
+- **HttpOnly Cookie-Based Auth**: Access & refresh tokenlar artık sadece HttpOnly cookie'lerde; frontend'te Authorization header veya localStorage token yok.
+- **Stateless Access, Rotating Refresh**: Access token kısa ömürlü, refresh token her yenilemede döndürülür (reuse detection backend'de).
+- **Simplified Client Logic**: 401 yanıtında interceptor bir kez `/auth/refresh` dener, başarılıysa orijinal isteği tekrarlar.
+- **Secure By Default**: XSS yüzeyinde token tutulmuyor; ileride cross-site dağıtım için CSRF header entegrasyonu planlandı.
+- **Multi-step Login & Recovery**: OTP / recovery code akışları aynen devam.
 
 #### 🛡️ Advanced Authorization & Route Protection
 - **Permission-based Access Control**: Fine-grained permission system with role-based authorization
@@ -286,11 +345,11 @@ Change `AUTH_BYPASS` to `false` in `src/config/dev.ts`.
 - **Memory Optimization**: Proper cleanup of timers and intervals to prevent memory leaks
 - **Memoization**: Strategic use of React.useMemo and useCallback for performance optimization
 
-#### 🔒 Security Enhancements
-- **Token Expiration Handling**: Automatic logout on token expiration with proper cleanup
-- **Secure Storage**: Enhanced localStorage management with error handling
-- **Route-level Security**: Multi-layered security with role and permission validation
-- **Input Validation**: Comprehensive form validation and sanitization
+#### 🔒 Security Enhancements (Revised)
+- **Cookie Rotation**: Refresh kullanımı access cookie'yi sessizce yeniler; reuse tespiti backend tarafında.
+- **No Client Token Storage**: Access / refresh token JS bellek ya da storage'ta tutulmaz.
+- **401 Refresh Guard**: Her istek için maksimum 1 otomatik refresh denemesi ile döngüler engellenir.
+- **Planned**: Cross-site modunda CSRF token header otomasyonu (gelecek adım).
 
 ---
 

@@ -43,9 +43,9 @@ const Select: React.FC<SelectProps> = ({
             <div
               key={index}
               className="px-2 py-1 text-sm hover:bg-gray-100 cursor-pointer transition-colors duration-200"
-              onClick={() => selectOption(option)}
+              onClick={() => selectOption(option.label)}
             >
-              {option}
+              {option.label}
             </div>
           ))}
         </div>

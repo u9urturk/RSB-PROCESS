@@ -4,9 +4,10 @@ import React from 'react';
 
 // Auth Types
 export interface User {
-    id: string;
+    userId: string;
     username: string;
     roles: string[];
+    sessionId?: string;
 }
 
 export interface AuthState {
@@ -85,6 +86,7 @@ export interface CardProps {
     type?: 'price' | 'str';
     targetProgress?: number;
     duration?: number;
+    className?: string;
 }
 
 // Circle Types
@@ -98,7 +100,7 @@ export interface CircleProps {
 
 // Select Types
 export interface SelectProps {
-    options: string[];
+    options: any[];
     defaultValue?: string;
     onChange?: (value: string) => void;
     placeholder?: string;
@@ -330,6 +332,7 @@ export interface UserProfile {
     userId: number;
     username: string;
     roles: string[];
+    sessionId?: string;
     // Ek kullanıcı bilgileri
     email?: string;
     phone?: string;
@@ -388,8 +391,18 @@ export interface NotificationContextType {
         id: string;
         type: 'success' | 'error' | 'warning' | 'info';
         message: string;
+        countdown?: number;
+        remaining?: number;
+        onComplete?: () => void;
     }>;
-    showNotification: (type: 'success' | 'error' | 'warning' | 'info', message: string) => void;
+    showNotification: (
+        type: 'success' | 'error' | 'warning' | 'info',
+        message: string,
+        options?: {
+            countdown?: number;
+            onComplete?: () => void;
+        }
+    ) => void;
     hideNotification: (id: string) => void;
 }
 

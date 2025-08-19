@@ -31,7 +31,7 @@ class JWTUtil {
       const payload = JSON.parse(atob(parts[1])) as JWTPayload;
       
       return {
-        id: payload.sub || '',
+        userId: payload.sub || '',
         username: payload.username || '',
         roles: payload.roles || [],
       };

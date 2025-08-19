@@ -13,6 +13,8 @@ interface StockRowProps {
 function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }: StockRowProps) {
 
     const isLow = item.quantity <= item.minQuantity;
+    // onStockChange may be used by parent components; reference it to avoid unused-variable warnings
+    void onStockChange;
 
     // useCallback ile event handler'lar optimize edildi
     const handleAddOpen = useCallback((e: React.MouseEvent) => {
@@ -27,14 +29,7 @@ function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }
 
     const handleDetailOpen = useCallback(() => onOpenDetail(item), [item, onOpenDetail]);
 
-    // Stok değişikliği işleyicileri
-    const handleAddSubmit = useCallback((amount: number) => {
-        onStockChange(item.id, amount, "add");
-    }, [item.id, onStockChange]);
-
-    const handleRemoveSubmit = useCallback((amount: number) => {
-        onStockChange(item.id, amount, "remove");
-    }, [item.id, onStockChange]);
+    // Stok değişikliği işleyicileri - inline handlers used by parent modals via onOpenAdd/onOpenRemove
 
     return (
             <div

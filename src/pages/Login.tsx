@@ -300,7 +300,6 @@ const VerificationStep: React.FC<BaseStepProps & {
 const Login: React.FC = () => {
     const loginState = useLoginState();
     const navigate = useNavigate();
-    const { } = useAuth();
     const {
         register,
         login,
@@ -308,7 +307,6 @@ const Login: React.FC = () => {
         isLoading,
         error,
         registrationData,
-        newRecoveryCode,
         clearError,
         clearRegistrationData,
         clearNewRecoveryCode,
@@ -339,7 +337,7 @@ const Login: React.FC = () => {
             // Check if user already exists (should go to verification)
             if (error.message.includes('already exists') || error.message.includes('User exists')) {
                 loginState.updateStep('verification');
-                showNotification('info', 'Mevcut kullanıcı. Lütfen OTP kodunu girin.');
+                showNotification('info', 'Merhaba ! . Lütfen OTP kodunu girin.');
             } else {
                 showNotification('error', error.message || 'Bir hata oluştu');
             }

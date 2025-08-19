@@ -22,7 +22,8 @@ const PageTransition: React.FC<PageTransitionProps> = ({
             initial="initial"
             animate="animate"
             exit="exit"
-            variants={animation}
+            // Framer Motion typing can be strict; cast animation to any to satisfy Variants typing
+            variants={animation as any}
             className={className}
         >
             {children}
