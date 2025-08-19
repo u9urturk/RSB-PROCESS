@@ -27,6 +27,9 @@ export async function fetchUserActivities({ userId, cursor, limit = 20 }: FetchU
     if (cursor) params.cursor = cursor;
     if (limit) params.limit = limit;
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
-    const response = await axios.get<UserActivityResponse>(`${baseUrl}/api/v1/user-activity/${userId}`, { params });
+        const response = await axios.get<UserActivityResponse>(`${baseUrl}/api/v1/user-activity/${userId}`, {
+            params,
+            withCredentials: true
+        });
     return response.data;
 }

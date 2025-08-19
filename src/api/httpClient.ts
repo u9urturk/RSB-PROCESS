@@ -10,7 +10,7 @@ const httpClient: AxiosInstance = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
-    withCredentials: true,
+        withCredentials: true, // Tüm isteklerde cookie gönderimi
 });
 
 // Request interceptor (placeholder) — şu an ekstra header yok.
