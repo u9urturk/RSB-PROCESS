@@ -11,6 +11,17 @@
 }
 
 
+/* tailwind.config.js veya global css dosyanıza ekleyin */
+@layer utilities {
+  .spin-slow {
+    animation-duration: 10s;
+  }
+  .spin-fast {
+    animation-duration: 0.5s;
+  }
+}
+
+
 
 /* Custom animations */
 @keyframes fade-in {

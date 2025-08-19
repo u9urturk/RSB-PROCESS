@@ -17,6 +17,8 @@ out/
 .svelte-kit/
 dist-ssr/
 
+# docs
+docs/
 # Electron specific
 dist-electron/
 release/

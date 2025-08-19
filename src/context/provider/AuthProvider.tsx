@@ -1,15 +1,16 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { RealtimeService, realtimeServiceRegistry } from '@/realtime/RealtimeService';
 import { authApiService } from '../../api/authApi';
-import type { 
-  RegisterRequest, 
-  LoginRequest, 
-  RecoveryLoginRequest, 
-  RegisterData, 
-  User 
+import { useNotification } from './NotificationProvider';
+import type {
+  RegisterRequest,
+  LoginRequest,
+  RecoveryLoginRequest,
+  RegisterData,
+  User
 } from '../../api/authApi';
-import { JWTUtil } from '../../utils/jtwUtils';
 
-// Auth State Interface
+
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -20,7 +21,6 @@ interface AuthState {
   newRecoveryCode: string | null;
 }
 
-// Context Type
 interface AuthContextType extends AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
   loginWithRecovery: (credentials: RecoveryLoginRequest) => Promise<string>;
@@ -31,52 +31,21 @@ interface AuthContextType extends AuthState {
   clearNewRecoveryCode: () => void;
 }
 
-// Action Types
 type AuthAction =
   | { type: 'AUTH_START' }
-  | { type: 'AUTH_SUCCESS'; payload: { user: User; token: string } }
+  | { type: 'AUTH_SUCCESS'; payload: { user: User; token: string | null } }
   | { type: 'AUTH_FAILURE'; payload: string }
   | { type: 'REGISTER_SUCCESS'; payload: RegisterData }
-  | { type: 'RECOVERY_LOGIN_SUCCESS'; payload: { user: User; token: string; newRecoveryCode: string } }
+  | { type: 'RECOVERY_LOGIN_SUCCESS'; payload: { user: User; token: string | null; newRecoveryCode: string } }
   | { type: 'LOGOUT' }
   | { type: 'CLEAR_ERROR' }
   | { type: 'CLEAR_REGISTRATION_DATA' }
   | { type: 'CLEAR_NEW_RECOVERY_CODE' }
   | { type: 'SET_LOADING'; payload: boolean };
 
-// Storage Service (Single Responsibility Principle)
-class StorageService {
-  private static readonly TOKEN_KEY = 'access_token';
-
-  static getToken(): string | null {
-    try {
-      return localStorage.getItem(this.TOKEN_KEY);
-    } catch {
-      return null;
-    }
-  }
-
-  static setToken(token: string): void {
-    try {
-      localStorage.setItem(this.TOKEN_KEY, token);
-    } catch (error) {
-      console.error('Failed to save token:', error);
-    }
-  }
-
-  static removeToken(): void {
-    try {
-      localStorage.removeItem(this.TOKEN_KEY);
-    } catch (error) {
-      console.error('Failed to remove token:', error);
-    }
-  }
-}
-
-// Initial State
 const initialState: AuthState = {
   user: null,
-  token: StorageService.getToken(),
+  token: null,
   isLoading: false,
   isAuthenticated: false,
   error: null,
@@ -93,7 +62,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isLoading: true,
         error: null,
       };
-    
+
     case 'AUTH_SUCCESS':
       return {
         ...state,
@@ -103,7 +72,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         token: action.payload.token,
         error: null,
       };
-    
+
     case 'AUTH_FAILURE':
       return {
         ...state,
@@ -113,7 +82,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         token: null,
         error: action.payload,
       };
-    
+
     case 'REGISTER_SUCCESS':
       return {
         ...state,
@@ -121,7 +90,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         registrationData: action.payload,
         error: null,
       };
-    
+
     case 'RECOVERY_LOGIN_SUCCESS':
       return {
         ...state,
@@ -132,7 +101,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         newRecoveryCode: action.payload.newRecoveryCode,
         error: null,
       };
-    
+
     case 'LOGOUT':
       return {
         ...state,
@@ -142,91 +111,145 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         error: null,
         newRecoveryCode: null,
       };
-    
+
     case 'CLEAR_ERROR':
       return {
         ...state,
         error: null,
       };
-    
+
     case 'CLEAR_REGISTRATION_DATA':
       return {
         ...state,
         registrationData: null,
       };
-    
+
     case 'CLEAR_NEW_RECOVERY_CODE':
       return {
         ...state,
         newRecoveryCode: null,
       };
-    
+
     case 'SET_LOADING':
       return {
         ...state,
         isLoading: action.payload,
       };
-    
+
     default:
       return state;
   }
 };
 
-// Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Provider Component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { showNotification } = useNotification();
+  const sessionIdRef = React.useRef<string | undefined>(undefined);
   const [state, dispatch] = useReducer(authReducer, {
     ...initialState,
-    isAuthenticated: initialState.token ? !JWTUtil.isTokenExpired(initialState.token) : false,
+    token: null,
+    isAuthenticated: false,
   });
-
-  // DEV ONLY BYPASS (set window.__AUTH_BYPASS__=true or VITE_AUTH_BYPASS=1)
   useEffect(() => {
-    const bypass = (window as any).__AUTH_BYPASS__ === true || import.meta.env.VITE_AUTH_BYPASS === '1';
-    if (bypass && !state.isAuthenticated) {
-      const dummyUser: User = {
-        id: 'dev-user',
-        username: 'Dev User',
-        roles: ['ADMIN'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      } as any;
-      dispatch({ type: 'AUTH_SUCCESS', payload: { user: dummyUser, token: 'dev-token' } });
+    sessionIdRef.current = state.user?.sessionId;
+  }, [state.user?.sessionId]);
+  const REALTIME_LOGOUT_ENABLED = ((import.meta as any).env?.VITE_FEATURE_REALTIME_LOGOUT ?? 'true') !== 'false';
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || (window as any).API_BASE_URL || '';
+  const REALTIME_BASE = (import.meta as any).env?.VITE_REALTIME_WS_BASE || API_BASE; // allow dedicated ws host
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        try {
+          const user = await authApiService.profile();
+          if (!cancelled) dispatch({ type: 'AUTH_SUCCESS', payload: { user, token: null } });
+          return;
+        } catch (_) {
+          const refreshed = await authApiService.refreshSession();
+          if (refreshed) {
+            try {
+              const user = await authApiService.profile();
+              if (!cancelled) dispatch({ type: 'AUTH_SUCCESS', payload: { user, token: null } });
+            } catch { /* yok say */ }
+          }
+        }
+      } catch { /* sessiz */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!REALTIME_LOGOUT_ENABLED) return;
+    if (!REALTIME_BASE) {
+      console.warn('[RT] REALTIME_BASE empty -> realtime disabled');
+      return;
     }
-  }, [state.isAuthenticated]);
-
-  // Auto-logout when token expires
-  useEffect(() => {
-    if (state.token && JWTUtil.isTokenExpired(state.token)) {
-      logout();
+    if (!realtimeServiceRegistry.instance) {
+      realtimeServiceRegistry.instance = new RealtimeService({
+        baseUrl: REALTIME_BASE,
+        debug: ((import.meta as any).env?.VITE_DEBUG_REALTIME === 'true'),
+        getCurrentSessionId: () => sessionIdRef.current,
+        onCurrentSessionRevoked: ({ reason }) => {
+          showNotification(
+            'warning',
+            'Oturumunuz sonlandırılıyor!',
+            {
+              countdown: 10,
+              onComplete: () => {
+                logout();
+                realtimeServiceRegistry.instance?.disconnect();
+                console.info('[RT] current session revoked', reason);
+              }
+            }
+          );
+        },
+        onOtherSessionRevoked: ({ sessionId }) => {
+          console.info('[RT] other session revoked (no logout expected)', sessionId);
+        },
+        onAuthError: () => {
+          (async () => {
+            console.warn('[RT] auth_error received -> attempting silent refresh');
+            try { await authApiService.refreshSession(); console.log('[RT] silent refresh success, reconnecting'); } catch { console.warn('[RT] silent refresh failed'); }
+            realtimeServiceRegistry.instance?.connect();
+          })();
+        }
+      });
+      if (typeof window !== 'undefined') (window as any).__RT__ = realtimeServiceRegistry.instance;
     }
-  }, [state.token]);
 
-  // Restore user from token on app start
+  }, [REALTIME_LOGOUT_ENABLED, REALTIME_BASE, state.user?.sessionId]);
+
   useEffect(() => {
-    if (state.token && !state.user && !JWTUtil.isTokenExpired(state.token)) {
-      const user = JWTUtil.parseToken(state.token);
-      if (user) {
-        dispatch({
-          type: 'AUTH_SUCCESS',
-          payload: { user, token: state.token },
-        });
+    if (!REALTIME_LOGOUT_ENABLED || !realtimeServiceRegistry.instance) return;
+    const handleDisconnect = () => {
+      if (state.isAuthenticated) {
+        setTimeout(() => {
+          realtimeServiceRegistry.instance?.connect();
+        }, 2000);
       }
+    };
+    const socket = realtimeServiceRegistry.instance['socket'];
+    if (socket) {
+      socket.on('disconnect', handleDisconnect);
     }
-  }, [state.token, state.user]);
+    return () => {
+      if (socket) {
+        socket.off('disconnect', handleDisconnect);
+      }
+    };
+  }, [state.isAuthenticated, REALTIME_LOGOUT_ENABLED]);
 
-  // Register function
   const register = useCallback(async (userData: RegisterRequest): Promise<RegisterData> => {
     try {
       dispatch({ type: 'AUTH_START' });
-      
+
       const registrationData = await authApiService.register(userData);
-      
-      dispatch({ 
-        type: 'REGISTER_SUCCESS', 
-        payload: registrationData 
+
+      dispatch({
+        type: 'REGISTER_SUCCESS',
+        payload: registrationData
       });
 
       return registrationData;
@@ -237,19 +260,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Login function
   const login = useCallback(async (credentials: LoginRequest): Promise<void> => {
     try {
       dispatch({ type: 'AUTH_START' });
-      
-      const loginData = await authApiService.login(credentials);
-      
-      StorageService.setToken(loginData.token);
-      dispatch({ 
-        type: 'AUTH_SUCCESS', 
-        payload: loginData
-      });
-      
+
+      const { user } = await authApiService.login(credentials);
+      dispatch({ type: 'AUTH_SUCCESS', payload: { user, token: null } });
+
+      if (REALTIME_LOGOUT_ENABLED && realtimeServiceRegistry.instance) {
+        realtimeServiceRegistry.instance.connect();
+      }
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
@@ -257,21 +278,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Recovery login function
   const loginWithRecovery = useCallback(async (credentials: RecoveryLoginRequest): Promise<string> => {
     try {
       dispatch({ type: 'AUTH_START' });
-      
-      const recoveryData = await authApiService.loginWithRecovery(credentials);
-      
-      StorageService.setToken(recoveryData.token);
-      dispatch({ 
-        type: 'RECOVERY_LOGIN_SUCCESS', 
-        payload: recoveryData
-      });
 
+      const recoveryData = await authApiService.loginWithRecovery(credentials);
+      dispatch({ type: 'RECOVERY_LOGIN_SUCCESS', payload: { user: recoveryData.user, token: null, newRecoveryCode: recoveryData.newRecoveryCode } });
+
+      if (REALTIME_LOGOUT_ENABLED && realtimeServiceRegistry.instance) {
+        realtimeServiceRegistry.instance.connect();
+      }
       return recoveryData.newRecoveryCode;
-      
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Recovery login failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
@@ -279,37 +297,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Logout function
   const logout = useCallback(async (): Promise<void> => {
     try {
-      // Call API logout (optional)
       await authApiService.logout();
     } catch (error) {
-      // Don't block logout for API errors
       console.warn('Logout API call failed:', error);
     } finally {
-      // Always clean local storage and state
-      StorageService.removeToken();
+      realtimeServiceRegistry.instance?.disconnect();
       dispatch({ type: 'LOGOUT' });
     }
   }, []);
 
-  // Clear error function
   const clearError = useCallback((): void => {
     dispatch({ type: 'CLEAR_ERROR' });
   }, []);
 
-  // Clear registration data function
   const clearRegistrationData = useCallback((): void => {
     dispatch({ type: 'CLEAR_REGISTRATION_DATA' });
   }, []);
 
-  // Clear new recovery code function
   const clearNewRecoveryCode = useCallback((): void => {
     dispatch({ type: 'CLEAR_NEW_RECOVERY_CODE' });
   }, []);
 
-  // Memoized context value
   const contextValue: AuthContextType = React.useMemo(() => ({
     ...state,
     login,
@@ -337,7 +347,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// Custom Hook (Interface Segregation Principle)
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -346,12 +355,11 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-// Export types for external use
-export type { 
-  RegisterRequest, 
-  LoginRequest, 
+export type {
+  RegisterRequest,
+  LoginRequest,
   RecoveryLoginRequest,
-  RegisterData, 
-  User, 
-  AuthState 
+  RegisterData,
+  User,
+  AuthState
 };

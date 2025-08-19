@@ -15,7 +15,6 @@ import {
     DashboardOverviewData,
     DashboardRevenueData
 } from '../types';
-import { useUser } from '../customHook/useUser';
 
 const dashboardCards: DashboardCard[] = [
     { title: "Toplam Sipariş", value: 42, type: "str", icon: <FaRegRectangleList size={20} /> },
@@ -64,9 +63,6 @@ const revenueData: DashboardRevenueData[] = [
 const Dashboard: React.FC = () => {
     const { setActivePath } = useNavigation();
     const [isLoading, setIsLoading] = useState(true);
-    const { user } = useUser();
-
-    console.log("Dashboard user:", user);
 
 
     useEffect(() => {
@@ -141,7 +137,7 @@ const Dashboard: React.FC = () => {
 
             <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
                 {/* Stat Cards */}
-                    <div className='compact grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8'>
+                <div className='compact grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8'>
                     {dashboardCards.map((card, index) => (
                         <div
                             key={index}
@@ -170,7 +166,7 @@ const Dashboard: React.FC = () => {
 
                 {/* Charts Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8">
-                    {[overviewData, OrderSummary, topSellingItems].map((Component, idx) => (
+                    {[overviewData, OrderSummary, topSellingItems].map((_, idx) => (
                         <div key={idx} className="lg:col-span-1">
                             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 h-full flex flex-col">
                                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">

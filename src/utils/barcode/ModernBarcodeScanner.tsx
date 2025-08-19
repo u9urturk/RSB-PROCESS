@@ -372,7 +372,7 @@ export default function ModernBarcodeScanner({
                             {torchEnabled ? <Zap size={18} /> : <ZapOff size={18} />}
                         </button>
                     )}
-{/*                     
+                    
                     {showCancel && (
                         <button
                             onClick={handleCancel}
@@ -381,7 +381,7 @@ export default function ModernBarcodeScanner({
                         >
                             <X size={18} />
                         </button>
-                    )} */}
+                    )}
                 </div>
             </div>
             

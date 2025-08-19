@@ -136,12 +136,12 @@ export interface ProfileUserFull {
 
 export interface ProfileUserSessionDetail {
   id: string;
-  issuedAt: string;
-  lastSeenAt: string;
+  createdAt: string; // session issuance time
+  expiresAt: string; // session expiry time
   ip?: string;
   userAgent?: string;
-  current: boolean;
   revokedAt?: string | null;
+  revokedReason?: string | null;
 }
 
 export type ProfileActivityType =

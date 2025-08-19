@@ -1,43 +1,44 @@
 import React, { useEffect, useRef } from 'react';
 import { CardProps } from '../types';
 
-const Card: React.FC<CardProps> = ({ 
-  value, 
-  title, 
-  icon, 
-  type = 'str', 
-  targetProgress = 75, 
-  duration = 1200 
+const Card: React.FC<CardProps> = ({
+    value,
+    title,
+    icon,
+    type = 'str',
+    targetProgress = 75,
+    duration = 1200,
+    className = ''
 }) => {
     const progressRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         let start: number | null = null;
         let frame: number;
-        
+
         const animate = (timestamp: number) => {
             if (!start) start = timestamp;
             const elapsed = timestamp - start;
             const percent = Math.min((elapsed / duration) * targetProgress, targetProgress);
-            
+
             if (progressRef.current) {
                 progressRef.current.style.background = `conic-gradient(
                     #fb923c ${percent}%, 
                     #f3f4f6 ${percent}% 100%
                 )`;
             }
-            
+
             if (percent < targetProgress) {
                 frame = requestAnimationFrame(animate);
             }
         };
-        
+
         frame = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(frame);
     }, [targetProgress, duration]);
 
     return (
-        <div className={"card flex flex-col items-center justify-center bg-white rounded-2xl shadow-md p-4 min-h-[120px] transition hover:shadow-lg hover:-translate-y-1"}>
+        <div className={`card flex flex-col items-center justify-center bg-white rounded-2xl shadow-md p-4 min-h-[120px] transition hover:shadow-lg hover:-translate-y-1 ${className}`}>
             <div className="flex flex-col items-center justify-center gap-3 w-full">
                 <div
                     ref={progressRef}

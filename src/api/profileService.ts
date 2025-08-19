@@ -1,103 +1,107 @@
 import {
-  ProfileUserPublic as UserProfilePublic,
-  ProfileUpdateProfileDTO as UpdateProfileDTO,
-  ProfileUpdatePreferencesDTO as UpdatePreferencesDTO,
-  ProfileChangePasswordDTO as ChangePasswordDTO,
-  ProfileStartMFAResponse as StartMFAResponse,
-  ProfileVerifyMFARequest as VerifyMFARequest,
-  ProfileVerifyMFAResponse as VerifyMFAResponse,
-  ProfileUserSessionSummary as UserSessionSummary,
-  ProfilePaginatedActivity as PaginatedActivity,
+  ProfileUserFull as UserProfileFull,
+  ProfileUpdateProfileDTO2 as UpdateProfileDTO,
+  ProfileUpdatePreferencesDTO2 as UpdatePreferencesDTO,
+  ProfileChangePasswordDTO2 as ChangePasswordDTO,
+  ProfileStartMFAResponse2 as StartMFAResponse,
+  ProfileVerifyMFARequest2 as VerifyMFARequest,
+  ProfileVerifyMFAResponse2 as VerifyMFAResponse,
+  ProfileUserSessionDetail as UserSessionDetail,
+  ProfilePaginatedActivityFull as PaginatedActivity,
+  ProfileUserActivityLogItem as ProfileUserActivityLogItem,
 } from '@/types/profile';
-import httpClient, { apiGet } from './httpClient';
+import { apiGet, apiPut, apiPost, apiDelete } from './httpClient';
 
-function isBypass() {
-  return (window as any).__AUTH_BYPASS__ === true || import.meta.env.VITE_AUTH_BYPASS === '1';
-}
-
-const mockProfile = {
-  id: 'dev-profile',
-  username: 'Dev User',
-  displayName: 'Dev User',
-  fullName: 'Developer User',
-  phone: '+905555555555',
-  positionTitle: 'Frontend Dev',
-  avatarUrl: '',
-  mfaEnabled: false,
-  preferences: {
-    theme: 'light',
-    density: 'comfortable',
-    locale: 'tr-TR',
-    timeZone: 'Europe/Istanbul',
-    notifications: { email: true, sms: false, push: true }
-  }
-};
-const mockSessions = [
-  { id: 'sess1', device: 'Chrome', ip: '127.0.0.1', lastActive: new Date().toISOString() }
-];
-const mockActivity = {
-  items: [
-    { id: 'act1', type: 'LOGIN', timestamp: new Date().toISOString(), details: 'Giriş yapıldı' }
-  ],
-  nextCursor: null
-};
-
-// Thin service layer (can be mocked in tests)
 export const profileService = {
-  getProfile: async (): Promise<UserProfilePublic> => {
-    if (isBypass()) return mockProfile as any;
-    const data = await apiGet<UserProfilePublic>('/profile');
+  getProfile: async (): Promise<UserProfileFull> => {
+    const data = await apiGet<UserProfileFull>('/profile/me');
+    console.debug('ProfileService.getProfile', data);
     return data;
   },
-  updateProfile: async (payload: UpdateProfileDTO): Promise<UserProfilePublic> => {
-    if (isBypass()) return { ...mockProfile, ...payload } as any;
-    const { data } = await httpClient.put('/profile', payload);
+  updateProfile: async (payload: UpdateProfileDTO): Promise<UserProfileFull> => {
+    const data = await apiPut<UserProfileFull>('/profile/me', payload);
+    console.debug('ProfileService.updateProfile', data);
     return data;
   },
-  updatePreferences: async (payload: UpdatePreferencesDTO): Promise<UserProfilePublic> => {
-    if (isBypass()) return { ...mockProfile, preferences: { ...mockProfile.preferences, ...payload } } as any;
-    const { data } = await httpClient.put('/profile/preferences', payload);
+  updatePreferences: async (payload: UpdatePreferencesDTO): Promise<UserProfileFull> => {
+    const data = await apiPut<UserProfileFull>('/profile/me/preferences', payload);
+    console.debug('ProfileService.updatePreferences', data);
     return data;
   },
   changePassword: async (payload: ChangePasswordDTO): Promise<void> => {
-    if (isBypass()) return;
-    await httpClient.put('/profile/password', payload);
+    await apiPut('/profile/me/password', payload);
   },
-  startMFA: async (): Promise<StartMFAResponse> => {
-    if (isBypass()) return { otpauthUrl: 'otpauth://totp/DevUser?secret=DEVSECRET', qrSvgData: '' } as any;
-    const { data } = await httpClient.post('/profile/mfa/start', {});
+  // MFA enable -> returns QR / otpauth url
+  enableMFA: async (): Promise<StartMFAResponse> => {
+    const data = await apiPost<StartMFAResponse>('/profile/mfa/enable', {});
     return data;
+  },
+  // kept for backward compatibility
+  startMFA: async (): Promise<StartMFAResponse> => {
+    return await (profileService as any).enableMFA();
   },
   verifyMFA: async (payload: VerifyMFARequest): Promise<VerifyMFAResponse> => {
-    if (isBypass()) return { recoveryCodes: ['RCODE1', 'RCODE2', 'RCODE3'] } as any;
-    const { data } = await httpClient.post('/profile/mfa/verify', payload);
+    const data = await apiPost<VerifyMFAResponse>('/profile/mfa/verify', payload);
     return data;
   },
-  disableMFA: async (): Promise<void> => {
-    if (isBypass()) return;
-    await httpClient.delete('/profile/mfa');
+  disableMFA: async (payload?: any): Promise<void> => {
+    // brief specifies POST /profile/mfa/disable with TOTP token in body
+    await apiPost('/profile/mfa/disable', payload || {});
   },
-  getSessions: async (): Promise<UserSessionSummary[]> => {
-    if (isBypass()) return mockSessions as any;
-    const { data } = await httpClient.get('/profile/sessions');
+  getSessions: async (): Promise<UserSessionDetail[]> => {
+    const data = await apiGet<UserSessionDetail[]>('/profile/me/sessions');
     return data;
   },
   revokeSession: async (id: string): Promise<void> => {
-    if (isBypass()) return;
-    await httpClient.delete(`/profile/sessions/${id}`);
+    await apiDelete(`/profile/me/sessions/${id}`);
+  },
+  // Bulk revoke sessions - keepCurrent=true to keep current session
+  bulkRevokeSessions: async (keepCurrent = true): Promise<void> => {
+    await apiDelete('/profile/me/sessions', { params: { keepCurrent } });
   },
   getActivity: async (cursor?: string): Promise<PaginatedActivity> => {
-    if (isBypass()) return mockActivity as any;
-    const { data } = await httpClient.get('/profile/activity', { params: { cursor } });
-    return data;
+    // backend should return { items: ProfileUserActivityLogItem[], nextCursor?: string | null }
+    const data = await apiGet<any>('/profile/me/activity', { params: { cursor } });
+
+    // Defensive normalization: ensure items is an array of activity items
+    const rawItems: unknown[] = Array.isArray(data?.items)
+      ? data.items
+      : data && data.items && typeof data.items === 'object'
+        ? Object.values(data.items as any)
+        : [];
+
+    const items: ProfileUserActivityLogItem[] = rawItems
+      .filter((it): it is ProfileUserActivityLogItem => !!it && typeof (it as any).id === 'string' && typeof (it as any).createdAt === 'string')
+      .map(i => i as ProfileUserActivityLogItem);
+
+    return {
+      items,
+      nextCursor: data?.nextCursor ?? null
+    };
   },
   uploadAvatar: async (file: File): Promise<{ avatarUrl: string }> => {
-    if (isBypass()) return { avatarUrl: '' };
     const form = new FormData();
     form.append('file', file);
-    const { data } = await httpClient.post('/profile/avatar', form, {
+    const data = await apiPost<{ avatarUrl: string }>('/profile/me/avatar', form, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return data;
+  },
+  getUserWithRoles: async (): Promise<UserWithRoles> => {
+    const data = await apiGet<UserWithRoles>(`/profile/users-with-roles`)
+    return data;
   }
+};
+
+
+type UserWithRoles = {
+  id: string,
+  username: string,
+  name: string | null,
+  surname: string | null,
+  email: string | null,
+  avatarUrl: string | null,
+  createdAt: string,
+  updatedAt: string,
+  roles: string[]
 };

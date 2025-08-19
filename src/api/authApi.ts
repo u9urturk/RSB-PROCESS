@@ -1,10 +1,7 @@
-import { AxiosResponse } from 'axios';
-import httpClient from './httpClient';
+import { apiPost } from './httpClient';
 import { ErrorHandlerService } from '../utils/ErrorHandlerService';
 import { User } from '../types';
-import { JWTUtil } from '../utils/jtwUtils';
 
-// API Response Types
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -19,13 +16,15 @@ interface RegisterData {
 }
 
 interface LoginData {
+  success?: boolean;
   message: string;
-  access_token: string;
+  sessionId: string;
+  refresh_expires_at?: string;
+  user_summary?: Partial<User> & { id: string; username: string };
 }
 
 interface RecoveryLoginData {
   message: string;
-  access_token: string;
   newRecoveryCode: string;
 }
 
@@ -43,156 +42,83 @@ interface RecoveryLoginRequest {
   username: string;
   recoveryCode: string;
 }
-
-// Auth API Service (Single Responsibility + Open/Closed Principle)
 class AuthApiService {
-  // Register user
   async register(userData: RegisterRequest): Promise<RegisterData> {
     try {
-      const response: AxiosResponse<ApiResponse<RegisterData>> = await httpClient.post(
-        '/auth/register',
-        userData
-      );
-
-      if (!response.data.success) {
-        throw new Error(response.data.data?.message || 'Registration failed');
-      }
-
-      return response.data.data;
+      const data = await apiPost<RegisterData>('/auth/register', userData);
+      return data;
     } catch (error) {
-      // Handle specific errors
       if (ErrorHandlerService.isConflictError(error)) {
         throw new Error('User already exists');
       }
-      
-      // Use global error handler
+
       const handledError = ErrorHandlerService.handleError(error, 'AuthApi.register');
       throw new Error(handledError.userMessage);
     }
   }
 
-  // Login with OTP
-  async login(credentials: LoginRequest): Promise<{ user: User; token: string }> {
+  async login(credentials: LoginRequest): Promise<{ user: User }> {
     try {
-      const response: AxiosResponse<ApiResponse<LoginData>> = await httpClient.post(
-        '/auth/login',
-        credentials
-      );
-
-      if (!response.data.success) {
-        throw new Error(response.data.data?.message || 'Login failed');
+      const data = await apiPost<LoginData>('/auth/login', credentials);
+      let user: User;
+      if (!data.user_summary) {
+        user = await this.profile();
+      } else {
+        user = data.user_summary as User;
       }
-
-      const user = JWTUtil.parseToken(response.data.data.access_token);
-      if (!user) {
-        throw new Error('Invalid token received');
+      if (data.sessionId) {
+        (user as any).sessionId = data.sessionId;
       }
-
-      return {
-        user,
-        token: response.data.data.access_token,
-      };
+      return { user };
     } catch (error) {
-      // Use global error handler
       const handledError = ErrorHandlerService.handleError(error, 'AuthApi.login');
       throw new Error(handledError.userMessage);
     }
   }
 
-  // Login with recovery code
-  async loginWithRecovery(credentials: RecoveryLoginRequest): Promise<{
-    user: User;
-    token: string;
-    newRecoveryCode: string;
-  }> {
+  async loginWithRecovery(credentials: RecoveryLoginRequest): Promise<{ user: User; newRecoveryCode: string; }> {
     try {
-      const response: AxiosResponse<ApiResponse<RecoveryLoginData>> = await httpClient.post(
-        '/auth/login-recovery',
-        credentials
-      );
-
-      if (!response.data.success) {
-        throw new Error(response.data.data?.message || 'Recovery login failed');
-      }
-
-      const user = JWTUtil.parseToken(response.data.data.access_token);
-      if (!user) {
-        throw new Error('Invalid token received');
-      }
-
-      return {
-        user,
-        token: response.data.data.access_token,
-        newRecoveryCode: response.data.data.newRecoveryCode,
-      };
+      const data = await apiPost<RecoveryLoginData>('/auth/login-recovery', credentials);
+      const user = await this.profile();
+      return { user, newRecoveryCode: data.newRecoveryCode };
     } catch (error) {
-      // Use global error handler
       const handledError = ErrorHandlerService.handleError(error, 'AuthApi.loginWithRecovery');
       throw new Error(handledError.userMessage);
     }
   }
 
-  // Logout (if needed for API call)
   async logout(): Promise<void> {
     try {
-      await httpClient.post('/auth/logout');
+      await apiPost('/auth/logout');
     } catch (error) {
-      // Don't throw logout errors, just log them
       ErrorHandlerService.logError(error, 'AuthApi.logout');
     }
   }
 
-  // Refresh token (future use)
-  async refreshToken(): Promise<{ token: string; user: User }> {
+  async refreshSession(): Promise<boolean> {
     try {
-      const response: AxiosResponse<ApiResponse<LoginData>> = await httpClient.post(
-        '/auth/refresh'
-      );
-
-      if (!response.data.success) {
-        throw new Error('Token refresh failed');
-      }
-
-      const user = JWTUtil.parseToken(response.data.data.access_token);
-      if (!user) {
-        throw new Error('Invalid token received');
-      }
-
-      return {
-        user,
-        token: response.data.data.access_token,
-      };
+      await apiPost('/auth/refresh');
+      return true;
     } catch (error) {
-      // Use global error handler
-      const handledError = ErrorHandlerService.handleError(error, 'AuthApi.refreshToken');
-      throw new Error(handledError.userMessage);
+      const handledError = ErrorHandlerService.handleError(error, 'AuthApi.refreshSession');
+      console.debug('[authApi] refreshSession failed', handledError.message);
+      return false;
     }
   }
 
-  // Verify token (check if token is still valid)
-  async verifyToken(): Promise<User> {
+  async profile(): Promise<User> {
     try {
-      const response: AxiosResponse<ApiResponse<{ user: User }>> = await httpClient.get(
-        '/auth/verify'
-      );
-
-      if (!response.data.success) {
-        throw new Error('Token verification failed');
-      }
-
-      return response.data.data.user;
+      const data = await apiPost<User>('/auth/profile');
+      return data;
     } catch (error) {
-      // Use global error handler
-      const handledError = ErrorHandlerService.handleError(error, 'AuthApi.verifyToken');
+      const handledError = ErrorHandlerService.handleError(error, 'AuthApi.profile');
       throw new Error(handledError.userMessage);
     }
   }
 }
 
-// Export singleton instance
 export const authApiService = new AuthApiService();
 
-// Export types
 export type {
   RegisterRequest,
   LoginRequest,
