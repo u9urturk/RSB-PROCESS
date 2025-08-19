@@ -7,7 +7,6 @@ interface ImportMetaEnv {
   readonly GIT_SHA: string
   readonly VITE_FEATURE_REALTIME_LOGOUT: boolean
 
-  // Diğer environment değişkenleri buraya eklenebilir
 }
 
 interface ImportMeta {
