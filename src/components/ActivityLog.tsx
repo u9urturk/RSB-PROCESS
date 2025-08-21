@@ -49,7 +49,6 @@ const ActivityLog: React.FC = () => {
                 <span className="truncate">Kullanıcı Aktivite Kaydı</span>
             </h3>
             {loading && <div className="text-xs text-gray-400">Yükleniyor...</div>}
-            {error && <div className="text-xs text-red-600">{error}</div>}
             {!loading && !activities.length && <div className="text-xs text-gray-500">Hiç aktivite bulunamadı.</div>}
             <ul
                 className="flex flex-col gap-3 w-full"
