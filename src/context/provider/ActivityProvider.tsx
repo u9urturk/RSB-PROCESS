@@ -37,7 +37,8 @@ export const ActivityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 const res = await fetchUserActivities(params);
                 setActivities(prev => {
                     const existingIds = new Set(prev.map(a => a.id));
-                    const newActivities = res.data.filter(a => !existingIds.has(a.id));
+                    const safeData = Array.isArray(res.data) ? res.data : [];
+                    const newActivities = safeData.filter(a => !existingIds.has(a.id));
                     return [...prev, ...newActivities];
                 });
                 setHasMore(res.data.length === (opts?.limit ?? 20));

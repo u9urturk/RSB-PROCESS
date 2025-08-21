@@ -9,6 +9,7 @@ import type {
   RegisterData,
   User
 } from '../../api/authApi';
+import { fetchCsrfToken } from '@/api/csrfService';
 
 
 interface AuthState {
@@ -154,6 +155,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     sessionIdRef.current = state.user?.sessionId;
   }, [state.user?.sessionId]);
+
+  useEffect(() => {
+    const fetchCsrf = async () => {
+      await fetchCsrfToken().catch(() => { });
+
+    };
+    fetchCsrf();
+  }, []);
 
 
 

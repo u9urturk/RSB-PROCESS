@@ -8,10 +8,9 @@ const httpClient: AxiosInstance = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
-        withCredentials: true,
+    withCredentials: true,
 });
 
-// Request interceptor (placeholder) — şu an ekstra header yok.
 httpClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => config,
     (error) => Promise.reject(error)
@@ -20,7 +19,6 @@ httpClient.interceptors.request.use(
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
-// Response interceptor - token yenileme ve hata yönetimi
 httpClient.interceptors.response.use(
     (response: AxiosResponse) => {
         return response;
