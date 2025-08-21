@@ -1,4 +1,4 @@
 // src/api/csrfService.ts
-import httpClient from './httpClient';
+import { apiGet } from './httpClient';
 
-export const fetchCsrfToken = () => httpClient.get('/auth/csrf');
+export const fetchCsrfToken = async () => await apiGet('/auth/csrf');

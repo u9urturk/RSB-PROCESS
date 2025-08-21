@@ -9,7 +9,6 @@ import type {
   RegisterData,
   User
 } from '../../api/authApi';
-import { fetchCsrfToken } from '@/api/csrfService';
 
 
 interface AuthState {
@@ -156,12 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionIdRef.current = state.user?.sessionId;
   }, [state.user?.sessionId]);
 
-  useEffect(() => {
-    const fetchCsrf = async () => {
-      await fetchCsrfToken().catch(() => { });
-    };
-    fetchCsrf();
-  }, []);
 
 
   const REALTIME_LOGOUT_ENABLED = ((import.meta as any).env?.VITE_FEATURE_REALTIME_LOGOUT ?? 'true') !== 'false';
