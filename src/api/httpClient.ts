@@ -1,8 +1,6 @@
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 import type { ProfileApiSuccess, ProfileApiError } from '@/types/profile';
-// Cookie-only: Authorization header / in-memory access token kaldırıldı.
-// Refresh flow: 401 -> bir kez /auth/refresh dene -> başarılıysa orijinali tekrar dene.
 
 const httpClient: AxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1",
@@ -10,7 +8,7 @@ const httpClient: AxiosInstance = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
-        withCredentials: true, // Tüm isteklerde cookie gönderimi
+        withCredentials: true,
 });
 
 // Request interceptor (placeholder) — şu an ekstra header yok.
