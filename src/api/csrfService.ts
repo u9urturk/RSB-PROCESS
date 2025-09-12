@@ -29,8 +29,6 @@ class CSRFService {
         fetchOptions.headers = {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
           // Force Safari to include cookies
           'X-Requested-With': 'XMLHttpRequest'
         };

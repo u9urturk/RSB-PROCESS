@@ -2,6 +2,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 import type { ProfileApiSuccess, ProfileApiError } from '@/types/profile';
 import { csrfService } from './csrfService';
+import { safariCSRFService } from './safariCsrfService';
 
 const httpClient: AxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1",
@@ -20,10 +21,8 @@ const isSafari = typeof window !== 'undefined' &&
 if (isSafari) {
     console.log('Safari detected - applying enhanced cookie configuration');
     
-    // Set default headers for Safari
+    // Set default headers for Safari (remove problematic headers)
     httpClient.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-    httpClient.defaults.headers.common['Cache-Control'] = 'no-cache';
-    httpClient.defaults.headers.common['Pragma'] = 'no-cache';
 }
 
 httpClient.interceptors.request.use(
@@ -31,7 +30,15 @@ httpClient.interceptors.request.use(
         // Add CSRF token for state-changing methods
         if (config.method && ['post', 'put', 'delete', 'patch'].includes(config.method.toLowerCase())) {
             try {
-                const token = await csrfService.getCsrfToken();
+                let token: string | null = null;
+                
+                // Use Safari-specific CSRF service for Safari
+                if (isSafari) {
+                    token = await safariCSRFService.getSafariCsrfToken();
+                } else {
+                    token = await csrfService.getCsrfToken();
+                }
+                
                 if (token) {
                     config.headers['X-CSRF-Token'] = token;
                 }
