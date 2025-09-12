@@ -1,6 +1,7 @@
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 import type { ProfileApiSuccess, ProfileApiError } from '@/types/profile';
+import { csrfService } from './csrfService';
 
 const httpClient: AxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1",
@@ -12,7 +13,20 @@ const httpClient: AxiosInstance = axios.create({
 });
 
 httpClient.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => config,
+    async (config: InternalAxiosRequestConfig) => {
+        // Add CSRF token for state-changing methods
+        if (config.method && ['post', 'put', 'delete', 'patch'].includes(config.method.toLowerCase())) {
+            try {
+                const token = await csrfService.getCsrfToken();
+                if (token) {
+                    config.headers['X-CSRF-Token'] = token;
+                }
+            } catch (error) {
+                console.warn('Could not get CSRF token:', error);
+            }
+        }
+        return config;
+    },
     (error) => Promise.reject(error)
 );
 
@@ -25,6 +39,29 @@ httpClient.interceptors.response.use(
     },
     async (error: AxiosError) => {
         const originalRequest = error.config as any;
+
+        // 403 CSRF Token error handling
+        if (error.response?.status === 403) {
+            const errorMessage = (error.response.data as any)?.message || '';
+            if (errorMessage.includes('CSRF') || errorMessage.includes('csrf')) {
+                console.log('CSRF token error detected, clearing cache and retrying...');
+                csrfService.clearCache();
+                
+                // Retry the request once with new token
+                if (!originalRequest._csrfRetry) {
+                    originalRequest._csrfRetry = true;
+                    try {
+                        const newToken = await csrfService.getCsrfToken();
+                        if (newToken) {
+                            originalRequest.headers['X-CSRF-Token'] = newToken;
+                            return httpClient(originalRequest);
+                        }
+                    } catch (tokenError) {
+                        console.error('Failed to get new CSRF token:', tokenError);
+                    }
+                }
+            }
+        }
 
         // 401 Unauthorized handling (cookie-only)
         if (error.response?.status === 401 && originalRequest) {

@@ -7,6 +7,10 @@ import { NotificationProvider } from './context/provider/NotificationProvider'
 import { ConfirmProvider } from './context/provider/ConfirmProvider'
 import { AuthProvider } from './context/provider/AuthProvider'
 import { ProfileProvider } from './context/provider/ProfileProvider'
+import { safariCSRFService } from './api/safariCsrfService'
+
+// Initialize Safari CSRF service for Safari browsers
+safariCSRFService.init();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
