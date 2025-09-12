@@ -12,6 +12,20 @@ const httpClient: AxiosInstance = axios.create({
     withCredentials: true,
 });
 
+// Safari detection for enhanced cookie handling
+const isSafari = typeof window !== 'undefined' && 
+  /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+
+// Safari-specific configuration
+if (isSafari) {
+    console.log('Safari detected - applying enhanced cookie configuration');
+    
+    // Set default headers for Safari
+    httpClient.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+    httpClient.defaults.headers.common['Cache-Control'] = 'no-cache';
+    httpClient.defaults.headers.common['Pragma'] = 'no-cache';
+}
+
 httpClient.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
         // Add CSRF token for state-changing methods
