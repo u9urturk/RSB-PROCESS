@@ -40,6 +40,41 @@ class CSRFService {
         throw new Error(`CSRF endpoint returned ${response.status}`);
       }
       
+      // Check content type before parsing
+      const contentType = response.headers.get('Content-Type') || '';
+      if (!contentType.includes('application/json')) {
+        console.error('CSRF endpoint returned non-JSON response, content-type:', contentType);
+        
+        // Try to get token from cookies as fallback
+        let token = null;
+        if (typeof document !== 'undefined') {
+          const cookieNames = [
+            'csrf_header_token',
+            'XSRF-TOKEN', 
+            '_token',
+            'csrf-token',
+            'X-CSRF-TOKEN'
+          ];
+          
+          for (const cookieName of cookieNames) {
+            token = document.cookie
+              .split('; ')
+              .find(row => row.startsWith(`${cookieName}=`))
+              ?.split('=')[1];
+            if (token) {
+              console.log(`Token found in cookie (non-JSON response): ${cookieName}`);
+              break;
+            }
+          }
+        }
+        
+        if (token) {
+          this.cachedToken = token;
+          this.tokenExpiry = Date.now() + this.TOKEN_CACHE_DURATION;
+        }
+        return token || null;
+      }
+      
       const data = await response.json();
       console.log('CSRF response data:', data);
       

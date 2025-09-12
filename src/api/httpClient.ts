@@ -41,9 +41,14 @@ httpClient.interceptors.request.use(
                 
                 if (token) {
                     config.headers['X-CSRF-Token'] = token;
+                    console.log('CSRF token added to request');
+                } else {
+                    console.warn('No CSRF token available, proceeding without token');
+                    // Don't fail the request, let backend handle missing token
                 }
             } catch (error) {
-                console.warn('Could not get CSRF token:', error);
+                console.warn('Could not get CSRF token, proceeding without token:', error);
+                // Don't fail the request, let backend handle missing token
             }
         }
         return config;

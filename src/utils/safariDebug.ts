@@ -62,17 +62,25 @@ export class SafariDebugger {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'X-Requested-With': 'XMLHttpRequest'
         }
       });
 
       console.log('Response status:', response.status);
       console.log('Response headers:', [...response.headers.entries()]);
+      console.log('Content-Type:', response.headers.get('Content-Type'));
       
-      const data = await response.json();
-      console.log('Response data:', data);
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
+      // Try to parse as JSON
+      try {
+        const data = JSON.parse(responseText);
+        console.log('Parsed JSON:', data);
+      } catch (parseError) {
+        console.log('Response is not valid JSON:', parseError);
+        console.log('Response appears to be HTML:', responseText.includes('<html>'));
+      }
       
       // Check cookies after request
       this.logCookies();

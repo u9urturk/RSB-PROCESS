@@ -1,6 +1,6 @@
 // src/api/safariCsrfService.ts
-import { csrfService } from './csrfService';
 import { SafariStorageService } from './safariStorageService';
+import { FallbackCSRFService } from './fallbackCsrfService';
 
 class SafariCSRFService {
   private isInitialized = false;
@@ -42,7 +42,7 @@ class SafariCSRFService {
       }
 
       // Make direct request to CSRF endpoint using XMLHttpRequest to avoid fetch override
-      const token = await this.fetchTokenWithXHR();
+      let token = await this.fetchTokenWithXHR();
       
       if (token) {
         this.safariTokenCache = token;
@@ -53,7 +53,17 @@ class SafariCSRFService {
         
         console.log('Safari CSRF token cached:', token.substring(0, 10) + '...');
       } else {
-        console.warn('No CSRF token found in Safari response or cookies');
+        console.warn('No CSRF token found in Safari response or cookies, trying fallback methods');
+        
+        // Try fallback methods
+        const fallbackToken = FallbackCSRFService.extractTokenFromAnywhere();
+        if (fallbackToken) {
+          token = fallbackToken;
+          this.safariTokenCache = token;
+          this.safariTokenExpiry = Date.now() + this.SAFARI_TOKEN_CACHE_DURATION;
+          SafariStorageService.saveToken(token);
+          console.log('Safari using fallback CSRF token:', token.substring(0, 10) + '...');
+        }
       }
       
       return token;
@@ -64,7 +74,7 @@ class SafariCSRFService {
   }
 
   private async fetchTokenWithXHR(): Promise<string | null> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', '/api/v1/auth/csrf', true);
       xhr.withCredentials = true;
@@ -75,6 +85,14 @@ class SafariCSRFService {
       xhr.onload = function() {
         if (xhr.status === 200) {
           try {
+            // Check if response is actually JSON
+            const contentType = xhr.getResponseHeader('Content-Type') || '';
+            if (!contentType.includes('application/json')) {
+              console.error('CSRF endpoint returned non-JSON response:', xhr.responseText);
+              resolve(null);
+              return;
+            }
+
             const data = JSON.parse(xhr.responseText);
             console.log('Safari CSRF XHR response:', data);
             
@@ -96,17 +114,52 @@ class SafariCSRFService {
                   .split('; ')
                   .find(row => row.startsWith(`${cookieName}=`))
                   ?.split('=')[1];
-                if (token) break;
+                if (token) {
+                  console.log(`Safari found token in cookie: ${cookieName}`);
+                  break;
+                }
               }
             }
             
             resolve(token);
           } catch (error) {
             console.error('Failed to parse CSRF response:', error);
-            resolve(null);
+            console.error('Response text:', xhr.responseText);
+            
+            // Fallback: try to extract token from HTML if it's an HTML response
+            const htmlResponse = xhr.responseText;
+            if (htmlResponse.includes('<')) {
+              console.log('HTML response detected, attempting token extraction from cookies');
+              
+              // Try to get token from cookies as fallback
+              let token = null;
+              if (typeof document !== 'undefined') {
+                const cookieNames = [
+                  'csrf_header_token',
+                  'XSRF-TOKEN',
+                  '_token',
+                  'csrf-token',
+                  'X-CSRF-TOKEN'
+                ];
+                
+                for (const cookieName of cookieNames) {
+                  token = document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith(`${cookieName}=`))
+                    ?.split('=')[1];
+                  if (token) {
+                    console.log(`Safari found token in cookie (HTML fallback): ${cookieName}`);
+                    break;
+                  }
+                }
+              }
+              resolve(token || null);
+            } else {
+              resolve(null);
+            }
           }
         } else {
-          console.error(`Safari CSRF XHR failed with status ${xhr.status}`);
+          console.error(`Safari CSRF XHR failed with status ${xhr.status}: ${xhr.responseText}`);
           resolve(null);
         }
       };
