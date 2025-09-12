@@ -1,8 +1,6 @@
 
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 import type { ProfileApiSuccess, ProfileApiError } from '@/types/profile';
-import { csrfService } from './csrfService';
-import { safariCSRFService } from './safariCsrfService';
 
 const httpClient: AxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1",
@@ -13,46 +11,8 @@ const httpClient: AxiosInstance = axios.create({
     withCredentials: true,
 });
 
-// Safari detection for enhanced cookie handling
-const isSafari = typeof window !== 'undefined' && 
-  /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-
-// Safari-specific configuration
-if (isSafari) {
-    console.log('Safari detected - applying enhanced cookie configuration');
-    
-    // Set default headers for Safari (remove problematic headers)
-    httpClient.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-}
-
 httpClient.interceptors.request.use(
-    async (config: InternalAxiosRequestConfig) => {
-        // Add CSRF token for state-changing methods
-        if (config.method && ['post', 'put', 'delete', 'patch'].includes(config.method.toLowerCase())) {
-            try {
-                let token: string | null = null;
-                
-                // Use Safari-specific CSRF service for Safari
-                if (isSafari) {
-                    token = await safariCSRFService.getSafariCsrfToken();
-                } else {
-                    token = await csrfService.getCsrfToken();
-                }
-                
-                if (token) {
-                    config.headers['X-CSRF-Token'] = token;
-                    console.log('CSRF token added to request');
-                } else {
-                    console.warn('No CSRF token available, proceeding without token');
-                    // Don't fail the request, let backend handle missing token
-                }
-            } catch (error) {
-                console.warn('Could not get CSRF token, proceeding without token:', error);
-                // Don't fail the request, let backend handle missing token
-            }
-        }
-        return config;
-    },
+    (config: InternalAxiosRequestConfig) => config,
     (error) => Promise.reject(error)
 );
 
@@ -65,29 +25,6 @@ httpClient.interceptors.response.use(
     },
     async (error: AxiosError) => {
         const originalRequest = error.config as any;
-
-        // 403 CSRF Token error handling
-        if (error.response?.status === 403) {
-            const errorMessage = (error.response.data as any)?.message || '';
-            if (errorMessage.includes('CSRF') || errorMessage.includes('csrf')) {
-                console.log('CSRF token error detected, clearing cache and retrying...');
-                csrfService.clearCache();
-                
-                // Retry the request once with new token
-                if (!originalRequest._csrfRetry) {
-                    originalRequest._csrfRetry = true;
-                    try {
-                        const newToken = await csrfService.getCsrfToken();
-                        if (newToken) {
-                            originalRequest.headers['X-CSRF-Token'] = newToken;
-                            return httpClient(originalRequest);
-                        }
-                    } catch (tokenError) {
-                        console.error('Failed to get new CSRF token:', tokenError);
-                    }
-                }
-            }
-        }
 
         // 401 Unauthorized handling (cookie-only)
         if (error.response?.status === 401 && originalRequest) {
