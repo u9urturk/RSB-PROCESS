@@ -15,6 +15,7 @@
     "@tailwindcss/vite": "^4.0.9",
     "@zxing/browser": "^0.1.5",
     "axios": "^1.9.0",
+    "crypto-js": "^4.2.0",
     "framer-motion": "^12.23.12",
     "fs": "^0.0.1-security",
     "lucide-react": "^0.479.0",

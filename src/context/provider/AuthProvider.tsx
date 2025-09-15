@@ -10,6 +10,7 @@ import type {
   User
 } from '../../api/authApi';
 import { fetchCsrfToken } from '@/api/csrfService';
+import { clearCsrfToken } from '@/api/httpClient';
 
 
 interface AuthState {
@@ -152,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     token: null,
     isAuthenticated: false,
   });
+
   useEffect(() => {
     sessionIdRef.current = state.user?.sessionId;
   }, [state.user?.sessionId]);
@@ -316,6 +318,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Logout API call failed:', error);
     } finally {
       realtimeServiceRegistry.instance?.disconnect();
+      clearCsrfToken(); // Clear encrypted CSRF token from sessionStorage
       dispatch({ type: 'LOGOUT' });
     }
   }, []);

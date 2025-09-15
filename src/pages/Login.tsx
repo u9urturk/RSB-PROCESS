@@ -8,19 +8,11 @@ import type { RegisterRequest, LoginRequest, RecoveryLoginRequest, RegisterData 
 import { useLoginState } from "../customHook/useLoginState";
 import { useNavigate } from "react-router-dom";
 
-// Types for component state
-
-
-// Custom hook for login state management (Single Responsibility)
-
-
-// Base props for all auth steps (Interface Segregation)
 interface BaseStepProps {
     loading: boolean;
     onBack?: () => void;
 }
 
-// Username Step Component (Single Responsibility)
 const UsernameStep: React.FC<BaseStepProps & {
     onSubmit: (username: string) => Promise<void>;
 }> = ({ onSubmit, loading }) => {
@@ -72,7 +64,6 @@ const UsernameStep: React.FC<BaseStepProps & {
     );
 };
 
-// QR Code Step Component (Enhanced for Horizontal Layout)
 const QrCodeStep: React.FC<BaseStepProps & {
     registrationData: RegisterData;
     onContinue: () => void;
@@ -208,7 +199,6 @@ const QrCodeStep: React.FC<BaseStepProps & {
     );
 };
 
-// Verification Step Component (Single Responsibility)
 const VerificationStep: React.FC<BaseStepProps & {
     username: string;
     isRecoveryMode: boolean;
@@ -225,7 +215,6 @@ const VerificationStep: React.FC<BaseStepProps & {
     };
 
     const handleCodeChange = (value: string) => {
-        // Only allow digits and limit length
         const cleanValue = value.replace(/\D/g, '');
         const maxLength = isRecoveryMode ? 8 : 6;
         setCode(cleanValue.slice(0, maxLength));
@@ -296,7 +285,6 @@ const VerificationStep: React.FC<BaseStepProps & {
     );
 };
 
-// Main Login Component (Enhanced Container)
 const Login: React.FC = () => {
     const loginState = useLoginState();
     const navigate = useNavigate();
@@ -322,7 +310,6 @@ const Login: React.FC = () => {
         }
     }, [isAuthenticated, user, navigate]);
 
-    // Handle username submission
     const handleUsernameSubmit = async (username: string) => {
         try {
             clearError();
@@ -334,7 +321,6 @@ const Login: React.FC = () => {
             loginState.updateStep('qr');
             showNotification('success', data.message);
         } catch (error: any) {
-            // Check if user already exists (should go to verification)
             if (error.message.includes('already exists') || error.message.includes('User exists')) {
                 loginState.updateStep('verification');
                 showNotification('info', 'Merhaba ! . Lütfen OTP kodunu girin.');
@@ -344,13 +330,11 @@ const Login: React.FC = () => {
         }
     };
 
-    // Continue after QR code step
     const continueAfterQr = () => {
         clearRegistrationData();
         loginState.updateStep('verification');
     };
 
-    // Handle verification
     const handleVerification = async (code: string) => {
         try {
             clearError();
@@ -364,7 +348,6 @@ const Login: React.FC = () => {
                 const newCode = await loginWithRecovery(recoveryRequest);
                 showNotification('success', `Giriş başarılı! Yeni kurtarma kodunuz: ${newCode}`);
 
-                // Clear the new recovery code after showing
                 setTimeout(() => clearNewRecoveryCode(), 5000);
             } else {
                 const loginRequest: LoginRequest = {
@@ -380,14 +363,12 @@ const Login: React.FC = () => {
         }
     };
 
-    // Show error notifications
     React.useEffect(() => {
         if (error) {
             showNotification('error', error);
         }
     }, [error, showNotification]);
 
-    // Get current step title and description
     const getStepInfo = () => {
         switch (loginState.step) {
             case 'username':
@@ -414,9 +395,7 @@ const Login: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-500 via-red-500 to-red-600 px-4 py-8">
-            {/* Responsive Container */}
             <div className="w-auto max-w-md h-auto lg:max-w-4xl space-y-8 bg-white p-6 lg:p-8 rounded-xl shadow-lg">
-                {/* Header */}
                 <div className="text-center">
                     <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-900">
                         {stepInfo.title}
@@ -426,7 +405,6 @@ const Login: React.FC = () => {
                     </p>
                 </div>
 
-                {/* Steps Container */}
                 <div >
                     <AnimatePresence mode="wait">
                         {loginState.step === 'username' && (
@@ -458,7 +436,6 @@ const Login: React.FC = () => {
                     </AnimatePresence>
                 </div>
 
-                {/* Back Button */}
                 {loginState.step !== 'username' && (
                     <button
                         onClick={loginState.goBack}

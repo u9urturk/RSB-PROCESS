@@ -1,5 +1,3 @@
-
-// Error Types
 interface ErrorResponse {
     message: string;
     code?: string;
@@ -17,53 +15,37 @@ interface ValidationError {
     message: string;
 }
 
-// Global Error Handler Service (Single Responsibility Principle)
 class ErrorHandlerService {
-    // Optional notifier function registered by UI to show toasts
     private static notifier: ((type: 'success' | 'error' | 'warning' | 'info', message: string) => void) | null = null;
 
     static registerNotifier(fn: ((type: 'success' | 'error' | 'warning' | 'info', message: string) => void) | null) {
         this.notifier = fn;
     }
-    // Getter used to access notifier in a type-safe way so linter sees the usage
     static getNotifier() {
         return this.notifier;
     }
-    /**
-     * Extract error message from various error types
-     * @param error - Error object from API call
-     * @returns Formatted error message
-     */
+
     static extractErrorMessage(error: any): string {
-        // Axios error response structure
         if (error?.response?.data?.message) {
             return error.response.data.message;
         }
 
-        // Axios error with data as string
         if (error?.response?.data && typeof error.response.data === 'string') {
             return error.response.data;
         }
 
-        // Axios error with data as object
         if (error?.response?.data) {
             return JSON.stringify(error.response.data);
         }
 
-        // Network or other errors
         if (error?.message) {
             return error.message;
         }
 
-        // Fallback error message
         return 'Unknown error occurred';
     }
 
-    /**
-     * Get detailed error information
-     * @param error - Error object
-     * @returns Detailed error response
-     */
+
     static getErrorDetails(error: any): ErrorResponse {
         const baseError: ErrorResponse = {
             message: this.extractErrorMessage(error),
@@ -75,83 +57,42 @@ class ErrorHandlerService {
         return baseError;
     }
 
-    /**
-     * Check if error is a conflict error (409)
-     * @param error - Error object
-     * @returns true if conflict error
-     */
+
     static isConflictError(error: any): boolean {
         return error?.response?.status === 409;
     }
 
-    /**
-     * Check if error is unauthorized (401)
-     * @param error - Error object
-     * @returns true if unauthorized error
-     */
     static isUnauthorizedError(error: any): boolean {
         return error?.response?.status === 401;
     }
 
-    /**
-     * Check if error is forbidden (403)
-     * @param error - Error object
-     * @returns true if forbidden error
-     */
+
     static isForbiddenError(error: any): boolean {
         return error?.response?.status === 403;
     }
 
-    /**
-     * Check if error is not found (404)
-     * @param error - Error object
-     * @returns true if not found error
-     */
     static isNotFoundError(error: any): boolean {
         return error?.response?.status === 404;
     }
 
-    /**
-     * Check if error is a validation error (422)
-     * @param error - Error object
-     * @returns true if validation error
-     */
+
     static isValidationError(error: any): boolean {
         return error?.response?.status === 422;
     }
 
-    /**
-     * Check if error is rate limit error (429)
-     * @param error - Error object
-     * @returns true if rate limit error
-     */
     static isRateLimitError(error: any): boolean {
         return error?.response?.status === 429;
     }
 
-    /**
-     * Check if error is a server error (5xx)
-     * @param error - Error object
-     * @returns true if server error
-     */
+
     static isServerError(error: any): boolean {
         return error?.response?.status >= 500 && error?.response?.status < 600;
     }
 
-    /**
-     * Check if error is a client error (4xx)
-     * @param error - Error object
-     * @returns true if client error
-     */
     static isClientError(error: any): boolean {
         return error?.response?.status >= 400 && error?.response?.status < 500;
     }
 
-    /**
-     * Check if error is a network error
-     * @param error - Error object
-     * @returns NetworkError object
-     */
     static isNetworkError(error: any): NetworkError {
         const isNetwork = error?.code === 'NETWORK_ERROR' ||
             error?.code === 'ECONNABORTED' ||
@@ -163,21 +104,13 @@ class ErrorHandlerService {
         };
     }
 
-    /**
-     * Check if error is a timeout error
-     * @param error - Error object
-     * @returns true if timeout error
-     */
+
     static isTimeoutError(error: any): boolean {
         return error?.code === 'ECONNABORTED' ||
             error?.message?.includes('timeout');
     }
 
-    /**
-     * Get validation errors from response
-     * @param error - Error object
-     * @returns Array of validation errors
-     */
+
     static getValidationErrors(error: any): ValidationError[] {
         if (!this.isValidationError(error)) {
             return [];
@@ -196,11 +129,7 @@ class ErrorHandlerService {
         return validationErrors;
     }
 
-    /**
-     * Get user-friendly error message based on error type
-     * @param error - Error object
-     * @returns User-friendly error message
-     */
+
     static getUserFriendlyMessage(error: any): string {
         const networkError = this.isNetworkError(error);
         if (networkError.isNetworkError) {
@@ -243,15 +172,9 @@ class ErrorHandlerService {
             return 'Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.';
         }
 
-        // Fallback to extracted message
         return this.extractErrorMessage(error);
     }
 
-    /**
-     * Log error with context
-     * @param error - Error object
-     * @param context - Additional context
-     */
     static logError(error: any, context?: string): void {
         const errorDetails = this.getErrorDetails(error);
         const logContext = context ? `[${context}]` : '';
@@ -266,12 +189,6 @@ class ErrorHandlerService {
         });
     }
 
-    /**
-     * Handle error and return appropriate response
-     * @param error - Error object
-     * @param context - Context for logging
-     * @returns Processed error with user-friendly message
-     */
     static handleError(error: any, context?: string): {
         message: string;
         userMessage: string;
@@ -294,7 +211,6 @@ class ErrorHandlerService {
     }
 }
 
-// Backwards-compatible export: convenience wrapper used by UI to map and show toast
 function mapApiErrorToToast(error: any, context?: string) {
     const handled = ErrorHandlerService.handleError(error, context);
     const notifier = ErrorHandlerService.getNotifier?.();
