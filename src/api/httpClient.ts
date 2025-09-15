@@ -11,54 +11,20 @@ const httpClient: AxiosInstance = axios.create({
     withCredentials: true,
 });
 
+// CSRF Token storage
 let csrfToken: string | null = null;
-
-const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'rsb-process-csrf-key-2024';
 const STORAGE_KEY = 'rsb_csrf_token';
 
-const simpleEncrypt = (text: string, key: string): string => {
-    try {
-        let encrypted = '';
-        for (let i = 0; i < text.length; i++) {
-            const keyChar = key.charCodeAt(i % key.length);
-            const textChar = text.charCodeAt(i);
-            encrypted += String.fromCharCode(textChar ^ keyChar);
-        }
-        return btoa(encrypted);
-    } catch (error) {
-        console.warn('Failed to encrypt CSRF token:', error);
-        return btoa(text); 
-    }
-};
-
-const simpleDecrypt = (encryptedText: string, key: string): string | null => {
-    try {
-        const decoded = atob(encryptedText); 
-        let decrypted = '';
-        for (let i = 0; i < decoded.length; i++) {
-            const keyChar = key.charCodeAt(i % key.length);
-            const encryptedChar = decoded.charCodeAt(i);
-            decrypted += String.fromCharCode(encryptedChar ^ keyChar);
-        }
-        return decrypted;
-    } catch (error) {
-        console.warn('Failed to decrypt CSRF token:', error);
-        return null;
-    }
-};
-
+// Function to get CSRF token from storage
 const getCsrfToken = (): string | null => {
     if (csrfToken) return csrfToken;
     
     if (typeof window !== 'undefined') {
         try {
-            const encryptedToken = sessionStorage.getItem(STORAGE_KEY);
-            if (encryptedToken) {
-                const decrypted = simpleDecrypt(encryptedToken, ENCRYPTION_KEY);
-                if (decrypted) {
-                    csrfToken = decrypted; // Cache in memory
-                    return decrypted;
-                }
+            const token = sessionStorage.getItem(STORAGE_KEY);
+            if (token) {
+                csrfToken = token; // Cache in memory
+                return token;
             }
         } catch (error) {
             console.warn('Failed to retrieve CSRF token from sessionStorage:', error);
@@ -67,29 +33,24 @@ const getCsrfToken = (): string | null => {
     return null;
 };
 
-// Function to set CSRF token with Safari handling
+// Function to set CSRF token
 export const setCsrfToken = (token: string) => {
     csrfToken = token;
-    const safari = isSafari();
     
     if (typeof window !== 'undefined') {
         try {
-            const encrypted = simpleEncrypt(token, ENCRYPTION_KEY);
-            sessionStorage.setItem(STORAGE_KEY, encrypted);
-            
+            sessionStorage.setItem(STORAGE_KEY, token);
             console.log('🔒 CSRF Token stored:', {
-                isSafari: safari,
                 tokenPreview: `${token.substring(0, 8)}...`,
-                encrypted: true,
-                storage: 'sessionStorage'
+                storage: 'sessionStorage (plain text)'
             });
-            
         } catch (error) {
             console.warn('Failed to store CSRF token in sessionStorage:', error);
         }
     }
 };
 
+// Function to clear CSRF token
 export const clearCsrfToken = () => {
     csrfToken = null;
     if (typeof window !== 'undefined') {
