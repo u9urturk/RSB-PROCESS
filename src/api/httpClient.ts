@@ -67,13 +67,23 @@ const getCsrfToken = (): string | null => {
     return null;
 };
 
+// Function to set CSRF token with Safari handling
 export const setCsrfToken = (token: string) => {
     csrfToken = token;
+    const safari = isSafari();
     
     if (typeof window !== 'undefined') {
         try {
             const encrypted = simpleEncrypt(token, ENCRYPTION_KEY);
             sessionStorage.setItem(STORAGE_KEY, encrypted);
+            
+            console.log('🔒 CSRF Token stored:', {
+                isSafari: safari,
+                tokenPreview: `${token.substring(0, 8)}...`,
+                encrypted: true,
+                storage: 'sessionStorage'
+            });
+            
         } catch (error) {
             console.warn('Failed to store CSRF token in sessionStorage:', error);
         }
@@ -91,12 +101,36 @@ export const clearCsrfToken = () => {
     }
 };
 
+// Function to detect Safari
+const isSafari = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const userAgent = window.navigator.userAgent;
+    return /^((?!chrome|android).)*safari/i.test(userAgent);
+};
+
 httpClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
             const token = getCsrfToken();
+            const safari = isSafari();
+            
+            console.log('🔍 Request Debug:', {
+                method: config.method,
+                url: config.url,
+                isSafari: safari,
+                csrfToken: token ? `${token.substring(0, 8)}...` : 'null',
+                headers: config.headers
+            });
+            
             if (token) {
                 config.headers['X-CSRF-Token'] = token;
+                
+                // Safari özel handling
+                if (safari) {
+                    console.log('🦎 Safari detected - CSRF handling');
+                    // Safari için ek header'lar eklenebilir
+                    config.headers['X-Requested-With'] = 'XMLHttpRequest';
+                }
             }
         }
         return config;
