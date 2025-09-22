@@ -8,13 +8,7 @@ export interface User {
     username: string;
     roles: string[];
     sessionId?: string;
-}
-
-export interface AuthState {
-    user: User | null;
-    token: string | null;
-    isAuthenticated: boolean;
-    loading: boolean;
+    access_token?: string;
 }
 
 // Waiter (Garson) Types
@@ -326,64 +320,6 @@ export interface StockBusinessState {
     isAddModalOpen: boolean;
     isDetailModalOpen: boolean;
     searchQuery: string;
-}
-
-export interface UserProfile {
-    userId: number;
-    username: string;
-    roles: string[];
-    sessionId?: string;
-    // Ek kullanıcı bilgileri
-    email?: string;
-    phone?: string;
-    fullName?: string;
-    firstName?: string;
-    lastName?: string;
-    avatar?: string;
-    isActive: boolean;
-    lastLoginAt?: string;
-    createdAt?: string;
-    updatedAt?: string;
-    // Permissions
-    permissions?: string[];
-    // Restaurant specific
-    restaurantId?: number;
-    restaurantName?: string;
-    // User preferences
-    preferences?: {
-        theme?: 'light' | 'dark';
-        language?: string;
-        timezone?: string;
-        notifications?: boolean;
-    };
-}
-
-
-export interface AuthContextType {
-    user: UserProfile | null;
-    token: string | null;
-    loading: boolean;
-    initializing: boolean;
-    setUserData: (userData: UserProfile, authToken: string) => void;
-    logout: () => void;
-    // Role ve Permission kontrolleri
-    hasRole: (role: string) => boolean;
-    hasAnyRole: (roles: string[]) => boolean;
-    hasAllRoles: (roles: string[]) => boolean;
-    hasPermission: (permission: string) => boolean;
-    hasAnyPermission: (permissions: string[]) => boolean;
-    // Role checks - shortcuts
-    isAdmin: () => boolean;
-    isManager: () => boolean;
-    isUser: () => boolean;
-    isRestaurantOwner: () => boolean;
-    isWaiter: () => boolean;
-    isCashier: () => boolean;
-    // Utility functions
-    refreshToken: () => Promise<string | null>;
-    isAuthenticated: boolean;
-    getUserDisplayName: () => string;
-    getUserInitials: () => string;
 }
 
 export interface NotificationContextType {

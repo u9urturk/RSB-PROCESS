@@ -3,7 +3,6 @@ import { Navigate } from "react-router-dom";
 import { useUser } from "./customHook/useUser";
 import type { UserPermissions } from "./customHook/useUser";
 
-// Pages
 import DashBoard from "./pages/DashBoard";
 import Layout from "./pages/Layout";
 import Login from "./pages/Login";
@@ -48,9 +47,9 @@ const RouteLoading: React.FC = () => (
 );
 
 // Unauthorized Component
-const UnauthorizedAccess: React.FC<{ message?: string; details?: string }> = ({ 
+const UnauthorizedAccess: React.FC<{ message?: string; details?: string }> = ({
     message = "Bu sayfaya erişim yetkiniz bulunmuyor.",
-    details 
+    details
 }) => (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md mx-auto p-6">
@@ -68,13 +67,13 @@ const UnauthorizedAccess: React.FC<{ message?: string; details?: string }> = ({
                 </div>
             )}
             <div className="space-y-3">
-                <button 
+                <button
                     onClick={() => window.history.back()}
                     className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg w-full transition-colors"
                 >
                     Geri Dön
                 </button>
-                <button 
+                <button
                     onClick={() => window.location.href = '/dashboard'}
                     className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg w-full transition-colors"
                 >
@@ -98,7 +97,7 @@ interface PrivateRouteProps {
     customCheck?: (user: any) => boolean;
 }
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ 
+const PrivateRoute: React.FC<PrivateRouteProps> = ({
     children,
     requireRoles = [],
     requireAnyRole = [],
@@ -109,11 +108,11 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     type,
     customCheck
 }) => {
-    const { 
-        user, 
-        isAuthenticated, 
-        hasRole, 
-        hasAnyRole, 
+    const {
+        user,
+        isAuthenticated,
+        hasRole,
+        hasAnyRole,
         hasAllRoles,
         hasPermission,
         hasAnyPermission,
@@ -132,12 +131,12 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     }
     // Redirect to login if not authenticated (normal flow)
     if (!isAuthenticated || !user) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/" replace />;
     }
 
     // Legacy support for admin prop
     if (admin && !hasRole('ADMIN')) {
-        return <UnauthorizedAccess 
+        return <UnauthorizedAccess
             message="Bu sayfa sadece yöneticiler için erişilebilir."
             details="ADMIN rolü gereklidir."
         />;
@@ -152,10 +151,10 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
             waiter: ['WAITER', 'ADMIN', 'MANAGER'],
             cashier: ['CASHIER', 'ADMIN', 'MANAGER']
         };
-        
+
         const allowedRoles = typeRoleMap[type] || [];
         if (allowedRoles.length > 0 && !hasAnyRole(allowedRoles)) {
-            return <UnauthorizedAccess 
+            return <UnauthorizedAccess
                 message={`Bu sayfa ${type} rolü için erişilebilir.`}
                 details={`Gerekli roller: ${allowedRoles.join(', ')}`}
             />;
@@ -166,7 +165,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     if (requireRoles.length > 0) {
         const hasRequiredRoles = requireRoles.every(role => hasRole(role));
         if (!hasRequiredRoles) {
-            return <UnauthorizedAccess 
+            return <UnauthorizedAccess
                 message="Gerekli rollere sahip değilsiniz."
                 details={`Gerekli roller: ${requireRoles.join(', ')}`}
             />;
@@ -176,7 +175,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     // Check any role requirement
     if (requireAnyRole.length > 0) {
         if (!hasAnyRole(requireAnyRole)) {
-            return <UnauthorizedAccess 
+            return <UnauthorizedAccess
                 message="Gerekli rollerden birine sahip değilsiniz."
                 details={`Gerekli rollerden biri: ${requireAnyRole.join(', ')}`}
             />;
@@ -186,7 +185,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     // Check all roles requirement
     if (requireAllRoles.length > 0) {
         if (!hasAllRoles(requireAllRoles)) {
-            return <UnauthorizedAccess 
+            return <UnauthorizedAccess
                 message="Tüm gerekli rollere sahip değilsiniz."
                 details={`Tüm gerekli roller: ${requireAllRoles.join(', ')}`}
             />;
@@ -197,7 +196,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     if (requirePermissions.length > 0) {
         const hasRequiredPermissions = requirePermissions.every(permission => hasPermission(permission));
         if (!hasRequiredPermissions) {
-            return <UnauthorizedAccess 
+            return <UnauthorizedAccess
                 message="Bu işlemi gerçekleştirmek için yetkiniz bulunmuyor."
                 details={`Gerekli yetkiler: ${requirePermissions.join(', ')}`}
             />;
@@ -207,7 +206,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     // Check any permission requirement
     if (requireAnyPermission.length > 0) {
         if (!hasAnyPermission(requireAnyPermission)) {
-            return <UnauthorizedAccess 
+            return <UnauthorizedAccess
                 message="Bu işlemi gerçekleştirmek için yetkiniz bulunmuyor."
                 details={`Gerekli yetkilerden biri: ${requireAnyPermission.join(', ')}`}
             />;
@@ -216,7 +215,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
 
     // Custom check function
     if (customCheck && !customCheck(user)) {
-        return <UnauthorizedAccess 
+        return <UnauthorizedAccess
             message="Bu sayfaya erişim için özel koşulları sağlamıyorsunuz."
             details="Ek business logic kontrolü başarısız."
         />;
@@ -300,7 +299,7 @@ const routes: CustomRouteObject[] = [
                 path: 'profile',
                 element: <ProfilePage />,
                 auth: true,
-                requireAnyRole: ['USER','ADMIN','MANAGER','WAITER','CASHIER']
+                requireAnyRole: ['USER', 'ADMIN', 'MANAGER', 'WAITER', 'CASHIER']
             }
         ]
     },
@@ -308,8 +307,8 @@ const routes: CustomRouteObject[] = [
     {
         path: '/unauthorized',
         element: (
-            <UnauthorizedAccess 
-                message="Bu sayfaya erişim yetkiniz bulunmamaktadır." 
+            <UnauthorizedAccess
+                message="Bu sayfaya erişim yetkiniz bulunmamaktadır."
                 details="Lütfen sistem yöneticinizle iletişime geçin."
             />
         )
@@ -324,13 +323,13 @@ const routes: CustomRouteObject[] = [
                     <h2 className="text-2xl font-semibold text-gray-800 mb-4">Sayfa Bulunamadı</h2>
                     <p className="text-gray-600 mb-8">Aradığınız sayfa mevcut değil.</p>
                     <div className="space-y-3">
-                        <button 
+                        <button
                             onClick={() => window.history.back()}
                             className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg transition-colors"
                         >
                             Geri Dön
                         </button>
-                        <button 
+                        <button
                             onClick={() => window.location.href = '/dashboard'}
                             className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors"
                         >
@@ -349,32 +348,32 @@ const authCheck = (routes: CustomRouteObject[]): CustomRouteObject[] =>
         if (route?.auth) {
             // Authentication ve authorization parametrelerini hazırla
             const authProps: PrivateRouteProps = { children: route.element };
-            
+
             // Role kontrolü parametreleri
             if (route.requireRoles) authProps.requireRoles = route.requireRoles;
             if (route.requireAnyRole) authProps.requireAnyRole = route.requireAnyRole;
             if (route.requireAllRoles) authProps.requireAllRoles = route.requireAllRoles;
-            
+
             // Permission kontrolü parametreleri
             if (route.requirePermissions) authProps.requirePermissions = route.requirePermissions;
             if (route.requireAnyPermission) authProps.requireAnyPermission = route.requireAnyPermission;
-            
+
             // Custom check function
             if (route.customCheck) authProps.customCheck = route.customCheck;
-            
+
             // Legacy support
             if (route.type) authProps.type = route.type;
             if (route.admin) authProps.admin = route.admin;
-            
+
             // PrivateRoute ile sarmal
             route.element = <PrivateRoute {...authProps} />;
         }
-        
+
         // Children routes için recursive auth check
         if (route?.children) {
             route.children = authCheck(route.children);
         }
-        
+
         return route;
     });
 

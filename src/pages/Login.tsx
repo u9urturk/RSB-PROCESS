@@ -109,7 +109,7 @@ const QrCodeStep: React.FC<BaseStepProps & {
                         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm mx-auto lg:mx-0">
                             <SafeQRCode qrCode={registrationData.qrCode} />
                         </div>
-                        
+
                         {/* QR Code Instructions - Desktop Only */}
                         <div className="hidden lg:block text-center lg:text-left">
                             <p className="text-xs text-gray-500 max-w-xs">
@@ -321,6 +321,7 @@ const Login: React.FC = () => {
             loginState.updateStep('qr');
             showNotification('success', data.message);
         } catch (error: any) {
+            console.log(error)
             if (error.message.includes('already exists') || error.message.includes('User exists')) {
                 loginState.updateStep('verification');
                 showNotification('info', 'Merhaba ! . Lütfen OTP kodunu girin.');

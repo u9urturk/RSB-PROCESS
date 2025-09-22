@@ -9,13 +9,12 @@ import type {
   RegisterData,
   User
 } from '../../api/authApi';
-import { fetchCsrfToken } from '@/api/csrfService';
-import { clearCsrfToken } from '@/api/httpClient';
+import { setAccessTokenGetter } from '@/api/httpClient';
 
 
 interface AuthState {
   user: User | null;
-  token: string | null;
+  accessToken: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
@@ -35,10 +34,12 @@ interface AuthContextType extends AuthState {
 
 type AuthAction =
   | { type: 'AUTH_START' }
-  | { type: 'AUTH_SUCCESS'; payload: { user: User; token: string | null } }
+  | { type: 'AUTH_SUCCESS'; payload: { user: User; accessToken: string | null } }
+  | { type: 'REFRESH_TOKEN'; payload: { accessToken: string } }
+  | { type: 'UPDATE_USER'; payload: { user: User } }
   | { type: 'AUTH_FAILURE'; payload: string }
   | { type: 'REGISTER_SUCCESS'; payload: RegisterData }
-  | { type: 'RECOVERY_LOGIN_SUCCESS'; payload: { user: User; token: string | null; newRecoveryCode: string } }
+  | { type: 'RECOVERY_LOGIN_SUCCESS'; payload: { user: User; accessToken: string | null; newRecoveryCode: string } }
   | { type: 'LOGOUT' }
   | { type: 'CLEAR_ERROR' }
   | { type: 'CLEAR_REGISTRATION_DATA' }
@@ -47,7 +48,7 @@ type AuthAction =
 
 const initialState: AuthState = {
   user: null,
-  token: null,
+  accessToken: null,
   isLoading: false,
   isAuthenticated: false,
   error: null,
@@ -71,7 +72,25 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isLoading: false,
         isAuthenticated: true,
         user: action.payload.user,
-        token: action.payload.token,
+        accessToken: action.payload.accessToken,
+        error: null,
+      };
+
+    case 'REFRESH_TOKEN':
+      return {
+        ...state,
+        isLoading: false,
+        isAuthenticated: true,
+        accessToken: action.payload.accessToken,
+        error: null,
+      };
+
+    case 'UPDATE_USER':
+      return {
+        ...state,
+        isLoading: false,
+        isAuthenticated: true,
+        user: action.payload.user,
         error: null,
       };
 
@@ -81,7 +100,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isLoading: false,
         isAuthenticated: false,
         user: null,
-        token: null,
+        accessToken: null,
         error: action.payload,
       };
 
@@ -99,7 +118,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isLoading: false,
         isAuthenticated: true,
         user: action.payload.user,
-        token: action.payload.token,
+        accessToken: action.payload.accessToken,
         newRecoveryCode: action.payload.newRecoveryCode,
         error: null,
       };
@@ -108,7 +127,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return {
         ...state,
         user: null,
-        token: null,
+        accessToken: null,
         isAuthenticated: false,
         error: null,
         newRecoveryCode: null,
@@ -150,7 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sessionIdRef = React.useRef<string | undefined>(undefined);
   const [state, dispatch] = useReducer(authReducer, {
     ...initialState,
-    token: null,
+    accessToken: null,
     isAuthenticated: false,
   });
 
@@ -158,41 +177,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionIdRef.current = state.user?.sessionId;
   }, [state.user?.sessionId]);
 
-  useEffect(() => {
-    const fetchCsrf = async () => {
-      await fetchCsrfToken().catch(() => { });
-
-    };
-    fetchCsrf();
-  }, []);
-
-
-
-  const REALTIME_LOGOUT_ENABLED = ((import.meta as any).env?.VITE_FEATURE_REALTIME_LOGOUT ?? 'true') !== 'false';
-  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || (window as any).API_BASE_URL || '';
-  const REALTIME_BASE = (import.meta as any).env?.VITE_REALTIME_WS_BASE || API_BASE; // allow dedicated ws host
+  const REALTIME_LOGOUT_ENABLED = false;
+  // const REALTIME_BASE = 'ws://localhost:3000';
+  const REALTIME_BASE = false;
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        try {
-          const user = await authApiService.profile();
-          if (!cancelled) dispatch({ type: 'AUTH_SUCCESS', payload: { user, token: null } });
-          return;
-        } catch (_) {
-          const refreshed = await authApiService.refreshSession();
-          if (refreshed) {
-            try {
-              const user = await authApiService.profile();
-              if (!cancelled) dispatch({ type: 'AUTH_SUCCESS', payload: { user, token: null } });
-            } catch { /* yok say */ }
-          }
+        const refreshed = await authApiService.refreshSession();
+        console.log('🔄 Refresh Token Response:', refreshed.access_token);
+        if (!cancelled) {
+          dispatch({ type: 'REFRESH_TOKEN', payload: { accessToken: refreshed.access_token } });
         }
-      } catch { /* sessiz */ }
+      } catch (error) {
+        console.log('🚫 Refresh failed:', error);
+      }
     })();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const user = await authApiService.profile();
+        if (!cancelled) dispatch({ type: 'UPDATE_USER', payload: { user } });
+      } catch { /* yok say */ }
+    })();
+    return () => { cancelled = true; };
+
+  }, [state.accessToken]);
+
 
   useEffect(() => {
     if (!REALTIME_LOGOUT_ENABLED) return;
@@ -258,7 +274,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = useCallback(async (userData: RegisterRequest): Promise<RegisterData> => {
     try {
       dispatch({ type: 'AUTH_START' });
-
       const registrationData = await authApiService.register(userData);
 
       dispatch({
@@ -274,12 +289,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  useEffect(() => {
+    if (state.accessToken !== null) {
+      console.log('🔧 Token Getter Updated, Current Token:', state.accessToken);
+    } setAccessTokenGetter(() => state.accessToken);
+  }, [state.accessToken]);
+
   const login = useCallback(async (credentials: LoginRequest): Promise<void> => {
+    console.log('Attempting login with credentials:', credentials);
     try {
       dispatch({ type: 'AUTH_START' });
 
       const { user } = await authApiService.login(credentials);
-      dispatch({ type: 'AUTH_SUCCESS', payload: { user, token: null } });
+
+      console.log('Login successful, user:', user);
+      dispatch({ type: 'AUTH_SUCCESS', payload: { user, accessToken: user.access_token || null } });
 
       if (REALTIME_LOGOUT_ENABLED && realtimeServiceRegistry.instance) {
         realtimeServiceRegistry.instance.connect();
@@ -297,7 +321,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch({ type: 'AUTH_START' });
 
       const recoveryData = await authApiService.loginWithRecovery(credentials);
-      dispatch({ type: 'RECOVERY_LOGIN_SUCCESS', payload: { user: recoveryData.user, token: null, newRecoveryCode: recoveryData.newRecoveryCode } });
+      dispatch({ type: 'RECOVERY_LOGIN_SUCCESS', payload: { user: recoveryData.user, accessToken: null, newRecoveryCode: recoveryData.newRecoveryCode } });
 
       if (REALTIME_LOGOUT_ENABLED && realtimeServiceRegistry.instance) {
         realtimeServiceRegistry.instance.connect();
@@ -318,7 +342,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Logout API call failed:', error);
     } finally {
       realtimeServiceRegistry.instance?.disconnect();
-      clearCsrfToken(); // Clear encrypted CSRF token from sessionStorage
       dispatch({ type: 'LOGOUT' });
     }
   }, []);

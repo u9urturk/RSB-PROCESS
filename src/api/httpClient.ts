@@ -2,6 +2,23 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 import type { ProfileApiSuccess, ProfileApiError } from '@/types/profile';
 
+let getAccessToken: () => string | null = () => null;
+
+export const setAccessTokenGetter = (getter: () => string | null): void => {
+    getAccessToken = getter;
+};
+
+// Login türevi endpoint'ler - Bu endpoint'lerde access token gönderilmez
+const AUTH_ENDPOINTS = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/refresh',
+    '/auth/login-recovery',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/auth/verify-email'
+];
+
 const httpClient: AxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1",
     timeout: 10000,
@@ -11,89 +28,29 @@ const httpClient: AxiosInstance = axios.create({
     withCredentials: true,
 });
 
-// CSRF Token storage
-let csrfToken: string | null = null;
-const STORAGE_KEY = 'rsb_csrf_token';
-
-// Function to get CSRF token from storage
-const getCsrfToken = (): string | null => {
-    if (csrfToken) return csrfToken;
-    
-    if (typeof window !== 'undefined') {
-        try {
-            const token = sessionStorage.getItem(STORAGE_KEY);
-            if (token) {
-                csrfToken = token; // Cache in memory
-                return token;
-            }
-        } catch (error) {
-            console.warn('Failed to retrieve CSRF token from sessionStorage:', error);
-        }
-    }
-    return null;
-};
-
-// Function to set CSRF token
-export const setCsrfToken = (token: string) => {
-    csrfToken = token;
-    
-    if (typeof window !== 'undefined') {
-        try {
-            sessionStorage.setItem(STORAGE_KEY, token);
-            console.log('🔒 CSRF Token stored:', {
-                tokenPreview: `${token.substring(0, 8)}...`,
-                storage: 'sessionStorage (plain text)'
-            });
-        } catch (error) {
-            console.warn('Failed to store CSRF token in sessionStorage:', error);
-        }
-    }
-};
-
-// Function to clear CSRF token
-export const clearCsrfToken = () => {
-    csrfToken = null;
-    if (typeof window !== 'undefined') {
-        try {
-            sessionStorage.removeItem(STORAGE_KEY);
-        } catch (error) {
-            console.warn('Failed to clear CSRF token from sessionStorage:', error);
-        }
-    }
-};
-
-// Function to detect Safari
-const isSafari = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    const userAgent = window.navigator.userAgent;
-    return /^((?!chrome|android).)*safari/i.test(userAgent);
-};
 
 httpClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
+        const isAuthEndpoint = AUTH_ENDPOINTS.some(endpoint =>
+            config.url?.includes(endpoint)
+        );
+
+        if (!isAuthEndpoint) {
+            const accessToken = getAccessToken();
+            if (accessToken) {
+                config.headers.Authorization = `Bearer ${accessToken}`;
+            }
+        }
+
         if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
-            const token = getCsrfToken();
-            const safari = isSafari();
-            
             console.log('🔍 Request Debug:', {
                 method: config.method,
                 url: config.url,
-                isSafari: safari,
-                csrfToken: token ? `${token.substring(0, 8)}...` : 'null',
-                headers: config.headers
+                headers: config.headers,
+                hasAccessToken: !isAuthEndpoint && !!getAccessToken()
             });
-            
-            if (token) {
-                config.headers['X-CSRF-Token'] = token;
-                
-                // Safari özel handling
-                if (safari) {
-                    console.log('🦎 Safari detected - CSRF handling');
-                    // Safari için ek header'lar eklenebilir
-                    config.headers['X-Requested-With'] = 'XMLHttpRequest';
-                }
-            }
         }
+
         return config;
     },
     (error) => Promise.reject(error)
@@ -137,6 +94,8 @@ httpClient.interceptors.response.use(
                 if (ok) {
                     originalRequest._retry = true;
                     return httpClient(originalRequest);
+                } else {
+                    window.location.href = '/login';
                 }
             } finally {
                 isRefreshing = false;
@@ -174,22 +133,8 @@ export default httpClient;
 
 export async function apiGet<T = any>(url: string, config?: any): Promise<T> {
     const response = await httpClient.get<ProfileApiSuccess<T>>(url, config);
-    
-    // Debug CSRF endpoint
-    if (url.includes('/auth/csrf')) {
-        console.log('🔍 Raw CSRF Response:', response);
-        console.log('🔍 Response data:', response.data);
-        console.log('🔍 Response status:', response.status);
-    }
-    
     const payload = response.data as unknown as ProfileApiSuccess<T> | ProfileApiError;
-    
-    // CSRF endpoint özel durumu - direct response dönüyor
-    if (url.includes('/auth/csrf')) {
-        console.log('🔧 CSRF Special handling - returning direct response');
-        return response.data as T;
-    }
-    
+
     if ((payload as ProfileApiError).success === false) {
         throw payload as ProfileApiError;
     }

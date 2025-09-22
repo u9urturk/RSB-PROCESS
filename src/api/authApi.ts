@@ -1,4 +1,4 @@
-import { apiPost } from './httpClient';
+import { apiPost, setAccessTokenGetter } from './httpClient';
 import { ErrorHandlerService } from '../utils/ErrorHandlerService';
 import { User } from '../types';
 
@@ -19,8 +19,8 @@ interface LoginData {
   success?: boolean;
   message: string;
   sessionId: string;
-  refresh_expires_at?: string;
-  user_summary?: Partial<User> & { id: string; username: string };
+  refresh_expires_at: string;
+  access_token: string;
 }
 
 interface RecoveryLoginData {
@@ -60,15 +60,20 @@ class AuthApiService {
   async login(credentials: LoginRequest): Promise<{ user: User }> {
     try {
       const data = await apiPost<LoginData>('/auth/login', credentials);
+      setAccessTokenGetter(() => data.access_token);
+      const userProfile = await this.profile();
+      if (!data.access_token) {
+        throw new Error(data.message || 'Login failed');
+      }
       let user: User;
-      if (!data.user_summary) {
-        user = await this.profile();
-      } else {
-        user = data.user_summary as User;
-      }
-      if (data.sessionId) {
-        (user as any).sessionId = data.sessionId;
-      }
+      user = {
+        userId: userProfile.userId,
+        sessionId: userProfile.sessionId,
+        username: credentials.username,
+        roles: userProfile.roles,
+        access_token: data.access_token
+
+      };
       return { user };
     } catch (error) {
       const handledError = ErrorHandlerService.handleError(error, 'AuthApi.login');
@@ -95,10 +100,11 @@ class AuthApiService {
     }
   }
 
-  async refreshSession(): Promise<boolean> {
+  async refreshSession(): Promise<any> {
     try {
-      await apiPost('/auth/refresh');
-      return true;
+      const data = await apiPost('/auth/refresh');
+      console.log('refreshSession', data);
+      return data;
     } catch (error) {
       const handledError = ErrorHandlerService.handleError(error, 'AuthApi.refreshSession');
       console.debug('[authApi] refreshSession failed', handledError.message);
