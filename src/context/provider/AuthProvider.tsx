@@ -186,12 +186,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     (async () => {
       try {
         const refreshed = await authApiService.refreshSession();
-        console.log('🔄 Refresh Token Response:', refreshed.access_token);
         if (!cancelled) {
           dispatch({ type: 'REFRESH_TOKEN', payload: { accessToken: refreshed.access_token } });
         }
       } catch (error) {
-        console.log('🚫 Refresh failed:', error);
       }
     })();
     return () => { cancelled = true; };
@@ -291,18 +289,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (state.accessToken !== null) {
-      console.log('🔧 Token Getter Updated, Current Token:', state.accessToken);
     } setAccessTokenGetter(() => state.accessToken);
   }, [state.accessToken]);
 
   const login = useCallback(async (credentials: LoginRequest): Promise<void> => {
-    console.log('Attempting login with credentials:', credentials);
     try {
       dispatch({ type: 'AUTH_START' });
 
       const { user } = await authApiService.login(credentials);
 
-      console.log('Login successful, user:', user);
       dispatch({ type: 'AUTH_SUCCESS', payload: { user, accessToken: user.access_token || null } });
 
       if (REALTIME_LOGOUT_ENABLED && realtimeServiceRegistry.instance) {

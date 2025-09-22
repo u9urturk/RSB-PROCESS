@@ -40,7 +40,6 @@ const SplashScreen: React.FC = () => {
 
         // Navigation timer
         const navigationTimer = setTimeout(() => {
-            console.log("Navigating based on authentication status:", isAuthenticated);
             if (isAuthenticated) {
                 navigate('/dashboard', { replace: true });
             } else {
