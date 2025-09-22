@@ -103,7 +103,6 @@ class AuthApiService {
   async refreshSession(): Promise<any> {
     try {
       const data = await apiPost('/auth/refresh');
-      console.log('refreshSession', data);
       return data;
     } catch (error) {
       const handledError = ErrorHandlerService.handleError(error, 'AuthApi.refreshSession');
