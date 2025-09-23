@@ -45,7 +45,7 @@ const SplashScreen: React.FC = () => {
             } else {
                 navigate('/login', { replace: true });
             }
-        }, 5000);
+        }, 2000);
 
         return () => {
             clearInterval(progressInterval);

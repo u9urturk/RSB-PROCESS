@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
-import { RealtimeService, realtimeServiceRegistry } from '@/realtime/RealtimeService';
 import { authApiService } from '../../api/authApi';
-import { useNotification } from './NotificationProvider';
 import type {
   RegisterRequest,
   LoginRequest,
@@ -165,7 +163,6 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { showNotification } = useNotification();
   const sessionIdRef = React.useRef<string | undefined>(undefined);
   const [state, dispatch] = useReducer(authReducer, {
     ...initialState,
@@ -177,9 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionIdRef.current = state.user?.sessionId;
   }, [state.user?.sessionId]);
 
-  const REALTIME_LOGOUT_ENABLED = false;
-  // const REALTIME_BASE = 'ws://localhost:3000';
-  const REALTIME_BASE = false;
+
 
   useEffect(() => {
     let cancelled = false;
@@ -206,68 +201,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => { cancelled = true; };
 
   }, [state.accessToken]);
-
-
-  useEffect(() => {
-    if (!REALTIME_LOGOUT_ENABLED) return;
-    if (!REALTIME_BASE) {
-      console.warn('[RT] REALTIME_BASE empty -> realtime disabled');
-      return;
-    }
-    if (!realtimeServiceRegistry.instance) {
-      realtimeServiceRegistry.instance = new RealtimeService({
-        baseUrl: REALTIME_BASE,
-        debug: ((import.meta as any).env?.VITE_DEBUG_REALTIME === 'true'),
-        getCurrentSessionId: () => sessionIdRef.current,
-        onCurrentSessionRevoked: ({ reason }) => {
-          showNotification(
-            'warning',
-            'Oturumunuz sonlandırılıyor!',
-            {
-              countdown: 10,
-              onComplete: () => {
-                logout();
-                realtimeServiceRegistry.instance?.disconnect();
-                console.info('[RT] current session revoked', reason);
-              }
-            }
-          );
-        },
-        onOtherSessionRevoked: ({ sessionId }) => {
-          console.info('[RT] other session revoked (no logout expected)', sessionId);
-        },
-        onAuthError: () => {
-          (async () => {
-            console.warn('[RT] auth_error received -> attempting silent refresh');
-            try { await authApiService.refreshSession(); console.log('[RT] silent refresh success, reconnecting'); } catch { console.warn('[RT] silent refresh failed'); }
-            realtimeServiceRegistry.instance?.connect();
-          })();
-        }
-      });
-      if (typeof window !== 'undefined') (window as any).__RT__ = realtimeServiceRegistry.instance;
-    }
-
-  }, [REALTIME_LOGOUT_ENABLED, REALTIME_BASE, state.user?.sessionId]);
-
-  useEffect(() => {
-    if (!REALTIME_LOGOUT_ENABLED || !realtimeServiceRegistry.instance) return;
-    const handleDisconnect = () => {
-      if (state.isAuthenticated) {
-        setTimeout(() => {
-          realtimeServiceRegistry.instance?.connect();
-        }, 2000);
-      }
-    };
-    const socket = realtimeServiceRegistry.instance['socket'];
-    if (socket) {
-      socket.on('disconnect', handleDisconnect);
-    }
-    return () => {
-      if (socket) {
-        socket.off('disconnect', handleDisconnect);
-      }
-    };
-  }, [state.isAuthenticated, REALTIME_LOGOUT_ENABLED]);
 
   const register = useCallback(async (userData: RegisterRequest): Promise<RegisterData> => {
     try {
@@ -300,9 +233,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       dispatch({ type: 'AUTH_SUCCESS', payload: { user, accessToken: user.access_token || null } });
 
-      if (REALTIME_LOGOUT_ENABLED && realtimeServiceRegistry.instance) {
-        realtimeServiceRegistry.instance.connect();
-      }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
@@ -318,9 +248,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const recoveryData = await authApiService.loginWithRecovery(credentials);
       dispatch({ type: 'RECOVERY_LOGIN_SUCCESS', payload: { user: recoveryData.user, accessToken: null, newRecoveryCode: recoveryData.newRecoveryCode } });
 
-      if (REALTIME_LOGOUT_ENABLED && realtimeServiceRegistry.instance) {
-        realtimeServiceRegistry.instance.connect();
-      }
       return recoveryData.newRecoveryCode;
 
     } catch (error) {
@@ -336,7 +263,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.warn('Logout API call failed:', error);
     } finally {
-      realtimeServiceRegistry.instance?.disconnect();
       dispatch({ type: 'LOGOUT' });
     }
   }, []);
