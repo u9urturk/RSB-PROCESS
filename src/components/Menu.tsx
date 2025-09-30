@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, MenuSquare, Boxes, ChefHat, BarChart3, Megaphone, UserCog, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, MenuSquare, Boxes, ChefHat, BarChart3, Megaphone, UserCog, ShoppingCart, Wifi } from 'lucide-react';
 import { useNavigation } from '../context/provider/NavigationProvider';
 import { MenuItemType, MenuProps, NavigationContextType } from '../types';
 
@@ -75,6 +75,13 @@ const menuItems: MenuItemType[] = [
         label: 'Kullanıcılar',
         show: true,
         color: 'from-blue-500 to-indigo-500'
+    },
+    {
+        to: '/dashboard/websocket-demo',
+        icon: <Wifi size={20} />,
+        label: 'Session Yönetimi',
+        show: true,
+        color: 'from-emerald-500 to-teal-500'
     },
 ];
 

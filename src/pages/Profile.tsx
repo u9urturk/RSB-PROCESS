@@ -45,7 +45,7 @@ type UserSession = {
   os?: string | null;
   device?: string | null;
   isCurrent?: boolean;
-  status?: string; // backend provided status (e.g., active, revoked, expired)
+  status?: string; 
 };
 
 const SessionsList: React.FC<{ sessions: UserSession[]; revokeSession: (id: string) => any }> = ({ sessions, revokeSession }) => {

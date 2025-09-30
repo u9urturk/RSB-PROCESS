@@ -8,6 +8,7 @@ import type {
   User
 } from '../../api/authApi';
 import { setAccessTokenGetter } from '@/api/httpClient';
+import { websocketManager } from '@/services/websocket';
 
 
 interface AuthState {
@@ -28,6 +29,7 @@ interface AuthContextType extends AuthState {
   clearError: () => void;
   clearRegistrationData: () => void;
   clearNewRecoveryCode: () => void;
+  isManualLogout: () => boolean;
 }
 
 type AuthAction =
@@ -164,6 +166,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const sessionIdRef = React.useRef<string | undefined>(undefined);
+  const manualLogoutRef = React.useRef<boolean>(false); // Manual logout flag
   const [state, dispatch] = useReducer(authReducer, {
     ...initialState,
     accessToken: null,
@@ -258,12 +261,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(async (): Promise<void> => {
+    // Manuel logout işaretleyici
+    manualLogoutRef.current = true;
+    
     try {
       await authApiService.logout();
     } catch (error) {
       console.warn('Logout API call failed:', error);
     } finally {
+      // WebSocket bağlantısını kapat
+      websocketManager.disconnect();
       dispatch({ type: 'LOGOUT' });
+      
+      // Flag'i sıfırla
+      setTimeout(() => {
+        manualLogoutRef.current = false;
+      }, 1000);
     }
   }, []);
 
@@ -279,6 +292,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'CLEAR_NEW_RECOVERY_CODE' });
   }, []);
 
+  const isManualLogout = useCallback((): boolean => {
+    return manualLogoutRef.current;
+  }, []);
+
   const contextValue: AuthContextType = React.useMemo(() => ({
     ...state,
     login,
@@ -288,6 +305,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearError,
     clearRegistrationData,
     clearNewRecoveryCode,
+    isManualLogout,
   }), [
     state,
     login,
@@ -297,6 +315,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearError,
     clearRegistrationData,
     clearNewRecoveryCode,
+    isManualLogout,
   ]);
 
   return (

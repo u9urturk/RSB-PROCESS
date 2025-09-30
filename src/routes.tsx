@@ -13,6 +13,7 @@ import SplashScreen from "./pages/SplashScreen";
 import StockBusinessMain from "./pages/stockbusiness/StockBusinessMain";
 import ProfilePage from "./pages/Profile";
 import UserManagementPage from "./pages/UserManagementPage";
+import { WebSocketDemoPage } from "./pages/WebSocketDemoPage";
 
 interface CustomRouteObject {
     path?: string;
@@ -300,6 +301,12 @@ const routes: CustomRouteObject[] = [
                 element: <ProfilePage />,
                 auth: true,
                 requireAnyRole: ['USER', 'ADMIN', 'MANAGER', 'WAITER', 'CASHIER']
+            },
+            {
+                path: 'websocket-demo',
+                element: <WebSocketDemoPage />,
+                auth: true,
+                requireAnyRole: ['ADMIN']
             }
         ]
     },
