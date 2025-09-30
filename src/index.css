@@ -1,0 +1,258 @@
+@import "tailwindcss";
+
+
+/* src/index.css veya global.css */
+.no-scrollbar {
+    scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+
+/* tailwind.config.js veya global css dosyanıza ekleyin */
+@layer utilities {
+  .spin-slow {
+    animation-duration: 10s;
+  }
+  .spin-fast {
+    animation-duration: 0.5s;
+  }
+}
+
+
+
+/* Custom animations */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+}
+
+/* Subtle upward fade */
+@keyframes fade-in-up {
+    0% { opacity: 0; transform: translateY(16px); }
+    60% { opacity: 1; }
+    100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up { animation: fade-in-up .5s cubic-bezier(.4,0,.2,1) both; }
+
+/* Zoom in (modal) */
+@keyframes zoom-in {
+    0% { opacity:0; transform: scale(.92) translateY(12px); }
+    60% { opacity:1; }
+    100% { opacity:1; transform: scale(1) translateY(0); }
+}
+.animate-zoom-in { animation: zoom-in .4s cubic-bezier(.4,0,.2,1) both; }
+
+.animate-slide-in {
+    animation: slide-in 0.8s ease-out;
+}
+
+/* Stock specific animations */
+@keyframes stock-card-hover {
+    from {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    to {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
+    }
+}
+
+/* Restaurant Status specific animations - Performance optimized */
+@keyframes table-card-hover {
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(-2px);
+    }
+}
+
+@keyframes transfer-highlight {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .table-card-hover {
+        animation: none;
+    }
+}
+
+/* Utility classes for table cards */
+.animate-pulse-glow {
+    animation: pulse-glow 2s infinite;
+}
+
+.animate-transfer-pulse {
+    animation: transfer-pulse 2s infinite;
+}
+
+.animate-table-hover {
+    animation: table-card-hover 0.3s ease-out;
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-table-status-pulse {
+    animation: table-status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-table-occupied-glow {
+    animation: table-occupied-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Scanner specific styles */
+.barcode-scanner-container {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.barcode-video {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 16px;
+}
+
+.barcode-retry-btn {
+    background: linear-gradient(to right, #f97316, #dc2626);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.barcode-retry-btn:hover {
+    background: linear-gradient(to right, #ea580c, #b91c1c);
+    transform: scale(1.05);
+}
+
+/* ===== Shared surface & chip utilities (Stage 5) ===== */
+.surface-panel { background-color:#ffffff; border-radius:1rem; box-shadow:0 4px 10px -2px rgba(0,0,0,0.06),0 2px 4px -2px rgba(0,0,0,0.04); border:1px solid #f1f5f9; }
+.surface-gradient-soft {
+    background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.65) 100%);
+    backdrop-filter: blur(6px);
+}
+.chip-base { display:inline-flex; align-items:center; gap:0.25rem; padding:0.25rem 0.5rem; border-radius:9999px; font-size:11px; font-weight:600; border:1px solid rgba(0,0,0,0.08); transition:color .2s, background-color .2s, border-color .2s; }
+.card-elevate-hover { transition: box-shadow .3s ease; }
+.card-elevate-hover:hover { box-shadow:0 12px 24px -6px rgba(0,0,0,0.12),0 4px 8px -2px rgba(0,0,0,0.06); }
+.focus-ring { outline:none; }
+.focus-ring:focus { box-shadow:0 0 0 2px rgba(255,255,255,1),0 0 0 4px rgba(251,146,60,0.6); }
+
+/* ===== Compact mode utilities (Stage 6) ===== */
+.compact * {
+    --compact-space-xs: 2px;
+    --compact-space-sm: 4px;
+    --compact-space-md: 8px;
+    --compact-space-lg: 12px;
+    --compact-space-xl: 16px;
+    --compact-radius: 6px;
+    --compact-font-size: 13px;
+}
+
+.compact .card,
+.compact .surface-panel {
+    padding: var(--compact-space-md) var(--compact-space-lg);
+    border-radius: var(--compact-radius);
+    font-size: var(--compact-font-size);
+}
+
+.compact .chip-base {
+    padding: var(--compact-space-xs) var(--compact-space-md);
+    font-size: 10px;
+}
+
+.compact .input,
+.compact input,
+.compact textarea,
+.compact select {
+    padding: var(--compact-space-sm) var(--compact-space-md);
+    font-size: var(--compact-font-size);
+    border-radius: var(--compact-radius);
+}
+
+.compact .navbar,
+.compact .menu {
+    padding: var(--compact-space-sm) var(--compact-space-lg);
+    font-size: var(--compact-font-size);
+}
+
+.compact .btn,
+.compact button {
+    padding: var(--compact-space-xs) var(--compact-space-md);
+    font-size: var(--compact-font-size);
+    border-radius: var(--compact-radius);
+}
+
+.compact .modal {
+    padding: var(--compact-space-lg);
+    border-radius: calc(var(--compact-radius) + 2px);
+}
+
+.compact .table,
+.compact .table th,
+.compact .table td {
+    padding: var(--compact-space-xs) var(--compact-space-md);
+    font-size: var(--compact-font-size);
+}
