@@ -11,6 +11,9 @@ import OnlineOrders from "./pages/OnlineOrders";
 import RestaurantStatusMain from "./pages/restaurantstatus/RestaurantStatusMain";
 import SplashScreen from "./pages/SplashScreen";
 import StockBusinessMain from "./pages/stockbusiness/StockBusinessMain";
+import StockTypeManagement from "./pages/stockbusiness/StockTypeManagement";
+import WarehouseManagement from "./pages/stockbusiness/WarehouseManagement";
+import SupplierManagement from "./pages/stockbusiness/SupplierManagement";
 import ProfilePage from "./pages/Profile";
 import UserManagementPage from "./pages/UserManagementPage";
 import { WebSocketDemoPage } from "./pages/WebSocketDemoPage";
@@ -269,11 +272,33 @@ const routes: CustomRouteObject[] = [
                 requireAnyRole: ['ADMIN', 'MANAGER'],
                 requireAnyPermission: ['canManageContent', 'canManageCategories'],
                 customCheck: (user) => {
-                    // Stok yönetimi için özel kontrol
                     const hasStockPermission = user?.permissions?.canManageContent || user?.permissions?.canManageCategories;
                     const hasAnalyticsOrAdmin = user?.permissions?.canViewAnalytics || user?.roles?.includes('ADMIN');
                     return hasStockPermission && hasAnalyticsOrAdmin;
-                }
+                },
+                children: [
+                    {
+                        path: 'stock-types',
+                        element: <StockTypeManagement />,
+                        auth: true,
+                        requireAnyRole: ['ADMIN', 'MANAGER'],
+                        requireAnyPermission: ['canManageCategories']
+                    },
+                    {
+                        path: 'warehouse',
+                        element: <WarehouseManagement />,
+                        auth: true,
+                        requireAnyRole: ['ADMIN', 'MANAGER'],
+                        requireAnyPermission: ['canManageContent']
+                    },
+                    {
+                        path: 'suppliers',
+                        element: <SupplierManagement />,
+                        auth: true,
+                        requireAnyRole: ['ADMIN', 'MANAGER'],
+                        requireAnyPermission: ['canManageContent']
+                    }
+                ]
             },
             {
                 path: 'menubusiness',

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { Package, Plus, AlertTriangle, TrendingUp, Clock, ShoppingBag } from "lucide-react";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import StockTable from "./components/StockTable";
 import StockSearchBar from "./components/StockSearchBar";
 import StockAddModal from "./components/modals/StockAddModal";
@@ -10,7 +11,6 @@ import PageTransition from "../../components/PageTransition";
 import { StockItem } from "../../types";
 import { useNavigation } from "../../context/provider/NavigationProvider";
 
-// Geçici mock data
 import mockData from "./mocks/stockData";
 
 interface StockTableProps {
@@ -26,6 +26,8 @@ interface StockAddModalProps {
 
 export default function StockBusinessMain() {
     const { setActivePath } = useNavigation();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [stocks, setStocks] = useState<StockItem[]>(() => 
         mockData.map(item => ({
             ...item,
@@ -40,6 +42,26 @@ export default function StockBusinessMain() {
     const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
     const [activeDetail, setActiveDetail] = useState<StockItem | null>(null);
     const [activeChange, setActiveChange] = useState<{ item: StockItem; type: 'add' | 'remove' } | null>(null);
+    const [activeTab, setActiveTab] = useState<string>('stock');
+
+    // URL'e göre aktif tab'ı belirle
+    useEffect(() => {
+        const path = location.pathname;
+        if (path.includes('/stock-types')) {
+            setActiveTab('stock-types');
+        } else if (path.includes('/warehouse')) {
+            setActiveTab('warehouse');
+        } else if (path.includes('/suppliers')) {
+            setActiveTab('suppliers');
+        } else {
+            setActiveTab('stock');
+        }
+    }, [location.pathname]);
+
+    const handleTabChange = (tab: { id: string; path: string }) => {
+        setActiveTab(tab.id);
+        navigate(tab.path);
+    };
 
     useEffect(() => {
         setActivePath('/dashboard/stockbusiness');
@@ -172,60 +194,102 @@ export default function StockBusinessMain() {
                                 </div>
                             </div>
                         </div>
+                        
+                        {/* Tab Navigation */}
+                        <div className="mt-6 border-t border-white/20 pt-6">
+                            <div className="flex flex-wrap gap-2 sm:gap-4">
+                                {[
+                                    { id: 'stock', label: 'Stok İşlemleri', icon: '📦', path: '/dashboard/stockbusiness' },
+                                    { id: 'stock-types', label: 'Stok Türü İşlemleri', icon: '🏷️', path: '/dashboard/stockbusiness/stock-types' },
+                                    { id: 'warehouse', label: 'Depo İşlemleri', icon: '🏢', path: '/dashboard/stockbusiness/warehouse' },
+                                    { id: 'suppliers', label: 'Tedarikçi İşlemleri', icon: '🚚', path: '/dashboard/stockbusiness/suppliers' }
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        className={`
+                                            px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base
+                                            transition-all duration-300 transform hover:scale-105
+                                            flex items-center gap-2 backdrop-blur-sm
+                                            ${activeTab === tab.id 
+                                                ? 'bg-white text-orange-600 shadow-lg' 
+                                                : 'bg-white/20 text-white hover:bg-white/30'
+                                            }
+                                        `}
+                                        onClick={() => handleTabChange(tab)}
+                                    >
+                                        <span className="text-lg">{tab.icon}</span>
+                                        <span className="hidden sm:inline">{tab.label}</span>
+                                        <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {/* Stat Cards */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-                        {stockStats.map((stat, index) => (
-                            <div 
-                                key={index} 
-                                className="group"
-                                style={{ animationDelay: `${index * 0.1}s` }}
-                            >
-                                <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 animate-fade-in">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className={`p-2 sm:p-3 bg-gradient-to-br ${stat.color} rounded-xl text-white group-hover:scale-110 transition-transform duration-300`}>
-                                            {stat.icon}
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-xs sm:text-sm text-gray-500 mb-1">
-                                                {stat.title}
+                    {/* Ana stok yönetimi içeriği - sadece stock tab'ında görünür */}
+                    {activeTab === 'stock' && (
+                        <>
+                            {/* Stat Cards */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                                {stockStats.map((stat, index) => (
+                                    <div 
+                                        key={index} 
+                                        className="group"
+                                        style={{ animationDelay: `${index * 0.1}s` }}
+                                    >
+                                        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 animate-fade-in">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className={`p-2 sm:p-3 bg-gradient-to-br ${stat.color} rounded-xl text-white group-hover:scale-110 transition-transform duration-300`}>
+                                                    {stat.icon}
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-xs sm:text-sm text-gray-500 mb-1">
+                                                        {stat.title}
+                                                    </div>
+                                                    <div className="text-lg sm:text-2xl font-bold text-gray-800">
+                                                        {stat.value}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="text-lg sm:text-2xl font-bold text-gray-800">
-                                                {stat.value}
-                                            </div>
+                                            <div className={`h-1 bg-gradient-to-r ${stat.color} rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}></div>
                                         </div>
                                     </div>
-                                    <div className={`h-1 bg-gradient-to-r ${stat.color} rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}></div>
+                                ))}
+                            </div>
+
+                            {/* Search and Add Section */}
+                            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
+                                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                                    <div className="flex-1 w-full sm:w-auto">
+                                        <StockSearchBar 
+                                            search={search} 
+                                            setSearch={setSearch} 
+                                            onBarcodeClick={handleBarcodeClick}
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => setIsAddModalOpen(true)}
+                                        className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 justify-center font-semibold"
+                                    >
+                                        <Plus size={20} />
+                                        Yeni Stok Ekle
+                                    </button>
                                 </div>
                             </div>
-                        ))}
-                    </div>
 
-                    {/* Search and Add Section */}
-                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
-                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                            <div className="flex-1 w-full sm:w-auto">
-                                <StockSearchBar 
-                                    search={search} 
-                                    setSearch={setSearch} 
-                                    onBarcodeClick={handleBarcodeClick}
-                                />
-                            </div>
-                            <button
-                                onClick={() => setIsAddModalOpen(true)}
-                                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 justify-center font-semibold"
-                            >
-                                <Plus size={20} />
-                                Yeni Stok Ekle
-                            </button>
+                            {/* Stock Table */}
+                            <TableComponent items={filteredStocks} onStockChange={handleStockChange} />
+                        </>
+                    )}
+
+                    {/* Child route content - diğer tab'lar için */}
+                    {activeTab !== 'stock' && (
+                        <div className="animate-fade-in">
+                            <Outlet />
                         </div>
-                    </div>
-
-                    {/* Stock Table */}
-                    <TableComponent items={filteredStocks} onStockChange={handleStockChange} />
+                    )}
                 </div>
             </div>
             
