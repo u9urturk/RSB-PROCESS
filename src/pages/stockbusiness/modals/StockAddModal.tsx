@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Package, X, Save } from "lucide-react";
 import { StockItem } from "@/types/index";
-import { Supplier, StockType } from "@/types/stock";
+import { Supplier, StockType, Warehouse } from "@/types/stock";
 import { stockTypeDatas } from "../mocks/stockTypeData";
+import { warehouseData } from "../mocks/warehouseData";
 
 interface StockAddModalProps {
     open: boolean;
@@ -11,6 +12,7 @@ interface StockAddModalProps {
     initialBarcode?: string; // yeni prop
     suppliers?: Supplier[]; // tedarikçi listesi
     stockTypes?: StockType[]; // stok tipleri listesi
+    warehouses?: Warehouse[]; // depo listesi
 }
 
 const StockAddModal: React.FC<StockAddModalProps> = ({ 
@@ -19,7 +21,8 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
     onAdd, 
     initialBarcode = "", 
     suppliers = [], 
-    stockTypes = stockTypeDatas 
+    stockTypes = stockTypeDatas,
+    warehouses = warehouseData
 }) => {
     const [formData, setFormData] = useState<Partial<StockItem>>({
         name: "",
@@ -32,9 +35,36 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
         barcode: initialBarcode,
         description: "",
         supplierId: "",
+        warehouseId: "",
         status: "active",
         notes: ""
     });
+
+    const [render, setRender] = useState(open);
+    const [isAnimating, setIsAnimating] = useState(false);
+
+    useEffect(() => { 
+        if (open) {
+            setRender(true);
+            setTimeout(() => setIsAnimating(true), 10);
+        } else {
+            setIsAnimating(false);
+        }
+    }, [open]);
+    
+    useEffect(() => { 
+        if (!open && render) { 
+            const t = setTimeout(() => setRender(false), 200); 
+            return () => clearTimeout(t); 
+        } 
+    }, [open, render]);
+    
+    if (!render) return null;
+
+    const handleClose = () => {
+        setIsAnimating(false);
+        setTimeout(() => onClose(), 200);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,6 +85,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
             status: formData.status || "active",
             stockTypeId: formData.stockTypeId || "",
             supplierId: formData.supplierId || undefined,
+            warehouseId: formData.warehouseId || undefined,
             notes: formData.notes || undefined,
             description: formData.description || undefined,
             barcode: formData.barcode || undefined
@@ -62,18 +93,21 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
         onClose();
     };
 
-    const [render, setRender] = useState(open);
-    useEffect(() => { if (open) setRender(true); }, [open]);
-    useEffect(() => { if (!open && render) { const t = setTimeout(() => setRender(false), 200); return () => clearTimeout(t); } }, [open, render]);
-    if (!render) return null;
-
-
-
-    const overlayCls = `fixed inset-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-200 ${open ? 'bg-black/60 opacity-100' : 'bg-black/0 opacity-0 pointer-events-none'}`;
-    const panelCls = `bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transition-all duration-200 ${open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`;
     return (
-        <div className={overlayCls}>
-            <div className={panelCls}>
+        <div
+            className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-200 ease-out ${isAnimating
+                ? 'bg-opacity-50 bg-gray-700/20 backdrop-blur-sm'
+                : 'bg-opacity-0 backdrop-blur-none'
+            }`}
+            onClick={handleClose}
+        >
+            <div
+                className={`bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transition-all duration-200 ease-out transform ${isAnimating
+                    ? 'scale-100 opacity-100 translate-y-0'
+                    : 'scale-95 opacity-0 translate-y-4'
+                }`}
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6 rounded-t-2xl">
                     <div className="flex items-center justify-between">
@@ -87,7 +121,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                             </div>
                         </div>
                         <button
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 hover:scale-105"
                         >
                             <X size={24} />
@@ -161,6 +195,26 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                                 {suppliers.map((supplier) => (
                                     <option key={supplier.id} value={supplier.id}>
                                         {supplier.name} - {supplier.category}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Depo */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-gray-700">
+                                Depo *
+                            </label>
+                            <select
+                                required
+                                value={formData.warehouseId}
+                                onChange={(e) => setFormData(prev => ({ ...prev, warehouseId: e.target.value }))}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 hover:border-orange-300"
+                            >
+                                <option value="">Depo Seçiniz</option>
+                                {warehouses.map((warehouse) => (
+                                    <option key={warehouse.id} value={warehouse.id}>
+                                        {warehouse.name} - {warehouse.location} ({warehouse.warehouseType})
                                     </option>
                                 ))}
                             </select>
@@ -301,7 +355,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                     <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-end">
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="px-6 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-semibold hover:scale-105"
                         >
                             İptal

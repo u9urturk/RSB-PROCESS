@@ -619,6 +619,7 @@ export interface StockItem {
     status?: "active" | "inactive";
     lastUpdated: string;
     supplierId?: string;
+    warehouseId?: string;
     description?: string;
     notes?: string;
 }
@@ -634,7 +635,7 @@ export interface StockChangeModalProps {
     onClose: () => void;
     item: StockItem;
     type: "add" | "remove";
-    onSubmit: (amount: number) => void;
+    onSubmit: (amount: number, updateData?: any) => void;
 }
 
 export interface StockDetailModalProps {

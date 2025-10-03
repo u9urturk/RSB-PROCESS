@@ -14,6 +14,7 @@ import { useNavigation } from "../../context/provider/NavigationProvider";
 import mockData from "./mocks/stockData";
 import mockSuppliers from "./mocks/supplierData";
 import { stockTypeDatas } from "./mocks/stockTypeData";
+import { warehouseData } from "./mocks/warehouseData";
 
 interface StockTableProps {
     items: StockItem[];
@@ -144,6 +145,7 @@ export default function StockBusinessMain() {
             initialBarcode={pendingBarcode || ""}
             suppliers={mockSuppliers}
             stockTypes={stockTypeDatas}
+            warehouses={warehouseData}
         />
     );
 
@@ -316,8 +318,25 @@ export default function StockBusinessMain() {
                     onClose={() => setActiveChange(null)}
                     item={activeChange.item}
                     type={activeChange.type}
-                    onSubmit={(amt: number) => {
-                        handleStockChange(activeChange.item.id, amt, activeChange.type);
+                    onSubmit={(amt: number, updateData?: any) => {
+                        if (updateData) {
+                            // Gelişmiş güncelleme - tüm stok bilgilerini güncelle
+                            setStocks(prev => prev.map(stock => {
+                                if (stock.id === activeChange.item.id) {
+                                    return {
+                                        ...stock,
+                                        quantity: updateData.quantity,
+                                        unitPrice: updateData.unitPrice,
+                                        supplierId: updateData.supplierId,
+                                        lastUpdated: updateData.lastUpdated
+                                    };
+                                }
+                                return stock;
+                            }));
+                        } else {
+                            // Basit güncelleme - sadece miktar
+                            handleStockChange(activeChange.item.id, amt, activeChange.type);
+                        }
                         setActiveChange(null);
                     }}
                 />

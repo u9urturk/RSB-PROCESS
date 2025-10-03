@@ -13,7 +13,8 @@ const mockData: StockItem[] = [
         description: "Taze domates",
         barcode: "8680123456789",
         lastUpdated: new Date().toISOString(),
-        supplierId: "sup1"
+        supplierId: "1",
+        warehouseId: "1"
     },
     {
         id: "2",
@@ -27,7 +28,8 @@ const mockData: StockItem[] = [
         description: "Taze tavuk göğüs",
         barcode: "8680987654321",
         lastUpdated: new Date().toISOString(),
-        supplierId: "sup2"
+        supplierId: "2",
+        warehouseId: "2"
     },
     {
         id: "3",
@@ -41,7 +43,8 @@ const mockData: StockItem[] = [
         description: "Tam yağlı süt",
         barcode: "8680456789123",
         lastUpdated: new Date().toISOString(),
-        supplierId: "sup3"
+        supplierId: "3",
+        warehouseId: "1"
     }
 ];
 
