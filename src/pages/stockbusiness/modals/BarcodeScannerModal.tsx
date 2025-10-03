@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { X, Camera, ScanLine, Search, AlertCircle } from "lucide-react";
-import ModernBarcodeScanner from "../../../../utils/barcode/ModernBarcodeScanner";
+import ModernBarcodeScanner from "../../../utils/barcode/ModernBarcodeScanner";
 
 interface BarcodeScannerModalProps {
     open: boolean;

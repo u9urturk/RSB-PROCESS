@@ -1,26 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Truck, User, Phone, Mail, MapPin, FileText, Calendar, CreditCard, Package } from 'lucide-react';
+import { Supplier } from '@/types/stock';
 
-interface Supplier {
-    id: number;
-    name: string;
-    category: string;
-    phone: string;
-    email: string;
-    rating: number;
-    status: 'Aktif' | 'Pasif' | 'Beklemede';
-    address: string;
-    contactPerson: string;
-    taxNumber: string;
-    paymentTerms: string;
-    deliveryTime: number; // gün
-    minimumOrder: number; // TL
-    products: string[];
-    contractStartDate: string;
-    contractEndDate: string;
-    totalOrders: number;
-    monthlyDeliveries: number;
-}
 
 interface SupplierAddModalProps {
     isOpen: boolean;
@@ -180,7 +161,7 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
     return (
         <div 
             className={`fixed inset-0  flex items-center justify-center z-50 p-4
-                ${isVisible ? 'backdrop-blur-xs bg-opacity-50' : 'backdrop-blur-none bg-opacity-0'} transition-all duration-300 ease-out`}
+                ${isVisible ? 'backdrop-blur-xs bg-gray-700/20 bg-opacity-50' : 'backdrop-blur-none bg-opacity-0'} transition-all duration-300 ease-out`}
             onClick={handleBackdropClick}
         >
             <div className={`bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80%] overflow-y-auto transform transition-all duration-300 ${

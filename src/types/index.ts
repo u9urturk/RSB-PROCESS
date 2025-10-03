@@ -1,7 +1,11 @@
 import React from 'react';
 
 
-
+export interface BaseEntity {
+    id: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
 // Auth Types
 export interface User {
     userId: string;
@@ -152,7 +156,7 @@ export interface MenuItemType {
     icon: React.ReactNode;
     label: string;
     show: boolean;
-    color:string;
+    color: string;
 }
 
 export interface MenuProps {
@@ -348,6 +352,11 @@ export interface ConfirmContextType {
     message: string;
     confirmText: string;
     cancelText: string;
+    type: 'default' | 'danger' | 'warning' | 'info';
+    icon: string | React.ReactNode;
+    details: Array<{ label: string; value: string | number }>;
+    warnings: string[];
+    data: any;
     onConfirm: () => void;
     onCancel: () => void;
     showConfirm: (params: {
@@ -355,6 +364,11 @@ export interface ConfirmContextType {
         message: string;
         confirmText?: string;
         cancelText?: string;
+        type?: 'default' | 'danger' | 'warning' | 'info';
+        icon?: string | React.ReactNode;
+        details?: Array<{ label: string; value: string | number }>;
+        warnings?: string[];
+        data?: any;
         onConfirm: () => void;
         onCancel?: () => void;
     }) => void;
@@ -595,7 +609,7 @@ export interface StockItem {
     id: string;
     barcode?: string;
     name: string;
-    category: string;
+    stockTypeId: string;
     unit: string;
     quantity: number;
     minQuantity: number;

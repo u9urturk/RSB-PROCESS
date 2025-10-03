@@ -1,85 +1,21 @@
 import React, { useState } from 'react';
 import { Package, Plus, Edit, Trash2, Tag } from 'lucide-react';
 import StockTypeAddModal from './modals/StockTypeAddModal';
-import DeleteConfirmationModal from './modals/DeleteConfirmationModal';
-
-interface StockType {
-    id: number;
-    name: string;
-    description: string;
-    color: string;
-    icon: string;
-    itemCount: number;
-    examples: string[];
-}
+import { useConfirm } from '@/context/provider/ConfirmProvider';
+import { StockType } from '@/types/stock';
+import { stockTypeDatas } from './mocks/stockTypeData';
 
 const StockTypeManagement: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [editingStockType, setEditingStockType] = useState<StockType | null>(null);
-    const [deletingStockType, setDeletingStockType] = useState<StockType | null>(null);
-    
+    const confirm = useConfirm();
+
     // Restoran sektörüne uygun stok türleri - state olarak tanımlandı
-    const [stockTypes, setStockTypes] = useState<StockType[]>([
-        {
-            id: 1,
-            name: 'Hammadde',
-            description: 'Yemek hazırlığı için kullanılan temel malzemeler',
-            color: 'from-green-500 to-green-600',
-            icon: '🥗',
-            itemCount: 45,
-            examples: ['Et', 'Sebze', 'Baharat', 'Süt ürünleri']
-        },
-        {
-            id: 2,
-            name: 'Ürün',
-            description: 'Satışa hazır nihai ürünler',
-            color: 'from-blue-500 to-blue-600',
-            icon: '🍽️',
-            itemCount: 32,
-            examples: ['Menü yemekleri', 'İçecekler', 'Tatlılar', 'Atıştırmalık']
-        },
-        {
-            id: 3,
-            name: 'Temizlik',
-            description: 'Hijyen ve temizlik malzemeleri',
-            color: 'from-purple-500 to-purple-600',
-            icon: '🧽',
-            itemCount: 18,
-            examples: ['Deterjan', 'Dezenfektan', 'Kağıt havlu', 'Çöp torbası']
-        },
-        {
-            id: 4,
-            name: 'Mutfak Gereçleri',
-            description: 'Mutfak ekipmanları ve araç gereçler',
-            color: 'from-orange-500 to-orange-600',
-            icon: '🔧',
-            itemCount: 25,
-            examples: ['Bıçak', 'Tencere', 'Tabak', 'Bardak']
-        },
-        {
-            id: 5,
-            name: 'Ambalaj',
-            description: 'Paketleme ve servis malzemeleri',
-            color: 'from-red-500 to-red-600',
-            icon: '📦',
-            itemCount: 12,
-            examples: ['Karton kutu', 'Plastik poşet', 'Alüminyum folyo', 'Servis kabı']
-        },
-        {
-            id: 6,
-            name: 'İçecek Malzemeleri',
-            description: 'İçecek hazırlığı için gerekli malzemeler',
-            color: 'from-cyan-500 to-cyan-600',
-            icon: '🥤',
-            itemCount: 20,
-            examples: ['Kahve çekirdeği', 'Çay yaprakları', 'Şurup', 'Buz']
-        }
-    ]);
+    const [stockTypes, setStockTypes] = useState<StockType[]>(stockTypeDatas);
 
     // Yeni stok türü ekleme handler'ı
     const handleAddStockType = (newStockType: Omit<StockType, 'id' | 'itemCount'>) => {
-        const newId = Math.max(...stockTypes.map(type => type.id), 0) + 1;
+        const newId = (Math.max(...stockTypes.map(type => parseInt(type.id)), 0) + 1).toString();
         setStockTypes(prev => [...prev, {
             ...newStockType,
             id: newId,
@@ -89,9 +25,9 @@ const StockTypeManagement: React.FC = () => {
     };
 
     // Stok türü güncelleme handler'ı
-    const handleUpdateStockType = (id: number, updatedStockType: Omit<StockType, 'id' | 'itemCount'>) => {
-        setStockTypes(prev => prev.map(type => 
-            type.id === id 
+    const handleUpdateStockType = (id: string, updatedStockType: Omit<StockType, 'id' | 'itemCount'>) => {
+        setStockTypes(prev => prev.map(type =>
+            type.id === id
                 ? { ...type, ...updatedStockType }
                 : type
         ));
@@ -100,10 +36,8 @@ const StockTypeManagement: React.FC = () => {
     };
 
     // Stok türü silme handler'ı
-    const handleDeleteStockType = (id: number) => {
+    const handleDeleteStockType = (id: string) => {
         setStockTypes(prev => prev.filter(type => type.id !== id));
-        setDeletingStockType(null);
-        setIsDeleteModalOpen(false);
     };
 
     // Edit butonuna tıklanınca
@@ -113,9 +47,31 @@ const StockTypeManagement: React.FC = () => {
     };
 
     // Delete butonuna tıklanınca
-    const handleDeleteClick = (stockType: StockType) => {
-        setDeletingStockType(stockType);
-        setIsDeleteModalOpen(true);
+    const handleDeleteClick = async (stockType: StockType) => {
+        const result = await confirm({
+            title: 'Stok Türünü Sil',
+            message: `"${stockType.name}" stok türünü silmek istediğinizden emin misiniz?`,
+            type: 'danger',
+            icon: '🗑️',
+            confirmText: 'Evet, Sil',
+            cancelText: 'İptal',
+            data: stockType,
+            details: [
+                { label: 'Stok Türü', value: stockType.name },
+                { label: 'Açıklama', value: stockType.description },
+                { label: 'Ürün Sayısı', value: `${stockType.itemCount} adet` }
+            ],
+            warnings: [
+                'Bu işlem geri alınamaz',
+                'Tüm ilişkili veriler silinecektir',
+                `${stockType.itemCount} adet ürün etkilenecektir`,
+                'Stok geçmişi kaybolacaktır'
+            ]
+        });
+
+        if (result) {
+            handleDeleteStockType(stockType.id);
+        }
     };
 
     // Modal kapatma handler'ı
@@ -138,7 +94,7 @@ const StockTypeManagement: React.FC = () => {
                             <p className="text-gray-600">Stok türlerini kategorize edin ve yönetin</p>
                         </div>
                     </div>
-                    <button 
+                    <button
                         onClick={() => setIsAddModalOpen(true)}
                         className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 font-semibold"
                     >
@@ -204,13 +160,13 @@ const StockTypeManagement: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button 
+                                    <button
                                         onClick={() => handleEditClick(type)}
                                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                     >
                                         <Edit size={16} />
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => handleDeleteClick(type)}
                                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                     >
@@ -218,14 +174,14 @@ const StockTypeManagement: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div className="mb-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm text-gray-600">Ürün Sayısı</span>
                                     <span className="font-semibold text-gray-800">{type.itemCount} adet</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
+                                    <div
                                         className={`h-2 bg-gradient-to-r ${type.color} rounded-full transition-all duration-300`}
                                         style={{ width: `${Math.min((type.itemCount / 50) * 100, 100)}%` }}
                                     ></div>
@@ -236,8 +192,8 @@ const StockTypeManagement: React.FC = () => {
                                 <p className="text-sm text-gray-600 mb-2">Örnek ürünler:</p>
                                 <div className="flex flex-wrap gap-2">
                                     {type.examples.map((example, idx) => (
-                                        <span 
-                                            key={idx} 
+                                        <span
+                                            key={idx}
                                             className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs"
                                         >
                                             {example}
@@ -259,14 +215,6 @@ const StockTypeManagement: React.FC = () => {
                 onUpdate={handleUpdateStockType}
                 editingStockType={editingStockType}
                 isEditMode={!!editingStockType}
-            />
-
-            {/* Delete Confirmation Modal */}
-            <DeleteConfirmationModal
-                open={isDeleteModalOpen}
-                stockType={deletingStockType}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleDeleteStockType}
             />
         </div>
     );

@@ -1,5 +1,80 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   GLOBAL MODAL ANIMATIONS
+   ============================================================================ */
+
+/* Modal Overlay Animations */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 1rem;
+    transition: all 200ms ease-out;
+}
+
+.modal-overlay-enter {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.modal-overlay-exit {
+    background-color: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+}
+
+/* Modal Content Animations */
+.modal-content {
+    background-color: white;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transition: all 200ms ease-out;
+    transform: translateY(0);
+}
+
+.modal-content-enter {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+.modal-content-exit {
+    transform: scale(0.95) translateY(1rem);
+    opacity: 0;
+}
+
+/* Modal Sizes */
+.modal-sm {
+    width: 100%;
+    max-width: 28rem; /* max-w-md */
+}
+
+.modal-md {
+    width: 100%;
+    max-width: 32rem; /* max-w-lg */
+}
+
+.modal-lg {
+    width: 100%;
+    max-width: 42rem; /* max-w-2xl */
+}
+
+.modal-xl {
+    width: 100%;
+    max-width: 48rem; /* max-w-3xl */
+}
+
+/* Modal with scrollable content */
+.modal-scrollable {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* ============================================================================
+   EXISTING STYLES
+   ============================================================================ */
 
 /* src/index.css veya global.css */
 .no-scrollbar {

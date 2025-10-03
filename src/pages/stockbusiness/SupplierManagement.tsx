@@ -1,118 +1,19 @@
 import React, { useState } from 'react';
 import { Truck, Plus, Phone, Mail, Star, Edit, Trash2, Package } from 'lucide-react';
 import SupplierAddModal from './modals/SupplierAddModal';
-import SupplierDeleteConfirmationModal from './modals/SupplierDeleteConfirmationModal';
+import { useConfirm } from '@/context/provider/ConfirmProvider';
+import { Supplier } from '@/types/stock';
+import mockSuppliers from './mocks/supplierData';
 
-interface Supplier {
-    id: number;
-    name: string;
-    category: string;
-    phone: string;
-    email: string;
-    rating: number;
-    status: 'Aktif' | 'Pasif' | 'Beklemede';
-    address: string;
-    contactPerson: string;
-    taxNumber: string;
-    paymentTerms: string;
-    deliveryTime: number; // gün
-    minimumOrder: number; // TL
-    products: string[];
-    contractStartDate: string;
-    contractEndDate: string;
-    totalOrders: number;
-    monthlyDeliveries: number;
-}
+
 
 const SupplierManagement: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-    const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
+    const confirm = useConfirm();
 
     // Mock supplier data - state olarak tanımlandı
-    const [suppliers, setSuppliers] = useState<Supplier[]>([
-        {
-            id: 1,
-            name: 'Metro Gıda A.Ş.',
-            category: 'Genel Gıda',
-            phone: '+90 212 555 0101',
-            email: 'siparis@metrogida.com',
-            rating: 4.8,
-            status: 'Aktif',
-            address: 'Maslak, İstanbul',
-            contactPerson: 'Ahmet Yılmaz',
-            taxNumber: '1234567890',
-            paymentTerms: '30 gün',
-            deliveryTime: 2,
-            minimumOrder: 1000,
-            products: ['Konserve', 'Baharat', 'Temizlik'],
-            contractStartDate: '2024-01-01',
-            contractEndDate: '2025-12-31',
-            totalOrders: 45,
-            monthlyDeliveries: 12
-        },
-        {
-            id: 2,
-            name: 'Ege Et Kombinası',
-            category: 'Et Ürünleri',
-            phone: '+90 232 555 0202',
-            email: 'satis@egeet.com',
-            rating: 4.5,
-            status: 'Aktif',
-            address: 'Kemalpaşa, İzmir',
-            contactPerson: 'Fatma Demir',
-            taxNumber: '0987654321',
-            paymentTerms: '15 gün',
-            deliveryTime: 1,
-            minimumOrder: 2000,
-            products: ['Dana Eti', 'Kuzu Eti', 'Tavuk'],
-            contractStartDate: '2024-03-01',
-            contractEndDate: '2025-03-01',
-            totalOrders: 28,
-            monthlyDeliveries: 8
-        },
-        {
-            id: 3,
-            name: 'Akdeniz Sebze Hal',
-            category: 'Sebze & Meyve',
-            phone: '+90 242 555 0303',
-            email: 'info@akdenizsebze.com',
-            rating: 4.2,
-            status: 'Aktif',
-            address: 'Kepez, Antalya',
-            contactPerson: 'Mehmet Kaya',
-            taxNumber: '1122334455',
-            paymentTerms: '7 gün',
-            deliveryTime: 1,
-            minimumOrder: 500,
-            products: ['Domates', 'Salatalık', 'Meyve'],
-            contractStartDate: '2024-02-15',
-            contractEndDate: '2025-02-15',
-            totalOrders: 67,
-            monthlyDeliveries: 18
-        },
-        {
-            id: 4,
-            name: 'Boğaziçi Süt Ürünleri',
-            category: 'Süt Ürünleri',
-            phone: '+90 216 555 0404',
-            email: 'siparis@bogazicisut.com',
-            rating: 4.7,
-            status: 'Beklemede',
-            address: 'Üsküdar, İstanbul',
-            contactPerson: 'Ayşe Özkan',
-            taxNumber: '5544332211',
-            paymentTerms: '21 gün',
-            deliveryTime: 3,
-            minimumOrder: 1500,
-            products: ['Süt', 'Peynir', 'Yoğurt', 'Tereyağı'],
-            contractStartDate: '2024-05-01',
-            contractEndDate: '2025-05-01',
-            totalOrders: 15,
-            monthlyDeliveries: 4
-        }
-    ]);
+    const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
 
     // Handler functions
     const handleAddSupplier = () => {
@@ -125,16 +26,34 @@ const SupplierManagement: React.FC = () => {
         setIsAddModalOpen(true);
     };
 
-    const handleDeleteSupplier = (supplier: Supplier) => {
-        setDeletingSupplier(supplier);
-        setIsDeleteModalOpen(true);
-    };
+    const handleDeleteSupplier = async (supplier: Supplier) => {
+        const result = await confirm({
+            title: 'Tedarikçi Sil',
+            message: `"${supplier.name}" tedarikçisini silmek istediğinizden emin misiniz?`,
+            type: 'danger',
+            icon: '🚚',
+            confirmText: 'Evet, Sil',
+            cancelText: 'İptal',
+            data: supplier,
+            details: [
+                { label: 'Tedarikçi', value: supplier.name },
+                { label: 'Kategori', value: supplier.category },
+                { label: 'Telefon', value: supplier.phone },
+                { label: 'E-posta', value: supplier.email },
+                { label: 'Toplam Sipariş', value: supplier.totalOrders },
+                { label: 'Aylık Teslimat', value: supplier.monthlyDeliveries },
+                { label: 'Değerlendirme', value: `${supplier.rating}/5` }
+            ],
+            warnings: [
+                'Bu tedarikçiye ait tüm geçmiş kayıtlar silinecek',
+                'Aktif siparişler iptal edilecek', 
+                'Sözleşme bilgileri kalıcı olarak kaybolacak',
+                'Bu işlem geri alınamaz'
+            ]
+        });
 
-    const confirmDeleteSupplier = () => {
-        if (deletingSupplier) {
-            setSuppliers(suppliers.filter(s => s.id !== deletingSupplier.id));
-            setDeletingSupplier(null);
-            setIsDeleteModalOpen(false);
+        if (result) {
+            setSuppliers(suppliers.filter(s => s.id !== supplier.id));
         }
     };
 
@@ -155,7 +74,7 @@ const SupplierManagement: React.FC = () => {
             // Add new supplier
             const newSupplier: Supplier = {
                 ...supplierData,
-                id: Math.max(...suppliers.map(s => s.id), 0) + 1,
+                id: (Math.max(...suppliers.map(s => parseInt(s.id)), 0) + 1).toString(),
                 totalOrders: 0,
                 monthlyDeliveries: 0
             };
@@ -295,13 +214,6 @@ const SupplierManagement: React.FC = () => {
                 onClose={() => setIsAddModalOpen(false)}
                 onSave={handleSaveSupplier}
                 editingSupplier={editingSupplier}
-            />
-
-            <SupplierDeleteConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={confirmDeleteSupplier}
-                supplier={deletingSupplier}
             />
         </div>
     );

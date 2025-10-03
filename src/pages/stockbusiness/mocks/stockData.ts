@@ -4,7 +4,7 @@ const mockData: StockItem[] = [
     {
         id: "1",
         name: "Domates",
-        category: "Sebze",
+        stockTypeId: "1", // Hammadde
         quantity: 100,
         unit: "kg",
         unitPrice: 15.99,
@@ -18,7 +18,7 @@ const mockData: StockItem[] = [
     {
         id: "2",
         name: "Tavuk Göğüs",
-        category: "Et",
+        stockTypeId: "1", // Hammadde
         quantity: 50,
         unit: "kg",
         unitPrice: 89.99,
@@ -32,7 +32,7 @@ const mockData: StockItem[] = [
     {
         id: "3",
         name: "Süt",
-        category: "Süt Ürünleri",
+        stockTypeId: "1", // Hammadde
         quantity: 200,
         unit: "L",
         unitPrice: 12.50,

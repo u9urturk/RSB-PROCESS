@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
-import { StockDetailModalProps } from "../../../../types";
-import { 
-    X, 
-    Package, 
-    AlertTriangle, 
-    Calendar, 
-    FileText, 
-    Zap, 
+import {
+    X,
+    Package,
+    AlertTriangle,
+    Calendar,
+    FileText,
+    Zap,
     TrendingUp,
     Tag,
     BarChart3
 } from "lucide-react";
+import { StockDetailModalProps } from "@/types/index";
 
 export default function StockDetailModal({ open, onClose, item }: StockDetailModalProps) {
     const [render, setRender] = useState(open);
@@ -31,8 +31,8 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
     const overlayBase = "fixed inset-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-200";
     const panelBase = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transition-all duration-200";
     return (
-        <div className={`${overlayBase} ${open ? 'opacity-100 bg-black/60' : 'opacity-0 bg-black/0 pointer-events-none'}`}>            
-            <div className={`${panelBase} ${open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}> 
+        <div className={`${overlayBase} ${open ? 'opacity-100 bg-black/60' : 'opacity-0 bg-black/0 pointer-events-none'}`}>
+            <div className={`${panelBase} ${open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}>
                 {/* Header */}
                 <div className={`bg-gradient-to-r ${isLowStock ? 'from-red-500 to-red-600' : 'from-orange-500 to-red-600'} text-white p-6 rounded-t-2xl`}>
                     <div className="flex items-center justify-between">
@@ -129,12 +129,11 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
                             </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-3">
-                            <div 
-                                className={`h-3 rounded-full transition-all duration-500 ${
-                                    isLowStock 
-                                        ? "bg-gradient-to-r from-red-500 to-red-600" 
+                            <div
+                                className={`h-3 rounded-full transition-all duration-500 ${isLowStock
+                                        ? "bg-gradient-to-r from-red-500 to-red-600"
                                         : "bg-gradient-to-r from-green-500 to-green-600"
-                                }`}
+                                    }`}
                                 style={{ width: `${stockPercentage}%` }}
                             ></div>
                         </div>

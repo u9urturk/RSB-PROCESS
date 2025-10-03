@@ -3,15 +3,17 @@ import { Package, Plus, AlertTriangle, TrendingUp, Clock, ShoppingBag } from "lu
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import StockTable from "./components/StockTable";
 import StockSearchBar from "./components/StockSearchBar";
-import StockAddModal from "./components/modals/StockAddModal";
-import BarcodeScannerModal from "./components/modals/BarcodeScannerModal";
-import StockChangeModal from "./components/modals/StockChangeModal";
-import StockDetailModal from "./components/modals/StockDetailModal";
+import StockAddModal from "./modals/StockAddModal";
+import BarcodeScannerModal from "./modals/BarcodeScannerModal";
+import StockChangeModal from "./modals/StockChangeModal";
+import StockDetailModal from "./modals/StockDetailModal";
 import PageTransition from "../../components/PageTransition";
 import { StockItem } from "../../types";
 import { useNavigation } from "../../context/provider/NavigationProvider";
 
 import mockData from "./mocks/stockData";
+import mockSuppliers from "./mocks/supplierData";
+import { stockTypeDatas } from "./mocks/stockTypeData";
 
 interface StockTableProps {
     items: StockItem[];
@@ -28,7 +30,7 @@ export default function StockBusinessMain() {
     const { setActivePath } = useNavigation();
     const navigate = useNavigate();
     const location = useLocation();
-    const [stocks, setStocks] = useState<StockItem[]>(() => 
+    const [stocks, setStocks] = useState<StockItem[]>(() =>
         mockData.map(item => ({
             ...item,
             id: item.id.toString(),
@@ -92,10 +94,10 @@ export default function StockBusinessMain() {
     const handleStockChange = useCallback((id: string, amount: number, type: "add" | "remove") => {
         setStocks(prev => prev.map(stock => {
             if (stock.id === id) {
-                const newQuantity = type === "add" 
-                    ? stock.quantity + amount 
+                const newQuantity = type === "add"
+                    ? stock.quantity + amount
                     : Math.max(0, stock.quantity - amount);
-                
+
                 return {
                     ...stock,
                     quantity: newQuantity,
@@ -112,11 +114,14 @@ export default function StockBusinessMain() {
         setPendingBarcode(null); // barcode eklenince temizle
     }, []);
 
-    const filteredStocks = stocks.filter(stock => 
-        stock.name.toLowerCase().includes(search.toLowerCase()) ||
-        stock.category.toLowerCase().includes(search.toLowerCase()) ||
-        stock.barcode?.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredStocks = stocks.filter(stock => {
+        const stockType = stockTypeDatas.find(type => type.id === stock.stockTypeId);
+        return (
+            stock.name.toLowerCase().includes(search.toLowerCase()) ||
+            stockType?.name.toLowerCase().includes(search.toLowerCase()) ||
+            stock.barcode?.toLowerCase().includes(search.toLowerCase())
+        );
+    });
 
     const TableComponent = ({ items, onStockChange }: StockTableProps) => (
         <StockTable
@@ -137,34 +142,36 @@ export default function StockBusinessMain() {
             }}
             onAdd={onSubmit}
             initialBarcode={pendingBarcode || ""}
+            suppliers={mockSuppliers}
+            stockTypes={stockTypeDatas}
         />
     );
 
     // Stok kartları
     const stockStats = [
-        { 
-            title: "Toplam Ürün", 
-            value: totalItems, 
-            icon: <Package size={20} />, 
-            color: "from-blue-500 to-blue-600" 
+        {
+            title: "Toplam Ürün",
+            value: totalItems,
+            icon: <Package size={20} />,
+            color: "from-blue-500 to-blue-600"
         },
-        { 
-            title: "Düşük Stok", 
-            value: lowStockItems, 
-            icon: <AlertTriangle size={20} />, 
-            color: "from-red-500 to-red-600" 
+        {
+            title: "Düşük Stok",
+            value: lowStockItems,
+            icon: <AlertTriangle size={20} />,
+            color: "from-red-500 to-red-600"
         },
-        { 
-            title: "Toplam Değer", 
-            value: `₺${totalValue.toLocaleString()}`, 
-            icon: <TrendingUp size={20} />, 
-            color: "from-green-500 to-green-600" 
+        {
+            title: "Toplam Değer",
+            value: `₺${totalValue.toLocaleString()}`,
+            icon: <TrendingUp size={20} />,
+            color: "from-green-500 to-green-600"
         },
-        { 
-            title: "Tükenen Ürün", 
-            value: outOfStockItems, 
-            icon: <ShoppingBag size={20} />, 
-            color: "from-orange-500 to-orange-600" 
+        {
+            title: "Tükenen Ürün",
+            value: outOfStockItems,
+            icon: <ShoppingBag size={20} />,
+            color: "from-orange-500 to-orange-600"
         }
     ];
 
@@ -194,7 +201,7 @@ export default function StockBusinessMain() {
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Tab Navigation */}
                         <div className="mt-6 border-t border-white/20 pt-6">
                             <div className="flex flex-wrap gap-2 sm:gap-4">
@@ -210,8 +217,8 @@ export default function StockBusinessMain() {
                                             px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base
                                             transition-all duration-300 transform hover:scale-105
                                             flex items-center gap-2 backdrop-blur-sm
-                                            ${activeTab === tab.id 
-                                                ? 'bg-white text-orange-600 shadow-lg' 
+                                            ${activeTab === tab.id
+                                                ? 'bg-white text-orange-600 shadow-lg'
                                                 : 'bg-white/20 text-white hover:bg-white/30'
                                             }
                                         `}
@@ -234,8 +241,8 @@ export default function StockBusinessMain() {
                             {/* Stat Cards */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
                                 {stockStats.map((stat, index) => (
-                                    <div 
-                                        key={index} 
+                                    <div
+                                        key={index}
                                         className="group"
                                         style={{ animationDelay: `${index * 0.1}s` }}
                                     >
@@ -263,9 +270,9 @@ export default function StockBusinessMain() {
                             <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
                                 <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                                     <div className="flex-1 w-full sm:w-auto">
-                                        <StockSearchBar 
-                                            search={search} 
-                                            setSearch={setSearch} 
+                                        <StockSearchBar
+                                            search={search}
+                                            setSearch={setSearch}
                                             onBarcodeClick={handleBarcodeClick}
                                         />
                                     </div>
@@ -292,7 +299,7 @@ export default function StockBusinessMain() {
                     )}
                 </div>
             </div>
-            
+
             <ModalComponent
                 open={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
@@ -309,7 +316,7 @@ export default function StockBusinessMain() {
                     onClose={() => setActiveChange(null)}
                     item={activeChange.item}
                     type={activeChange.type}
-                    onSubmit={(amt) => {
+                    onSubmit={(amt: number) => {
                         handleStockChange(activeChange.item.id, amt, activeChange.type);
                         setActiveChange(null);
                     }}

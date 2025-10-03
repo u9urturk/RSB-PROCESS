@@ -1,44 +1,70 @@
 import { useState, useEffect } from "react";
-import { StockItem } from "../../../../types";
 import { Package, X, Save } from "lucide-react";
+import { StockItem } from "@/types/index";
+import { Supplier, StockType } from "@/types/stock";
+import { stockTypeDatas } from "../mocks/stockTypeData";
 
 interface StockAddModalProps {
     open: boolean;
     onClose: () => void;
     onAdd: (newStock: StockItem) => void;
     initialBarcode?: string; // yeni prop
+    suppliers?: Supplier[]; // tedarikçi listesi
+    stockTypes?: StockType[]; // stok tipleri listesi
 }
 
-const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd, initialBarcode = "" }) => {
+const StockAddModal: React.FC<StockAddModalProps> = ({ 
+    open, 
+    onClose, 
+    onAdd, 
+    initialBarcode = "", 
+    suppliers = [], 
+    stockTypes = stockTypeDatas 
+}) => {
     const [formData, setFormData] = useState<Partial<StockItem>>({
         name: "",
-        category: "",
+        stockTypeId: "",
         quantity: 0,
         unit: "adet",
         unitPrice: 0,
         minQuantity: 0,
         maxQuantity: 0,
-        barcode: initialBarcode, 
-        description: ""
+        barcode: initialBarcode,
+        description: "",
+        supplierId: "",
+        status: "active",
+        notes: ""
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        const quantity = formData.quantity || 0;
+        const unitPrice = formData.unitPrice || 0;
+        const totalPrice = quantity * unitPrice;
+
         onAdd({
             ...formData,
             id: Date.now().toString(),
             lastUpdated: new Date().toISOString(),
-            quantity: formData.quantity || 0,
+            quantity,
             minQuantity: formData.minQuantity || 0,
             maxQuantity: formData.maxQuantity || 0,
-            unitPrice: formData.unitPrice || 0
+            unitPrice,
+            totalPrice,
+            status: formData.status || "active",
+            stockTypeId: formData.stockTypeId || "",
+            supplierId: formData.supplierId || undefined,
+            notes: formData.notes || undefined,
+            description: formData.description || undefined,
+            barcode: formData.barcode || undefined
         } as StockItem);
         onClose();
     };
 
     const [render, setRender] = useState(open);
     useEffect(() => { if (open) setRender(true); }, [open]);
-    useEffect(() => { if (!open && render) { const t = setTimeout(() => setRender(false), 200); return () => clearTimeout(t);} }, [open, render]);
+    useEffect(() => { if (!open && render) { const t = setTimeout(() => setRender(false), 200); return () => clearTimeout(t); } }, [open, render]);
     if (!render) return null;
 
 
@@ -101,22 +127,58 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd, ini
                             />
                         </div>
 
-                        {/* Kategori */}
+                        {/* Stok Tipi */}
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-gray-700">
-                                Kategori *
+                                Stok Tipi *
                             </label>
                             <select
                                 required
-                                value={formData.category}
-                                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                                value={formData.stockTypeId}
+                                onChange={(e) => setFormData(prev => ({ ...prev, stockTypeId: e.target.value }))}
                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 hover:border-orange-300"
                             >
-                                <option value="">Kategori Seçiniz</option>
-                                <option value="Gıda">Gıda</option>
-                                <option value="İçecek">İçecek</option>
-                                <option value="Temizlik">Temizlik</option>
-                                <option value="Diğer">Diğer</option>
+                                <option value="">Stok Tipi Seçiniz</option>
+                                {stockTypes.map((stockType) => (
+                                    <option key={stockType.id} value={stockType.id}>
+                                        {stockType.icon} {stockType.name} - {stockType.description}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Tedarikçi */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-gray-700">
+                                Tedarikçi
+                            </label>
+                            <select
+                                value={formData.supplierId}
+                                onChange={(e) => setFormData(prev => ({ ...prev, supplierId: e.target.value }))}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 hover:border-orange-300"
+                            >
+                                <option value="">Tedarikçi Seçiniz</option>
+                                {suppliers.map((supplier) => (
+                                    <option key={supplier.id} value={supplier.id}>
+                                        {supplier.name} - {supplier.category}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Durum */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-gray-700">
+                                Durum *
+                            </label>
+                            <select
+                                required
+                                value={formData.status}
+                                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as "active" | "inactive" }))}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 hover:border-orange-300"
+                            >
+                                <option value="active">Aktif</option>
+                                <option value="inactive">Pasif</option>
                             </select>
                         </div>
 
@@ -218,6 +280,20 @@ const StockAddModal: React.FC<StockAddModalProps> = ({ open, onClose, onAdd, ini
                             rows={3}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 hover:border-orange-300 resize-none"
                             placeholder="Ürün hakkında ek bilgiler..."
+                        />
+                    </div>
+
+                    {/* Notlar */}
+                    <div className="mt-4 space-y-2">
+                        <label className="block text-sm font-semibold text-gray-700">
+                            Notlar
+                        </label>
+                        <textarea
+                            value={formData.notes}
+                            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                            rows={2}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 hover:border-orange-300 resize-none"
+                            placeholder="İç notlar, uyarılar vb..."
                         />
                     </div>
 

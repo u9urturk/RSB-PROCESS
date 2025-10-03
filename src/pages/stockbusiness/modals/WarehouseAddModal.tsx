@@ -1,25 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Building2, MapPin, Users, Thermometer, Ruler } from 'lucide-react';
 
-interface Warehouse {
-    id: number;
-    name: string;
-    location: string;
-    capacity: string;
-    capacityPercentage: number;
-    status: 'Aktif' | 'Pasif' | 'Bakım';
-    manager: string;
-    staffCount: number;
-    area: number;
-    temperature?: number;
-    warehouseType: 'Normal' | 'Soğuk' | 'Dondurucu' | 'Kuru';
-}
-
+import { Warehouse } from '@/types/stock';
 interface WarehouseAddModalProps {
     open: boolean;
     onClose: () => void;
     onAdd?: (warehouse: Omit<Warehouse, 'id'>) => void;
-    onUpdate?: (id: number, warehouse: Omit<Warehouse, 'id'>) => void;
+    onUpdate?: (id: string, warehouse: Omit<Warehouse, 'id'>) => void;
     editingWarehouse?: Warehouse | null;
     isEditMode?: boolean;
 }
@@ -47,7 +34,7 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
         warehouseType: 'Normal' as 'Normal' | 'Soğuk' | 'Dondurucu' | 'Kuru'
     });
 
-    const [errors, setErrors] = useState<{[key: string]: string}>({});
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // Animasyon kontrolü
     useEffect(() => {
@@ -90,7 +77,7 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
     }, [isEditMode, editingWarehouse, open]);
 
     const validateForm = () => {
-        const newErrors: {[key: string]: string} = {};
+        const newErrors: { [key: string]: string } = {};
 
         if (!formData.name.trim()) {
             newErrors.name = 'Depo adı gereklidir';
@@ -175,20 +162,18 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
     if (!shouldRender) return null;
 
     return (
-        <div 
-            className={`fixed inset-0  flex items-center justify-center z-50 p-4 transition-all duration-200 ease-out ${
-                isAnimating 
-                    ? 'bg-opacity-50 backdrop-blur-sm' 
-                    : 'bg-opacity-0 backdrop-blur-none'
-            }`}
+        <div
+            className={`fixed inset-0  flex items-center justify-center z-50 p-4 transition-all duration-200 ease-out ${isAnimating
+                ? 'bg-opacity-50 bg-gray-700/20 backdrop-blur-sm'
+                : 'bg-opacity-0 backdrop-blur-none'
+                }`}
             onClick={handleClose}
         >
-            <div 
-                className={`bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto transition-all duration-200 ease-out transform ${
-                    isAnimating 
-                        ? 'scale-100 opacity-100 translate-y-0' 
-                        : 'scale-95 opacity-0 translate-y-4'
-                }`}
+            <div
+                className={`bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto transition-all duration-200 ease-out transform ${isAnimating
+                    ? 'scale-100 opacity-100 translate-y-0'
+                    : 'scale-95 opacity-0 translate-y-4'
+                    }`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -228,9 +213,8 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                                 type="text"
                                 value={formData.name}
                                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                                    errors.name ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'
+                                    }`}
                                 placeholder="Örn: Ana Depo, Soğuk Hava Deposu..."
                             />
                             {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
@@ -246,9 +230,8 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                                 type="text"
                                 value={formData.location}
                                 onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                                    errors.location ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${errors.location ? 'border-red-500' : 'border-gray-300'
+                                    }`}
                                 placeholder="Örn: Merkez, Yan Bina, Kat 2..."
                             />
                             {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
@@ -265,8 +248,8 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                             </label>
                             <select
                                 value={formData.warehouseType}
-                                onChange={(e) => setFormData(prev => ({ 
-                                    ...prev, 
+                                onChange={(e) => setFormData(prev => ({
+                                    ...prev,
                                     warehouseType: e.target.value as 'Normal' | 'Soğuk' | 'Dondurucu' | 'Kuru',
                                     temperature: e.target.value === 'Normal' || e.target.value === 'Kuru' ? undefined : prev.temperature
                                 }))}
@@ -308,9 +291,8 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                                 type="number"
                                 value={formData.temperature || ''}
                                 onChange={(e) => setFormData(prev => ({ ...prev, temperature: e.target.value ? Number(e.target.value) : undefined }))}
-                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                                    errors.temperature ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${errors.temperature ? 'border-red-500' : 'border-gray-300'
+                                    }`}
                                 placeholder={formData.warehouseType === 'Dondurucu' ? 'Örn: -18' : 'Örn: 4'}
                                 min={formData.warehouseType === 'Dondurucu' ? -30 : -5}
                                 max={formData.warehouseType === 'Dondurucu' ? -10 : 15}
@@ -331,9 +313,8 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                                 type="text"
                                 value={formData.manager}
                                 onChange={(e) => setFormData(prev => ({ ...prev, manager: e.target.value }))}
-                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                                    errors.manager ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${errors.manager ? 'border-red-500' : 'border-gray-300'
+                                    }`}
                                 placeholder="Örn: Ahmet Yılmaz"
                             />
                             {errors.manager && <p className="text-red-500 text-sm mt-1">{errors.manager}</p>}
@@ -349,9 +330,8 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                                 type="number"
                                 value={formData.staffCount}
                                 onChange={(e) => setFormData(prev => ({ ...prev, staffCount: Number(e.target.value) }))}
-                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                                    errors.staffCount ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${errors.staffCount ? 'border-red-500' : 'border-gray-300'
+                                    }`}
                                 min="1"
                                 max="50"
                             />
@@ -368,9 +348,8 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                                 type="number"
                                 value={formData.area}
                                 onChange={(e) => setFormData(prev => ({ ...prev, area: Number(e.target.value) }))}
-                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                                    errors.area ? 'border-red-500' : 'border-gray-300'
-                                }`}
+                                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${errors.area ? 'border-red-500' : 'border-gray-300'
+                                    }`}
                                 min="10"
                                 placeholder="m²"
                             />
@@ -399,12 +378,11 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                             </span>
                         </div>
                         <div className="mt-2 h-2 bg-gray-200 rounded-full">
-                            <div 
-                                className={`h-2 rounded-full transition-all duration-300 ${
-                                    formData.capacityPercentage >= 90 ? 'bg-red-500' :
+                            <div
+                                className={`h-2 rounded-full transition-all duration-300 ${formData.capacityPercentage >= 90 ? 'bg-red-500' :
                                     formData.capacityPercentage >= 75 ? 'bg-yellow-500' :
-                                    'bg-green-500'
-                                }`}
+                                        'bg-green-500'
+                                    }`}
                                 style={{ width: `${formData.capacityPercentage}%` }}
                             ></div>
                         </div>

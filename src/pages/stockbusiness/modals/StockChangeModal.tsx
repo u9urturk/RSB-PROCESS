@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StockChangeModalProps } from "../../../../types";
+import { StockChangeModalProps } from "../../../types";
 import { Plus, Minus, X, TrendingUp, Package } from "lucide-react";
 
 export default function StockChangeModal({ open, onClose, item, type, onSubmit }: StockChangeModalProps) {

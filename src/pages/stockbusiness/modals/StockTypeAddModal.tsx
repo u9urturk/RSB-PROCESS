@@ -1,28 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { X, Package, Palette, FileText, Hash, Lightbulb } from 'lucide-react';
-
-interface StockType {
-    id: number;
-    name: string;
-    description: string;
-    color: string;
-    icon: string;
-    itemCount: number;
-    examples: string[];
-}
+import { StockType } from '@/types/stock';
 
 interface StockTypeAddModalProps {
     open: boolean;
     onClose: () => void;
     onAdd?: (stockType: Omit<StockType, 'id' | 'itemCount'>) => void;
-    onUpdate?: (id: number, stockType: Omit<StockType, 'id' | 'itemCount'>) => void;
+    onUpdate?: (id: string, stockType: Omit<StockType, 'id' | 'itemCount'>) => void;
     editingStockType?: StockType | null;
     isEditMode?: boolean;
 }
 
-const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({ 
-    open, 
-    onClose, 
+const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
+    open,
+    onClose,
     onAdd,
     onUpdate,
     editingStockType,
@@ -30,7 +21,7 @@ const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
 }) => {
     const [isAnimating, setIsAnimating] = useState(false);
     const [shouldRender, setShouldRender] = useState(false);
-    
+
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -39,14 +30,14 @@ const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
         examples: ['']
     });
 
-    const [errors, setErrors] = useState<{[key: string]: string}>({});
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // Animasyon kontrolü
     useEffect(() => {
         if (open) {
             setShouldRender(true);
             // Kısa bir delay ile animasyonu başlat
-            setTimeout(() => setIsAnimating(true), 10);
+            setTimeout(() => setIsAnimating(true), 100);
         } else {
             setIsAnimating(false);
             // Animasyon bitimini bekle ve modal'ı DOM'dan kaldır
@@ -90,12 +81,12 @@ const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
 
     // Önceden tanımlı icon seçenekleri
     const iconOptions = [
-        '📦', '🥗', '🍽️', '🧽', '🔧', '🥤', '🍔', '🍕', '🥘', '🍰', 
+        '📦', '🥗', '🍽️', '🧽', '🔧', '🥤', '🍔', '🍕', '🥘', '🍰',
         '☕', '🥖', '🧊', '🫖', '🍳', '🥄', '🍴', '📋', '🏷️', '📊'
     ];
 
     const validateForm = () => {
-        const newErrors: {[key: string]: string} = {};
+        const newErrors: { [key: string]: string } = {};
 
         if (!formData.name.trim()) {
             newErrors.name = 'Stok türü adı gereklidir';
@@ -120,7 +111,7 @@ const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (validateForm()) {
             const validExamples = formData.examples.filter(example => example.trim());
             const stockTypeData = {
@@ -136,7 +127,7 @@ const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
             } else if (!isEditMode && onAdd) {
                 onAdd(stockTypeData);
             }
-            
+
             handleClose();
         }
     };
@@ -180,20 +171,18 @@ const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
     if (!shouldRender) return null;
 
     return (
-        <div 
-            className={`fixed inset-0  flex items-center justify-center z-50 p-4 transition-all duration-200 ease-out ${
-                isAnimating 
-                    ? 'bg-opacity-50 backdrop-blur-sm' 
+        <div
+            className={`fixed inset-0  flex items-center justify-center z-50 p-4 transition-all duration-200 ease-out ${isAnimating
+                    ? 'bg-opacity-50 bg-gray-700/20 backdrop-blur-sm'
                     : 'bg-opacity-0 backdrop-blur-none'
-            }`}
+                }`}
             onClick={handleClose}
         >
-            <div 
-                className={`bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80%] overflow-y-auto transition-all duration-200 ease-out transform ${
-                    isAnimating 
-                        ? 'scale-100 opacity-100 translate-y-0' 
+            <div
+                className={`bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80%] overflow-y-auto transition-all duration-200 ease-out transform ${isAnimating
+                        ? 'scale-100 opacity-100 translate-y-0'
                         : 'scale-95 opacity-0 translate-y-4'
-                }`}
+                    }`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -231,9 +220,8 @@ const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                                errors.name ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'
+                                }`}
                             placeholder="Örn: Hammadde, Temizlik Malzemesi..."
                         />
                         {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
@@ -248,9 +236,8 @@ const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
                         <textarea
                             value={formData.description}
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all h-24 resize-none ${
-                                errors.description ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all h-24 resize-none ${errors.description ? 'border-red-500' : 'border-gray-300'
+                                }`}
                             placeholder="Bu stok türünün ne için kullanıldığını açıklayın..."
                         />
                         {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
@@ -268,11 +255,10 @@ const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
                                     key={color.value}
                                     type="button"
                                     onClick={() => setFormData(prev => ({ ...prev, color: color.value }))}
-                                    className={`p-3 rounded-xl border-2 transition-all hover:scale-105 ${
-                                        formData.color === color.value 
-                                            ? 'border-gray-800 ring-2 ring-gray-300' 
+                                    className={`p-3 rounded-xl border-2 transition-all hover:scale-105 ${formData.color === color.value
+                                            ? 'border-gray-800 ring-2 ring-gray-300'
                                             : 'border-gray-200 hover:border-gray-300'
-                                    }`}
+                                        }`}
                                 >
                                     <div className={`h-8 w-full ${color.preview} rounded-lg mb-1`}></div>
                                     <p className="text-xs text-gray-600">{color.label}</p>
@@ -293,11 +279,10 @@ const StockTypeAddModal: React.FC<StockTypeAddModalProps> = ({
                                     key={icon}
                                     type="button"
                                     onClick={() => setFormData(prev => ({ ...prev, icon }))}
-                                    className={`p-3 rounded-lg border transition-all hover:scale-110 ${
-                                        formData.icon === icon 
-                                            ? 'border-blue-500 bg-blue-50' 
+                                    className={`p-3 rounded-lg border transition-all hover:scale-110 ${formData.icon === icon
+                                            ? 'border-blue-500 bg-blue-50'
                                             : 'border-gray-200 hover:border-gray-300'
-                                    }`}
+                                        }`}
                                 >
                                     <span className="text-xl">{icon}</span>
                                 </button>
