@@ -8,13 +8,13 @@ import BarcodeScannerModal from "./modals/BarcodeScannerModal";
 import StockChangeModal from "./modals/StockChangeModal";
 import StockDetailModal from "./modals/StockDetailModal";
 import PageTransition from "../../components/PageTransition";
-import { StockItem } from "../../types";
 import { useNavigation } from "../../context/provider/NavigationProvider";
 
 import mockData from "./mocks/stockData";
 import mockSuppliers from "./mocks/supplierData";
 import { stockTypeDatas } from "./mocks/stockTypeData";
 import { warehouseData } from "./mocks/warehouseData";
+import { StockItem } from "@/types/index";
 
 interface StockTableProps {
     items: StockItem[];
@@ -110,9 +110,10 @@ export default function StockBusinessMain() {
     }, []);
 
     const handleAddStock = useCallback((newStock: StockItem) => {
-        setStocks(prev => [...prev, newStock]);
-        setIsAddModalOpen(false);
-        setPendingBarcode(null); // barcode eklenince temizle
+        console.log('Adding new stock:', newStock); 
+        // setStocks(prev => [...prev, newStock]);
+        // setIsAddModalOpen(false);
+        // setPendingBarcode(null); // barcode eklenince temizle
     }, []);
 
     const filteredStocks = stocks.filter(stock => {

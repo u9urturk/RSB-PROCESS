@@ -109,7 +109,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6 rounded-t-2xl">
+                <div className="bg-gradient-to-r sticky top-0 from-orange-500 to-red-600 text-white p-6 rounded-t-2xl">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-white/20 rounded-xl">

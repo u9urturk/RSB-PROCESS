@@ -190,7 +190,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             onClick={handleClose}
         >
             <div
-                className={`bg-white rounded-2xl shadow-2xl max-w-4xl w-full min-h-[60vh] max-h-[90vh] overflow-hidden transition-all duration-500 ease-in-out flex flex-col ${isAnimating ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+                className={`bg-white rounded-2xl overflow-y-scroll shadow-2xl max-w-4xl w-full min-h-[60vh] max-h-[90vh] overflow-hidden transition-all duration-500 ease-in-out flex flex-col ${isAnimating ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
                     }`}
                 onClick={(e) => e.stopPropagation()}
                 style={{
@@ -199,7 +199,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
                 }}
             >
                 {/* Header */}
-                <div className={`bg-gradient-to-r ${isLowStock ? 'from-red-500 to-red-600' : 'from-orange-500 to-red-600'} text-white p-6 rounded-t-2xl`}>
+                <div className={`bg-gradient-to-r sticky top-0 z-10 ${isLowStock ? 'from-red-500 to-red-600' : 'from-orange-500 to-red-600'} text-white p-6 rounded-t-2xl`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-white/20 rounded-xl">
