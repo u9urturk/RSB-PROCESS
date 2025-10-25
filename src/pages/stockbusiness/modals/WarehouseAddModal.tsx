@@ -26,12 +26,12 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
         name: '',
         location: '',
         capacityPercentage: 0,
-        status: 'Aktif' as 'Aktif' | 'Pasif' | 'Bakım',
+        status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE',
         manager: '',
         staffCount: 1,
         area: 100,
         temperature: undefined as number | undefined,
-        warehouseType: 'Normal' as 'Normal' | 'Soğuk' | 'Dondurucu' | 'Kuru'
+        warehouseType: 'NORMAL' as 'NORMAL' | 'COLD' | 'FROZEN' | 'DRY'
     });
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -66,12 +66,12 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                 name: '',
                 location: '',
                 capacityPercentage: 0,
-                status: 'Aktif',
+                status: 'ACTIVE',
                 manager: '',
                 staffCount: 1,
                 area: 100,
                 temperature: undefined,
-                warehouseType: 'Normal'
+                warehouseType: 'NORMAL'
             });
         }
     }, [isEditMode, editingWarehouse, open]);
@@ -105,7 +105,7 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
             newErrors.capacityPercentage = 'Kapasite 0-100 arasında olmalıdır';
         }
 
-        if ((formData.warehouseType === 'Soğuk' || formData.warehouseType === 'Dondurucu') && !formData.temperature) {
+        if ((formData.warehouseType === 'COLD' || formData.warehouseType === 'FROZEN') && !formData.temperature) {
             newErrors.temperature = 'Bu depo türü için sıcaklık gereklidir';
         }
 
@@ -117,7 +117,7 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
         e.preventDefault();
 
         if (validateForm()) {
-            const warehouseData = {
+            const warehouseData: Omit<Warehouse, 'id'> = {
                 name: formData.name.trim(),
                 location: formData.location.trim(),
                 capacity: `${formData.capacityPercentage}%`,
@@ -147,12 +147,12 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                 name: '',
                 location: '',
                 capacityPercentage: 0,
-                status: 'Aktif',
+                status: 'ACTIVE',
                 manager: '',
                 staffCount: 1,
                 area: 100,
                 temperature: undefined,
-                warehouseType: 'Normal'
+                warehouseType: 'NORMAL'
             });
             setErrors({});
             onClose();
@@ -250,15 +250,15 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                                 value={formData.warehouseType}
                                 onChange={(e) => setFormData(prev => ({
                                     ...prev,
-                                    warehouseType: e.target.value as 'Normal' | 'Soğuk' | 'Dondurucu' | 'Kuru',
-                                    temperature: e.target.value === 'Normal' || e.target.value === 'Kuru' ? undefined : prev.temperature
+                                    warehouseType: e.target.value as 'NORMAL' | 'COLD' | 'FROZEN' | 'DRY',
+                                    temperature: e.target.value === 'NORMAL' || e.target.value === 'DRY' ? undefined : prev.temperature
                                 }))}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             >
-                                <option value="Normal">Normal Depo</option>
-                                <option value="Soğuk">Soğuk Hava Deposu</option>
-                                <option value="Dondurucu">Dondurucu Deposu</option>
-                                <option value="Kuru">Kuru Gıda Deposu</option>
+                                <option value="NORMAL">Normal Depo</option>
+                                <option value="COLD">Soğuk Hava Deposu</option>
+                                <option value="FROZEN">Dondurucu Deposu</option>
+                                <option value="DRY">Kuru Gıda Deposu</option>
                             </select>
                         </div>
 
@@ -270,18 +270,18 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                             </label>
                             <select
                                 value={formData.status}
-                                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'Aktif' | 'Pasif' | 'Bakım' }))}
+                                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE' }))}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                             >
-                                <option value="Aktif">Aktif</option>
-                                <option value="Pasif">Pasif</option>
-                                <option value="Bakım">Bakım</option>
+                                <option value="ACTIVE">Aktif</option>
+                                <option value="INACTIVE">Pasif</option>
+                                <option value="MAINTENANCE">Bakım</option>
                             </select>
                         </div>
                     </div>
 
                     {/* Sıcaklık (sadece soğuk depolar için) */}
-                    {(formData.warehouseType === 'Soğuk' || formData.warehouseType === 'Dondurucu') && (
+                    {(formData.warehouseType === 'COLD' || formData.warehouseType === 'FROZEN') && (
                         <div>
                             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                                 <Thermometer size={16} />
@@ -293,9 +293,9 @@ const WarehouseAddModal: React.FC<WarehouseAddModalProps> = ({
                                 onChange={(e) => setFormData(prev => ({ ...prev, temperature: e.target.value ? Number(e.target.value) : undefined }))}
                                 className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${errors.temperature ? 'border-red-500' : 'border-gray-300'
                                     }`}
-                                placeholder={formData.warehouseType === 'Dondurucu' ? 'Örn: -18' : 'Örn: 4'}
-                                min={formData.warehouseType === 'Dondurucu' ? -30 : -5}
-                                max={formData.warehouseType === 'Dondurucu' ? -10 : 15}
+                                placeholder={formData.warehouseType === 'FROZEN' ? 'Örn: -18' : 'Örn: 4'}
+                                min={formData.warehouseType === 'FROZEN' ? -30 : -5}
+                                max={formData.warehouseType === 'FROZEN' ? -10 : 15}
                             />
                             {errors.temperature && <p className="text-red-500 text-sm mt-1">{errors.temperature}</p>}
                         </div>

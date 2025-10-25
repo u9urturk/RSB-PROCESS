@@ -1,6 +1,17 @@
 import { BaseEntity } from ".";
 
 // ===== STOCK & INVENTORY TYPES =====
+export interface Unit extends BaseEntity {
+    name: string;
+    shortName: string;
+    category: 'weight' | 'volume' | 'count' | 'package';
+    conversionFactor?: number;
+    baseUnit?: string;
+    symbol: string;
+    description: string;
+    isActive: boolean;
+}
+
 export interface StockType extends BaseEntity {
     name: string;
     description: string;
@@ -31,7 +42,7 @@ export interface Supplier extends BaseEntity {
     phone: string;
     email: string;
     rating: number;
-    status: 'Aktif' | 'Pasif' | 'Beklemede';
+    status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
     address: string;
     contactPerson: string;
     taxNumber: string;
@@ -39,10 +50,17 @@ export interface Supplier extends BaseEntity {
     deliveryTime: number; // gün
     minimumOrder: number; // TL
     products: string[];
-    contractStartDate: string;
-    contractEndDate: string;
+    contractStartDate?: string;
+    contractEndDate?: string;
     totalOrders: number;
     monthlyDeliveries: number;
+    contactInfo?: string; // Legacy field
+    leadTimeDays?: number; // Legacy field
+    isActive?: boolean; // Legacy field
+    createdAt?: string;
+    updatedAt?: string;
+    stockItems?: any[]; // Relations from backend
+    inventories?: any[]; // Relations from backend
 }
 
 export interface Warehouse extends BaseEntity {
@@ -50,10 +68,12 @@ export interface Warehouse extends BaseEntity {
     location: string;
     capacity: string;
     capacityPercentage: number;
-    status: 'Aktif' | 'Pasif' | 'Bakım';
+    status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
     manager: string;
     staffCount: number;
     area: number;
     temperature?: number;
-    warehouseType: 'Normal' | 'Soğuk' | 'Dondurucu' | 'Kuru';
+    warehouseType: 'NORMAL' | 'COLD' | 'FROZEN' | 'DRY';
+    code?: string;
+    isActive?: boolean;
 }

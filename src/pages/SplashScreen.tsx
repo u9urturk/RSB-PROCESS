@@ -107,7 +107,7 @@ const SplashScreen: React.FC = () => {
                     }}
                     className="mb-8"
                 >
-                    <div className="w-24 h-24 mx-auto bg-white/10 rounded-full flex items-center justify-center backdrop-blur-lg border border-white/20 shadow-2xl">
+                    <div className="w-24 h-24 text-8xl mx-auto bg-white/10 rounded-full flex items-center justify-center backdrop-blur-lg border border-white/20 shadow-2xl">
                         <motion.div
                             animate={{ rotate: [0, 10, -10, 0] }}
                             transition={{

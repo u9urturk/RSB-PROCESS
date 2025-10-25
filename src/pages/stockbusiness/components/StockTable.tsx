@@ -1,7 +1,7 @@
-import { memo } from "react";
+import { memo} from "react";
 import { Package, Search } from "lucide-react";
 import StockRow from "./StockRow";
-import { StockItem } from "../../../types";
+import { StockItem } from "../provider";
 
 interface StockTableProps {
     items: StockItem[];
@@ -11,7 +11,9 @@ interface StockTableProps {
     onOpenDetail: (item: StockItem) => void;
 }
 
+
 function StockTable({ items, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }: StockTableProps) {
+   
     if (items.length === 0) {
         return (
             <div className="bg-white rounded-2xl p-12 shadow-lg border border-gray-100 text-center">

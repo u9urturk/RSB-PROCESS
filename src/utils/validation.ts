@@ -58,6 +58,88 @@ export const validateInput = {
         }
         
         return { isValid: true };
+    },
+
+    // StockType validations
+    stockTypeName: (value: string): ValidationResult => {
+        const trimmed = value.trim();
+        
+        if (trimmed.length < 2 || trimmed.length > 50) {
+            return { isValid: false, error: 'Stok türü adı 2-50 karakter arasında olmalıdır' };
+        }
+
+        // Check for HTML/script injection
+        const maliciousPatterns = [/<[^>]*>/g, /script/i, /javascript/i];
+        for (const pattern of maliciousPatterns) {
+            if (pattern.test(trimmed)) {
+                return { isValid: false, error: 'Geçersiz karakterler tespit edildi' };
+            }
+        }
+
+        return { isValid: true };
+    },
+
+    stockTypeDescription: (value: string): ValidationResult => {
+        if (!value) return { isValid: true }; // Optional field
+
+        const trimmed = value.trim();
+        
+        if (trimmed.length < 10 || trimmed.length > 500) {
+            return { isValid: false, error: 'Açıklama 10-500 karakter arasında olmalıdır' };
+        }
+
+        // Check for HTML/script injection
+        const maliciousPatterns = [/<[^>]*>/g, /script/i, /javascript/i];
+        for (const pattern of maliciousPatterns) {
+            if (pattern.test(trimmed)) {
+                return { isValid: false, error: 'Geçersiz karakterler tespit edildi' };
+            }
+        }
+
+        return { isValid: true };
+    },
+
+    stockTypeColor: (value: string): ValidationResult => {
+        if (!value) return { isValid: true }; // Optional field
+
+        const trimmed = value.trim();
+        
+        // Tailwind gradient format validation
+        const gradientPattern = /^from-\w+-\d{3} to-\w+-\d{3}$/;
+        if (!gradientPattern.test(trimmed)) {
+            return { isValid: false, error: 'Renk formatı "from-color-500 to-color-600" şeklinde olmalıdır' };
+        }
+
+        return { isValid: true };
+    },
+
+    stockTypeIcon: (value: string): ValidationResult => {
+        if (!value) return { isValid: true }; // Optional field
+
+        const trimmed = value.trim();
+        
+        if (trimmed.length < 1 || trimmed.length > 2) {
+            return { isValid: false, error: 'Icon 1-2 karakter (emoji) olmalıdır' };
+        }
+
+        return { isValid: true };
+    },
+
+    stockTypeExamples: (value: string[]): ValidationResult => {
+        if (!value || value.length === 0) return { isValid: true }; // Optional field
+
+        if (value.length < 1) {
+            return { isValid: false, error: 'En az bir örnek ürün eklemelisiniz' };
+        }
+
+        for (const example of value) {
+            const trimmed = example.trim();
+            if (trimmed.length < 2 || trimmed.length > 50) {
+                return { isValid: false, error: 'Her örnek ürün 2-50 karakter arasında olmalıdır' };
+            }
+        }
+
+        return { isValid: true };
     }
 };
 
@@ -73,7 +155,66 @@ export const sanitizeInput = {
     
     recoveryCode: (value: string): string => {
         return value.replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    },
+
+    stockTypeName: (value: string): string => {
+        return value.trim();
+    },
+
+    stockTypeDescription: (value: string): string => {
+        return value.trim();
     }
+};
+
+// 🛡️ StockType Validation
+export interface StockTypeData {
+    name: string;
+    description?: string;
+    color?: string;
+    icon?: string;
+    examples?: string[];
+}
+
+export const validateStockType = (data: StockTypeData): ValidationResult => {
+    // Validate name (required)
+    const nameValidation = validateInput.stockTypeName(data.name);
+    if (!nameValidation.isValid) {
+        return nameValidation;
+    }
+
+    // Validate description (optional)
+    if (data.description) {
+        const descValidation = validateInput.stockTypeDescription(data.description);
+        if (!descValidation.isValid) {
+            return descValidation;
+        }
+    }
+
+    // Validate color (optional)
+    if (data.color) {
+        const colorValidation = validateInput.stockTypeColor(data.color);
+        if (!colorValidation.isValid) {
+            return colorValidation;
+        }
+    }
+
+    // Validate icon (optional)
+    if (data.icon) {
+        const iconValidation = validateInput.stockTypeIcon(data.icon);
+        if (!iconValidation.isValid) {
+            return iconValidation;
+        }
+    }
+
+    // Validate examples (optional)
+    if (data.examples) {
+        const examplesValidation = validateInput.stockTypeExamples(data.examples);
+        if (!examplesValidation.isValid) {
+            return examplesValidation;
+        }
+    }
+
+    return { isValid: true };
 };
 
 // 🛡️ XSS Prevention

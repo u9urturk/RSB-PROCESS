@@ -1,5 +1,5 @@
+import { NotificationContextType } from '@/types/index';
 import React, { useState, useCallback, createContext, useContext, useEffect } from 'react';
-import { NotificationContextType } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Notification {
@@ -30,12 +30,30 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [countdownNotification, setCountdownNotification] = useState<Notification | null>(null);
     const [remaining, setRemaining] = useState<number | undefined>(undefined);
+    const [recentMessages, setRecentMessages] = useState<Set<string>>(new Set());
 
     const showNotification = useCallback((
         type: 'success' | 'error' | 'warning' | 'info',
         message: string,
         options?: { countdown?: number; onComplete?: () => void; }
     ) => {
+        // Duplicate message prevention
+        if (recentMessages.has(message)) {
+            return; // Aynı mesajı tekrar gösterme
+        }
+
+        // Add to recent messages
+        setRecentMessages(prev => new Set([...prev, message]));
+        
+        // Remove from recent messages after 2 seconds
+        setTimeout(() => {
+            setRecentMessages(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(message);
+                return newSet;
+            });
+        }, 2000);
+
         if (options?.countdown) {
             const id = uuidv4();
             setCountdownNotification({ id, type, message, countdown: options.countdown, onComplete: options.onComplete });
@@ -47,7 +65,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
                 hideNotification(id);
             }, 3000);
         }
-    }, []);
+    }, [recentMessages]);
 
     const hideNotification = useCallback((id: string) => {
         setNotifications(prev => prev.filter(notification => notification.id !== id));

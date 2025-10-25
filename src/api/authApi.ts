@@ -1,6 +1,6 @@
 import { apiPost, setAccessTokenGetter } from './httpClient';
 import { ErrorHandlerService } from '../utils/ErrorHandlerService';
-import { User } from '../types';
+import { User } from '@/types/index';
 
 interface ApiResponse<T> {
   success: boolean;

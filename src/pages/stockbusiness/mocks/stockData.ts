@@ -1,4 +1,4 @@
-import { StockItem } from "../../../types";
+import { StockItem } from "@/types/index";
 
 const mockData: StockItem[] = [
     {
@@ -6,7 +6,7 @@ const mockData: StockItem[] = [
         name: "Domates",
         stockTypeId: "1", // Hammadde
         quantity: 100,
-        unit: "kg",
+        unitId: "2", // Kilogram
         unitPrice: 15.99,
         minQuantity: 20,
         maxQuantity: 200,
@@ -21,7 +21,7 @@ const mockData: StockItem[] = [
         name: "Tavuk Göğüs",
         stockTypeId: "1", // Hammadde
         quantity: 50,
-        unit: "kg",
+        unitId: "2", // Kilogram
         unitPrice: 89.99,
         minQuantity: 10,
         maxQuantity: 100,
@@ -36,7 +36,7 @@ const mockData: StockItem[] = [
         name: "Süt",
         stockTypeId: "1", // Hammadde
         quantity: 200,
-        unit: "L",
+        unitId: "4", // Litre
         unitPrice: 12.50,
         minQuantity: 50,
         maxQuantity: 300,

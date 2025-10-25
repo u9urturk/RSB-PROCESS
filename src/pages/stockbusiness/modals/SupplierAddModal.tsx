@@ -23,7 +23,7 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
         phone: '',
         email: '',
         rating: 5,
-        status: 'Aktif' as 'Aktif' | 'Pasif' | 'Beklemede',
+        status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE' | 'PENDING',
         address: '',
         contactPerson: '',
         taxNumber: '',
@@ -36,6 +36,23 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
     });
 
     const [newProduct, setNewProduct] = useState('');
+
+    // Utility function to format ISO date strings to YYYY-MM-DD for date inputs
+    const formatDateForInput = (isoString: string | undefined) => {
+        if (!isoString) return '';
+        try {
+            // If it's already in YYYY-MM-DD format, return as is
+            if (/^\d{4}-\d{2}-\d{2}$/.test(isoString)) {
+                return isoString;
+            }
+            // Otherwise, convert from ISO string to YYYY-MM-DD
+            const date = new Date(isoString);
+            return date.toISOString().split('T')[0];
+        } catch (error) {
+            console.warn('Error formatting date:', isoString, error);
+            return '';
+        }
+    };
 
     const categories = [
         'Genel Gıda',
@@ -76,8 +93,8 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
                     deliveryTime: editingSupplier.deliveryTime,
                     minimumOrder: editingSupplier.minimumOrder,
                     products: [...editingSupplier.products],
-                    contractStartDate: editingSupplier.contractStartDate,
-                    contractEndDate: editingSupplier.contractEndDate
+                    contractStartDate: formatDateForInput(editingSupplier.contractStartDate),
+                    contractEndDate: formatDateForInput(editingSupplier.contractEndDate)
                 });
             } else {
                 // Reset form for new supplier
@@ -87,7 +104,7 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
                     phone: '',
                     email: '',
                     rating: 5,
-                    status: 'Aktif',
+                    status: 'ACTIVE',
                     address: '',
                     contactPerson: '',
                     taxNumber: '',
@@ -431,9 +448,9 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
                                 onChange={(e) => handleInputChange('status', e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             >
-                                <option value="Aktif">Aktif</option>
-                                <option value="Pasif">Pasif</option>
-                                <option value="Beklemede">Beklemede</option>
+                                <option value="ACTIVE">Aktif</option>
+                                <option value="INACTIVE">Pasif</option>
+                                <option value="PENDING">Beklemede</option>
                             </select>
                         </div>
 

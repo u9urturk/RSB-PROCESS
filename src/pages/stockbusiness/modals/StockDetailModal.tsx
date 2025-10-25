@@ -22,6 +22,7 @@ import { StockType, Supplier } from "@/types/stock";
 import { stockTypeDatas } from "../mocks/stockTypeData";
 import mockSuppliers from "../mocks/supplierData";
 import { warehouseData } from "../mocks/warehouseData";
+import { getUnitSymbol } from "../utils/unitService";
 
 // Stok hareket türleri
 interface StockMovement {
@@ -54,7 +55,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             id: '1',
             type: 'in',
             quantity: 50,
-            unit: item.unit,
+            unit: getUnitSymbol(item.unitId),
             date: '2024-10-01T10:30:00Z',
             supplierId: '1',
             userId: 'user1',
@@ -68,7 +69,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             id: '2',
             type: 'out',
             quantity: 15,
-            unit: item.unit,
+            unit: getUnitSymbol(item.unitId),
             date: '2024-09-28T14:20:00Z',
             userId: 'user2',
             userName: 'Fatma Demir',
@@ -80,7 +81,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             id: '3',
             type: 'in',
             quantity: 30,
-            unit: item.unit,
+            unit: getUnitSymbol(item.unitId),
             date: '2024-09-25T09:15:00Z',
             supplierId: '2',
             userId: 'user1',
@@ -94,7 +95,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             id: '4',
             type: 'adjustment',
             quantity: -5,
-            unit: item.unit,
+            unit: getUnitSymbol(item.unitId),
             date: '2024-09-20T16:45:00Z',
             userId: 'user3',
             userName: 'Mehmet Kaya',
@@ -106,7 +107,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             id: '5',
             type: 'in',
             quantity: 100,
-            unit: item.unit,
+            unit: getUnitSymbol(item.unitId),
             date: '2024-09-15T09:00:00Z',
             supplierId: '1',
             userId: 'user1',
@@ -272,7 +273,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
                                                 <div className="text-2xl font-bold text-blue-800">
                                                     {item.quantity}
                                                 </div>
-                                                <div className="text-sm text-blue-600">{item.unit}</div>
+                                                <div className="text-sm text-blue-600">{getUnitSymbol(item.unitId)}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -302,7 +303,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
                                                 <div className="text-2xl font-bold text-amber-800">
                                                     {item.minQuantity}
                                                 </div>
-                                                <div className="text-sm text-amber-600">{item.unit}</div>
+                                                <div className="text-sm text-amber-600">{getUnitSymbol(item.unitId)}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -418,7 +419,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
                                         <div>
                                             <div className="text-sm text-gray-600">Birim Fiyat</div>
                                             <div className="font-semibold text-gray-800">
-                                                ₺{item.unitPrice.toLocaleString()} / {item.unit}
+                                                ₺{item.unitPrice.toLocaleString()} / {getUnitSymbol(item.unitId)}
                                             </div>
                                         </div>
                                     </div>

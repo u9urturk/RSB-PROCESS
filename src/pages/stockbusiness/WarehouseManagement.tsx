@@ -1,36 +1,186 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2, Plus, MapPin, Users, Edit, Trash2, Settings } from 'lucide-react';
 import WarehouseAddModal from './modals/WarehouseAddModal';
 import { useConfirm } from '@/context/provider/ConfirmProvider';
+import { useNotification } from '@/context/provider/NotificationProvider';
 import { Warehouse } from '@/types/stock';
-import warehouseData from './mocks/warehouseData';
+import { warehouseApi, WarehouseStatus, WarehouseType } from './apis/warehouseApi';
+import { ErrorHandlerService } from '@/utils/ErrorHandlerService';
 
 
 
 const WarehouseManagement: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
+    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+    const [isLoaded, setIsLoaded] = useState(false);
     const confirm = useConfirm();
+    const { showNotification } = useNotification();
 
-    const [warehouses, setWarehouses] = useState<Warehouse[]>(warehouseData);
+    // Utility functions for displaying Turkish labels
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'ACTIVE': return 'Aktif';
+            case 'INACTIVE': return 'Pasif';
+            case 'MAINTENANCE': return 'Bakım';
+            default: return status;
+        }
+    };
+
+    const getTypeLabel = (type: string) => {
+        switch (type) {
+            case 'NORMAL': return 'Normal';
+            case 'COLD': return 'Soğuk';
+            case 'FROZEN': return 'Dondurucu';
+            case 'DRY': return 'Kuru';
+            default: return type;
+        }
+    };
+
+    // Load warehouses from API
+    useEffect(() => {
+        if (isLoaded) return;
+
+        warehouseApi.getAllWarehouses().then(data => {
+            console.log('API Depo Verisi:', data);
+            const formattedData: Warehouse[] = data.data.map((item: any) => ({
+                id: item.id,
+                name: item.name,
+                location: item.location,
+                capacity: item.capacity,
+                capacityPercentage: item.capacityPercentage,
+                status: item.status,
+                manager: item.manager,
+                staffCount: item.staffCount,
+                area: item.area,
+                temperature: item.temperature,
+                warehouseType: item.warehouseType,
+                code: item.code,
+                isActive: item.isActive,
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt
+            }));
+
+
+            setWarehouses(formattedData);
+            setIsLoaded(true);
+        }).catch(error => {
+            console.error('Depolar yüklenirken hata:', error);
+            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
+            showNotification('error', `Depolar yüklenirken hata: ${errorMessage}`);
+        });
+
+        return () => {
+        }
+    }, [])
 
     // Handler fonksiyonları
-    const handleAddWarehouse = (newWarehouse: Omit<Warehouse, 'id'>) => {
-        const newId = (Math.max(...warehouses.map(w => parseInt(w.id)), 0) + 1).toString();
-        setWarehouses(prev => [...prev, { ...newWarehouse, id: newId }]);
-        setIsAddModalOpen(false);
+    const handleAddWarehouse = async (newWarehouse: Omit<Warehouse, 'id'>) => {
+        try {
+            const created = await warehouseApi.createWarehouse({
+                name: newWarehouse.name,
+                location: newWarehouse.location,
+                capacity: newWarehouse.capacity,
+                capacityPercentage: newWarehouse.capacityPercentage,
+                status: newWarehouse.status as WarehouseStatus,
+                manager: newWarehouse.manager,
+                staffCount: newWarehouse.staffCount,
+                area: newWarehouse.area,
+                temperature: newWarehouse.temperature,
+                warehouseType: newWarehouse.warehouseType as WarehouseType,
+                code: newWarehouse.code,
+                isActive: newWarehouse.isActive
+            });
+
+            const warehouseToAdd: Warehouse = {
+                id: created.id,
+                name: created.name,
+                location: created.location,
+                capacity: created.capacity,
+                capacityPercentage: created.capacityPercentage,
+                status: created.status,
+                manager: created.manager,
+                staffCount: created.staffCount,
+                area: created.area,
+                temperature: created.temperature,
+                warehouseType: created.warehouseType,
+                code: created.code,
+                isActive: created.isActive,
+                createdAt: created.createdAt,
+                updatedAt: created.updatedAt
+            };
+
+            setWarehouses(prev => [...prev, warehouseToAdd]);
+            setIsAddModalOpen(false);
+            showNotification('success', `"${warehouseToAdd.name}" deposu başarıyla oluşturuldu`);
+        } catch (error) {
+            console.error('Depo oluşturulurken hata:', error);
+            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
+            showNotification('error', `Depo oluşturulurken hata: ${errorMessage}`);
+        }
     };
 
-    const handleUpdateWarehouse = (id: string, updatedWarehouse: Omit<Warehouse, 'id'>) => {
-        setWarehouses(prev => prev.map(w =>
-            w.id === id ? { ...w, ...updatedWarehouse } : w
-        ));
-        setEditingWarehouse(null);
-        setIsAddModalOpen(false);
+    const handleUpdateWarehouse = async (id: string, updatedWarehouse: Omit<Warehouse, 'id'>) => {
+        try {
+            const updated = await warehouseApi.updateWarehouse(id, {
+                name: updatedWarehouse.name,
+                location: updatedWarehouse.location,
+                capacity: updatedWarehouse.capacity,
+                capacityPercentage: updatedWarehouse.capacityPercentage,
+                status: updatedWarehouse.status as WarehouseStatus,
+                manager: updatedWarehouse.manager,
+                staffCount: updatedWarehouse.staffCount,
+                area: updatedWarehouse.area,
+                temperature: updatedWarehouse.temperature,
+                warehouseType: updatedWarehouse.warehouseType as WarehouseType,
+                code: updatedWarehouse.code,
+                isActive: updatedWarehouse.isActive
+            });
+
+            const warehouseToUpdate: Warehouse = {
+                id: updated.id,
+                name: updated.name,
+                location: updated.location,
+                capacity: updated.capacity,
+                capacityPercentage: updated.capacityPercentage,
+                status: updated.status,
+                manager: updated.manager,
+                staffCount: updated.staffCount,
+                area: updated.area,
+                temperature: updated.temperature,
+                warehouseType: updated.warehouseType,
+                code: updated.code,
+                isActive: updated.isActive,
+                createdAt: updated.createdAt,
+                updatedAt: updated.updatedAt
+            };
+
+            setWarehouses(prev => prev.map(w =>
+                w.id === id ? warehouseToUpdate : w
+            ));
+            setEditingWarehouse(null);
+            setIsAddModalOpen(false);
+            showNotification('success', `"${warehouseToUpdate.name}" deposu başarıyla güncellendi`);
+        } catch (error) {
+            console.error('Depo güncellenirken hata:', error);
+            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
+            showNotification('error', `Depo güncellenirken hata: ${errorMessage}`);
+        }
     };
 
-    const handleDeleteWarehouse = (id: string) => {
-        setWarehouses(prev => prev.filter(w => w.id !== id));
+    const handleDeleteWarehouse = async (id: string) => {
+        try {
+            const warehouseToDelete = warehouses.find(w => w.id === id);
+            const warehouseName = warehouseToDelete?.name || 'Bilinmeyen';
+
+            await warehouseApi.deleteWarehouse(id);
+            setWarehouses(prev => prev.filter(w => w.id !== id));
+            showNotification('success', `"${warehouseName}" deposu başarıyla silindi`);
+        } catch (error) {
+            console.error('Depo silinirken hata:', error);
+            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
+            showNotification('error', `Depo silinirken hata: ${errorMessage}`);
+        }
     };
 
     const handleEditClick = (warehouse: Warehouse) => {
@@ -77,7 +227,7 @@ const WarehouseManagement: React.FC = () => {
 
     // Stats hesaplamaları
     const totalWarehouses = warehouses.length;
-    const activeLocations = warehouses.filter(w => w.status === 'Aktif').length;
+    const activeLocations = warehouses.filter(w => w.status === 'ACTIVE').length;
     const totalStaff = warehouses.reduce((sum, w) => sum + w.staffCount, 0);
     const averageCapacity = Math.round(
         warehouses.reduce((sum, w) => sum + w.capacityPercentage, 0) / warehouses.length
@@ -136,23 +286,23 @@ const WarehouseManagement: React.FC = () => {
                         <div key={warehouse.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className={`p-2 rounded-lg ${warehouse.status === 'Aktif' ? 'bg-green-100' :
-                                        warehouse.status === 'Pasif' ? 'bg-gray-100' : 'bg-yellow-100'
+                                    <div className={`p-2 rounded-lg ${warehouse.status === 'ACTIVE' ? 'bg-green-100' :
+                                        warehouse.status === 'INACTIVE' ? 'bg-gray-100' : 'bg-yellow-100'
                                         }`}>
                                         <Building2 size={20} className={
-                                            warehouse.status === 'Aktif' ? 'text-green-600' :
-                                                warehouse.status === 'Pasif' ? 'text-gray-600' : 'text-yellow-600'
+                                            warehouse.status === 'ACTIVE' ? 'text-green-600' :
+                                                warehouse.status === 'INACTIVE' ? 'text-gray-600' : 'text-yellow-600'
                                         } />
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <h4 className="font-semibold text-gray-800">{warehouse.name}</h4>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${warehouse.warehouseType === 'Soğuk' ? 'bg-blue-100 text-blue-700' :
-                                                warehouse.warehouseType === 'Dondurucu' ? 'bg-cyan-100 text-cyan-700' :
-                                                    warehouse.warehouseType === 'Kuru' ? 'bg-orange-100 text-orange-700' :
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${warehouse.warehouseType === 'COLD' ? 'bg-blue-100 text-blue-700' :
+                                                warehouse.warehouseType === 'FROZEN' ? 'bg-cyan-100 text-cyan-700' :
+                                                    warehouse.warehouseType === 'DRY' ? 'bg-orange-100 text-orange-700' :
                                                         'bg-gray-100 text-gray-700'
                                                 }`}>
-                                                {warehouse.warehouseType}
+                                                {getTypeLabel(warehouse.warehouseType)}
                                                 {warehouse.temperature && ` (${warehouse.temperature}°C)`}
                                             </span>
                                         </div>
@@ -164,11 +314,11 @@ const WarehouseManagement: React.FC = () => {
                                             <span className="text-xs text-gray-500">
                                                 👥 {warehouse.staffCount} personel
                                             </span>
-                                            <span className={`text-xs px-2 py-1 rounded ${warehouse.status === 'Aktif' ? 'bg-green-100 text-green-700' :
-                                                warehouse.status === 'Pasif' ? 'bg-gray-100 text-gray-700' :
+                                            <span className={`text-xs px-2 py-1 rounded ${warehouse.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
+                                                warehouse.status === 'INACTIVE' ? 'bg-gray-100 text-gray-700' :
                                                     'bg-yellow-100 text-yellow-700'
                                                 }`}>
-                                                {warehouse.status}
+                                                {getStatusLabel(warehouse.status)}
                                             </span>
                                         </div>
                                     </div>

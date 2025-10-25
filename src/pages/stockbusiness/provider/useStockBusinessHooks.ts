@@ -197,7 +197,7 @@ export const useSuppliers = () => {
 
     // Get active suppliers
     const getActiveSuppliers = useCallback(() => {
-        return suppliers.filter(supplier => supplier.status === 'Aktif');
+        return suppliers.filter(supplier => supplier.status === 'ACTIVE');
     }, [suppliers]);
 
     // Get supplier by category
@@ -317,7 +317,7 @@ export const useWarehouses = () => {
 
     // Get active warehouses
     const getActiveWarehouses = useCallback(() => {
-        return warehouses.filter(warehouse => warehouse.status === 'Aktif');
+        return warehouses.filter(warehouse => warehouse.status === 'ACTIVE');
     }, [warehouses]);
 
     return {

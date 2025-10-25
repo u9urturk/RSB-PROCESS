@@ -609,8 +609,36 @@ export interface StockItem {
     id: string;
     barcode?: string;
     name: string;
-    stockTypeId: string;
+    stockType: string;
     unit: string;
+    quantity: number;
+    minQuantity: number;
+    maxQuantity: number;
+    unitPrice: number;
+    totalPrice?: number;
+    status?: "active" | "inactive";
+    lastUpdated: string;
+    supplier?: string;
+    warehouse?: string;
+    description?: string;
+    notes?: string;
+    lotNumber?: string;
+
+    productId: string;
+    warehouseId: string;
+    supplierId?: string;
+    categoryId: string;
+    stockTypeId: string;
+    baseUnitId: string;
+}
+
+// StockBusiness Types
+export interface StockItemAddDto {
+    id: string;
+    barcode?: string;
+    name: string;
+    stockTypeId: string;
+    unitId: string;
     quantity: number;
     minQuantity: number;
     maxQuantity: number;
@@ -622,6 +650,7 @@ export interface StockItem {
     warehouseId?: string;
     description?: string;
     notes?: string;
+    lotNumber?: string;
 }
 
 export interface StockAddModalProps {

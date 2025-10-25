@@ -12,6 +12,8 @@ import RestaurantStatusMain from "./pages/restaurantstatus/RestaurantStatusMain"
 import SplashScreen from "./pages/SplashScreen";
 import StockBusinessMain from "./pages/stockbusiness/StockBusinessMain";
 import StockTypeManagement from "./pages/stockbusiness/StockTypeManagement";
+import CategoryManagement from "./pages/stockbusiness/CategoryManagement";
+import BaseUnitManagement from "./pages/stockbusiness/BaseUnitManagement";
 import WarehouseManagement from "./pages/stockbusiness/WarehouseManagement";
 import SupplierManagement from "./pages/stockbusiness/SupplierManagement";
 import ProfilePage from "./pages/Profile";
@@ -283,6 +285,20 @@ const routes: CustomRouteObject[] = [
                         auth: true,
                         requireAnyRole: ['ADMIN', 'MANAGER'],
                         requireAnyPermission: ['canManageCategories']
+                    },
+                    {
+                        path: 'categories',
+                        element: <CategoryManagement />,
+                        auth: true,
+                        requireAnyRole: ['ADMIN', 'MANAGER'],
+                        requireAnyPermission: ['canManageCategories']
+                    },
+                    {
+                        path: 'base-units',
+                        element: <BaseUnitManagement />,
+                        auth: true,
+                        requireAnyRole: ['ADMIN', 'MANAGER'],
+                        requireAnyPermission: ['canManageContent']
                     },
                     {
                         path: 'warehouse',

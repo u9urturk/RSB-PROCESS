@@ -9,12 +9,18 @@ import StockChangeModal from "./modals/StockChangeModal";
 import StockDetailModal from "./modals/StockDetailModal";
 import PageTransition from "../../components/PageTransition";
 import { useNavigation } from "../../context/provider/NavigationProvider";
+import { CategoryProvider, useCategories } from "./provider/CategoryProvider";
+import { BaseUnitProvider } from "./provider/BaseUnitProvider";
 
 import mockData from "./mocks/stockData";
 import mockSuppliers from "./mocks/supplierData";
-import { stockTypeDatas } from "./mocks/stockTypeData";
 import { warehouseData } from "./mocks/warehouseData";
-import { StockItem } from "@/types/index";
+import { StockItem, StockItemAddDto } from "@/types/index";
+
+import stockTypeApi, { StockTypeResponseDto } from "./apis/stockTypeApi";
+import supplierApi, { SupplierResponseDto } from "./apis/supplierApi";
+import warehouseApi, { WarehouseResponseDto } from "./apis/warehouseApi";
+import inventoryApi, { InventoryResponseDto } from "./apis/inventoryApi";
 
 interface StockTableProps {
     items: StockItem[];
@@ -24,10 +30,102 @@ interface StockTableProps {
 interface StockAddModalProps {
     open: boolean;
     onClose: () => void;
-    onSubmit: (item: StockItem) => void;
+    onSubmit: (item: StockItemAddDto) => void;
 }
 
+// StockAddModal wrapper component that uses categories from context
+interface StockAddModalWrapperProps {
+    open: boolean;
+    onClose: () => void;
+    onSubmit: (item: StockItemAddDto) => void;
+}
+
+const StockAddModalWrapper: React.FC<StockAddModalWrapperProps> = ({ open, onClose, onSubmit }) => {
+    const { categories } = useCategories();
+    const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
+    const [stockTypes, setStockTypes] = useState<StockTypeResponseDto[]>([]);
+    const [suppliers, setSuppliers] = useState<SupplierResponseDto[]>([]);
+    const [warehouses, setWarehouses] = useState<WarehouseResponseDto[]>([]);
+    const [loadingData, setLoadingData] = useState(false);
+
+    // Fetch all required data
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoadingData(true);
+            try {
+                // Fetch stock types
+                const stockTypesResponse = await stockTypeApi.getAllStockTypes();
+                console.log('Fetched stock types:', stockTypesResponse.data);
+                setStockTypes(stockTypesResponse.data);
+
+                // Fetch suppliers
+                const suppliersResponse = await supplierApi.getAllSuppliers();
+                console.log('Fetched suppliers:', suppliersResponse.data);
+                // Backend'den gelen supplier'ları local interface'e uygun hale getir
+                const mappedSuppliers = suppliersResponse.data.map(supplier => ({
+                    ...supplier,
+                    minimumOrder: parseFloat(supplier.minimumOrder) || 0 // String'den number'a çevir
+                }));
+                setSuppliers(mappedSuppliers as any);
+
+                // Fetch warehouses
+                const warehousesResponse = await warehouseApi.getAllWarehouses();
+                console.log('Fetched warehouses:', warehousesResponse.data);
+                setWarehouses(warehousesResponse.data);
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setLoadingData(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+
+    // Loading state için basit bir kontrol
+    if (loadingData && open) {
+        return (
+            <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+                <div className="bg-white p-6 rounded-xl">
+                    <div className="flex items-center gap-3">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+                        <span>Veriler yükleniyor...</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <StockAddModal
+            open={open}
+            onClose={() => {
+                onClose();
+                setPendingBarcode(null); // modal kapatılırsa barcode temizle
+            }}
+            onAdd={onSubmit}
+            initialBarcode={pendingBarcode || ""}
+            suppliers={suppliers.length > 0 ? (suppliers as any) : mockSuppliers} // Backend'den gelirse kullan, yoksa mock
+            stockTypes={stockTypes}
+            warehouses={warehouses.length > 0 ? (warehouses as any) : warehouseData} // Backend'den gelirse kullan, yoksa mock
+            categories={categories}
+        />
+    );
+};
+
 export default function StockBusinessMain() {
+    return (
+        <CategoryProvider>
+            <BaseUnitProvider>
+                <StockBusinessMainContent />
+            </BaseUnitProvider>
+        </CategoryProvider>
+    );
+}
+
+function StockBusinessMainContent() {
     const { setActivePath } = useNavigation();
     const navigate = useNavigate();
     const location = useLocation();
@@ -42,7 +140,6 @@ export default function StockBusinessMain() {
     const [search, setSearch] = useState<string>("");
     const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
     const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState<boolean>(false);
-    const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
     const [activeDetail, setActiveDetail] = useState<StockItem | null>(null);
     const [activeChange, setActiveChange] = useState<{ item: StockItem; type: 'add' | 'remove' } | null>(null);
     const [activeTab, setActiveTab] = useState<string>('stock');
@@ -52,6 +149,10 @@ export default function StockBusinessMain() {
         const path = location.pathname;
         if (path.includes('/stock-types')) {
             setActiveTab('stock-types');
+        } else if (path.includes('/categories')) {
+            setActiveTab('categories');
+        } else if (path.includes('/base-units')) {
+            setActiveTab('base-units');
         } else if (path.includes('/warehouse')) {
             setActiveTab('warehouse');
         } else if (path.includes('/suppliers')) {
@@ -60,6 +161,50 @@ export default function StockBusinessMain() {
             setActiveTab('stock');
         }
     }, [location.pathname]);
+
+     // Inventory data state
+    const [inventoryData, setInventoryData] = useState<InventoryResponseDto[]>([]);
+    const [loadingInventory, setLoadingInventory] = useState<boolean>(false);
+    const [inventoryError, setInventoryError] = useState<string | null>(null);
+
+    // Fetch inventory data from API
+    useEffect(() => {
+        const fetchInventoryData = async () => {
+            try {
+                setLoadingInventory(true);
+                setInventoryError(null);
+                const response = await inventoryApi.getAllInventories();
+                console.log('Fetched inventories response:', response);
+                
+                // Handle API response structure
+                if (response && response.data) {
+                    setInventoryData(response.data); // response.data is InventoryResponseDto[]
+                } else {
+                    // Fallback for direct array response
+                    setInventoryData(response as any || []);
+                }
+            } catch (error) {
+                console.error('Error fetching inventories:', error);
+                setInventoryError('Inventory verileri yüklenirken hata oluştu');
+                setInventoryData([]); // Set empty array on error
+            } finally {
+                setLoadingInventory(false);
+            }
+        };
+
+        fetchInventoryData();
+    }, []);
+
+    // Debug inventory data (geçici olarak)
+    useEffect(() => {
+        console.log('Inventory Data State Updated:', {
+            inventoryData,
+            count: inventoryData.length,
+            loadingInventory,
+            inventoryError
+        });
+    }, [inventoryData, loadingInventory, inventoryError]);
+
 
     const handleTabChange = (tab: { id: string; path: string }) => {
         setActiveTab(tab.id);
@@ -71,10 +216,10 @@ export default function StockBusinessMain() {
     }, [setActivePath]);
 
     // Stok istatistikleri
-    const totalItems = stocks.length;
-    const lowStockItems = stocks.filter(item => item.quantity <= item.minQuantity).length;
-    const totalValue = stocks.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const outOfStockItems = stocks.filter(item => item.quantity === 0).length;
+    const totalItems = inventoryData.length;
+    const lowStockItems = inventoryData.filter(item => item.quantity <= item.minQuantity).length;
+    const totalValue = inventoryData.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const outOfStockItems = inventoryData.filter(item => item.quantity === 0).length;
 
     const handleBarcodeClick = useCallback(() => {
         setIsBarcodeModalOpen(true);
@@ -87,8 +232,8 @@ export default function StockBusinessMain() {
         // Barcode ile eşleşen ürün var mı?
         const found = stocks.some(stock => stock.barcode === barcode);
         if (!found) {
-            setPendingBarcode(barcode); // barcode'ı sakla
-            setIsAddModalOpen(true);    // ekleme modalını aç
+            // Barcode bulunamadı, ekleme modalını aç
+            setIsAddModalOpen(true);
         }
     }, [stocks]);
 
@@ -109,23 +254,26 @@ export default function StockBusinessMain() {
         }));
     }, []);
 
-    const handleAddStock = useCallback((newStock: StockItem) => {
+    const handleAddStock = useCallback((newStock: StockItemAddDto) => {
         console.log('Adding new stock:', newStock); 
         // setStocks(prev => [...prev, newStock]);
         // setIsAddModalOpen(false);
         // setPendingBarcode(null); // barcode eklenince temizle
     }, []);
 
-    const filteredStocks = stocks.filter(stock => {
-        const stockType = stockTypeDatas.find(type => type.id === stock.stockTypeId);
+    const filteredStocks = inventoryData.filter(stock => {
         return (
             stock.name.toLowerCase().includes(search.toLowerCase()) ||
-            stockType?.name.toLowerCase().includes(search.toLowerCase()) ||
+            stock?.stockType.toLowerCase().includes(search.toLowerCase()) ||
             stock.barcode?.toLowerCase().includes(search.toLowerCase())
         );
     });
 
     const TableComponent = ({ items, onStockChange }: StockTableProps) => (
+
+        
+
+
         <StockTable
             items={items}
             onStockChange={onStockChange}
@@ -135,20 +283,9 @@ export default function StockBusinessMain() {
         />
     );
 
-    const ModalComponent = ({ open, onClose, onSubmit }: StockAddModalProps) => (
-        <StockAddModal
-            open={open}
-            onClose={() => {
-                onClose();
-                setPendingBarcode(null); // modal kapatılırsa barcode temizle
-            }}
-            onAdd={onSubmit}
-            initialBarcode={pendingBarcode || ""}
-            suppliers={mockSuppliers}
-            stockTypes={stockTypeDatas}
-            warehouses={warehouseData}
-        />
-    );
+    const ModalComponent = ({ open, onClose, onSubmit }: StockAddModalProps) => {
+        return <StockAddModalWrapper open={open} onClose={onClose} onSubmit={onSubmit} />;
+    };
 
     // Stok kartları
     const stockStats = [
@@ -211,6 +348,8 @@ export default function StockBusinessMain() {
                                 {[
                                     { id: 'stock', label: 'Stok İşlemleri', icon: '📦', path: '/dashboard/stockbusiness' },
                                     { id: 'stock-types', label: 'Stok Türü İşlemleri', icon: '🏷️', path: '/dashboard/stockbusiness/stock-types' },
+                                    { id: 'categories', label: 'Kategori İşlemleri', icon: '📂', path: '/dashboard/stockbusiness/categories' },
+                                    { id: 'base-units', label: 'Birim İşlemleri', icon: '📏', path: '/dashboard/stockbusiness/base-units' },
                                     { id: 'warehouse', label: 'Depo İşlemleri', icon: '🏢', path: '/dashboard/stockbusiness/warehouse' },
                                     { id: 'suppliers', label: 'Tedarikçi İşlemleri', icon: '🚚', path: '/dashboard/stockbusiness/suppliers' }
                                 ].map((tab) => (

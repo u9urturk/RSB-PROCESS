@@ -7,11 +7,11 @@ export const warehouseData: Warehouse[] = [
         location: 'Merkez',
         capacity: '85%',
         capacityPercentage: 85,
-        status: 'Aktif',
+        status: 'ACTIVE',
         manager: 'Ahmet Yılmaz',
         staffCount: 4,
         area: 500,
-        warehouseType: 'Normal'
+        warehouseType: 'NORMAL'
     },
     {
         id: '2',
@@ -19,12 +19,12 @@ export const warehouseData: Warehouse[] = [
         location: 'Yan Bina',
         capacity: '60%',
         capacityPercentage: 60,
-        status: 'Aktif',
+        status: 'ACTIVE',
         manager: 'Fatma Demir',
         staffCount: 2,
         area: 200,
         temperature: 4,
-        warehouseType: 'Soğuk'
+        warehouseType: 'COLD'
     },
     {
         id: '3',
@@ -32,11 +32,11 @@ export const warehouseData: Warehouse[] = [
         location: 'Kat 2',
         capacity: '90%',
         capacityPercentage: 90,
-        status: 'Aktif',
+        status: 'ACTIVE',
         manager: 'Mehmet Kaya',
         staffCount: 2,
         area: 300,
-        warehouseType: 'Kuru'
+        warehouseType: 'DRY'
     }
 ];
 

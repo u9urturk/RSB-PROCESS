@@ -1,9 +1,10 @@
 import { memo, useCallback } from "react";
 import { Package, Plus, Minus, AlertTriangle, Eye, TrendingUp, Clock, Zap } from "lucide-react";
-import { StockItem } from "../../../types";
+import { StockItem } from "@/types/index";
+import { getUnitSymbol } from "../utils/unitService";
 
 interface StockRowProps {
-    item: StockItem;
+    item: any;
     onStockChange: (id: string, amount: number, type: "add" | "remove") => void; // still used for progress updates elsewhere maybe
     onOpenAdd: (item: StockItem) => void;
     onOpenRemove: (item: StockItem) => void;
@@ -51,7 +52,7 @@ function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }
                     </h3>
                     <div className="flex items-center gap-2">
                         <span className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 font-medium">
-                            {item.stockTypeId === "1" ? "Hammadde" : item.stockTypeId === "2" ? "Yarı Mamul" : "Mamül"}
+                            {item.stockType}
                         </span>
                         {isLow && (
                             <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-medium flex items-center gap-1">
@@ -74,14 +75,14 @@ function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }
                     <div className="text-2xl font-bold text-gray-800">
                         {item.quantity}
                     </div>
-                    <div className="text-sm text-gray-500">{item.unit}</div>
+                    <div className="text-sm text-gray-500">{getUnitSymbol(item.unitId)}</div>
                     <div className="text-xs text-gray-400 mt-1">Mevcut Stok</div>
                 </div>
                 <div className="text-center p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl">
                     <div className="text-2xl font-bold text-orange-600">
                         {item.minQuantity}
                     </div>
-                    <div className="text-sm text-orange-500">{item.unit}</div>
+                    <div className="text-sm text-orange-500">{getUnitSymbol(item.unitId)}</div>
                     <div className="text-xs text-orange-400 mt-1">Min. Stok</div>
                 </div>
             </div>
@@ -112,7 +113,13 @@ function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }
                         Güncelleme
                     </span>
                     <span className="font-medium text-gray-700">
-                        {new Date(item.lastUpdated).toLocaleDateString('tr-TR')}
+                        {new Date(item.lastUpdated).toLocaleString('tr-TR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
                     </span>
                 </div>
             </div>

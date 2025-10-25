@@ -1,19 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Truck, Plus, Phone, Mail, Star, Edit, Trash2, Package } from 'lucide-react';
 import SupplierAddModal from './modals/SupplierAddModal';
 import { useConfirm } from '@/context/provider/ConfirmProvider';
+import { useNotification } from '@/context/provider/NotificationProvider';
 import { Supplier } from '@/types/stock';
-import mockSuppliers from './mocks/supplierData';
+import { supplierApi, SupplierStatus } from './apis/supplierApi';
+import { ErrorHandlerService } from '@/utils/ErrorHandlerService';
 
 
 
 const SupplierManagement: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [isLoaded, setIsLoaded] = useState(false);
     const confirm = useConfirm();
+    const { showNotification } = useNotification();
 
-    // Mock supplier data - state olarak tanımlandı
-    const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+    // Utility functions for displaying Turkish labels
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'ACTIVE': return 'Aktif';
+            case 'INACTIVE': return 'Pasif';
+            case 'PENDING': return 'Beklemede';
+            default: return status;
+        }
+    };
+
+    // Load suppliers from API
+    useEffect(() => {
+        if (isLoaded) return;
+
+        supplierApi.getAllSuppliers().then(response => {
+            console.log('API Tedarikçi Verisi:', response);
+            const formattedData: Supplier[] = response.data.map((item: any) => ({
+                id: item.id,
+                name: item.name,
+                category: item.category,
+                phone: item.phone,
+                email: item.email,
+                rating: item.rating,
+                status: item.status,
+                address: item.address,
+                contactPerson: item.contactPerson,
+                taxNumber: item.taxNumber,
+                paymentTerms: item.paymentTerms,
+                deliveryTime: item.deliveryTime,
+                minimumOrder: parseFloat(item.minimumOrder) || 0, // Backend'den string geliyor
+                products: item.products,
+                contractStartDate: item.contractStartDate,
+                contractEndDate: item.contractEndDate,
+                totalOrders: item.totalOrders,
+                monthlyDeliveries: item.monthlyDeliveries,
+                contactInfo: item.contactInfo,
+                leadTimeDays: item.leadTimeDays,
+                isActive: item.isActive,
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt,
+                stockItems: item.stockItems,
+                inventories: item.inventories
+            }));
+
+            setSuppliers(formattedData);
+            setIsLoaded(true);
+        }).catch(error => {
+            console.error('Tedarikçiler yüklenirken hata:', error);
+            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
+            showNotification('error', `Tedarikçiler yüklenirken hata: ${errorMessage}`);
+        });
+    }, [isLoaded, showNotification]);
 
     // Handler functions
     const handleAddSupplier = () => {
@@ -40,8 +95,8 @@ const SupplierManagement: React.FC = () => {
                 { label: 'Kategori', value: supplier.category },
                 { label: 'Telefon', value: supplier.phone },
                 { label: 'E-posta', value: supplier.email },
-                { label: 'Toplam Sipariş', value: supplier.totalOrders },
-                { label: 'Aylık Teslimat', value: supplier.monthlyDeliveries },
+                { label: 'Toplam Sipariş', value: supplier.totalOrders.toString() },
+                { label: 'Aylık Teslimat', value: supplier.monthlyDeliveries.toString() },
                 { label: 'Değerlendirme', value: `${supplier.rating}/5` }
             ],
             warnings: [
@@ -53,39 +108,145 @@ const SupplierManagement: React.FC = () => {
         });
 
         if (result) {
-            setSuppliers(suppliers.filter(s => s.id !== supplier.id));
+            try {
+                await supplierApi.deleteSupplier(supplier.id);
+                setSuppliers(suppliers.filter(s => s.id !== supplier.id));
+                showNotification('success', `"${supplier.name}" tedarikçisi başarıyla silindi`);
+            } catch (error) {
+                console.error('Tedarikçi silinirken hata:', error);
+                const errorMessage = ErrorHandlerService.extractErrorMessage(error);
+                showNotification('error', `Tedarikçi silinirken hata: ${errorMessage}`);
+            }
         }
     };
 
-    const handleSaveSupplier = (supplierData: Omit<Supplier, 'id' | 'totalOrders' | 'monthlyDeliveries'>) => {
-        if (editingSupplier) {
-            // Edit existing supplier
-            setSuppliers(suppliers.map(s => 
-                s.id === editingSupplier.id 
-                    ? { 
-                        ...supplierData, 
-                        id: editingSupplier.id, 
-                        totalOrders: editingSupplier.totalOrders,
-                        monthlyDeliveries: editingSupplier.monthlyDeliveries 
-                    }
-                    : s
-            ));
-        } else {
-            // Add new supplier
-            const newSupplier: Supplier = {
-                ...supplierData,
-                id: (Math.max(...suppliers.map(s => parseInt(s.id)), 0) + 1).toString(),
-                totalOrders: 0,
-                monthlyDeliveries: 0
-            };
-            setSuppliers([...suppliers, newSupplier]);
+    const handleSaveSupplier = async (supplierData: Omit<Supplier, 'id' | 'totalOrders' | 'monthlyDeliveries'>) => {
+        try {
+            if (editingSupplier) {
+                // Tedarikçi güncelleme
+                const response = await supplierApi.updateSupplier(editingSupplier.id, {
+                    name: supplierData.name,
+                    category: supplierData.category,
+                    phone: supplierData.phone,
+                    email: supplierData.email,
+                    rating: supplierData.rating,
+                    status: supplierData.status as SupplierStatus,
+                    address: supplierData.address,
+                    contactPerson: supplierData.contactPerson,
+                    taxNumber: supplierData.taxNumber,
+                    paymentTerms: supplierData.paymentTerms,
+                    deliveryTime: supplierData.deliveryTime,
+                    minimumOrder: supplierData.minimumOrder,
+                    products: supplierData.products,
+                    contractStartDate: supplierData.contractStartDate,
+                    contractEndDate: supplierData.contractEndDate,
+                    contactInfo: supplierData.contactInfo,
+                    leadTimeDays: supplierData.leadTimeDays,
+                    isActive: supplierData.isActive
+                });
+
+                console.log('Update response:', response);
+                const updated = response.data;
+
+                const updatedSupplier: Supplier = {
+                    id: updated.id || editingSupplier.id,
+                    name: updated.name || supplierData.name,
+                    category: updated.category || supplierData.category,
+                    phone: updated.phone || supplierData.phone,
+                    email: updated.email || supplierData.email,
+                    rating: updated.rating || supplierData.rating,
+                    status: updated.status || (supplierData.status as SupplierStatus),
+                    address: updated.address || supplierData.address,
+                    contactPerson: updated.contactPerson || supplierData.contactPerson,
+                    taxNumber: updated.taxNumber || supplierData.taxNumber,
+                    paymentTerms: updated.paymentTerms || supplierData.paymentTerms,
+                    deliveryTime: updated.deliveryTime || supplierData.deliveryTime,
+                    minimumOrder: updated.minimumOrder ? parseFloat(updated.minimumOrder) : (supplierData.minimumOrder || 0),
+                    products: updated.products || supplierData.products || [],
+                    contractStartDate: updated.contractStartDate || supplierData.contractStartDate,
+                    contractEndDate: updated.contractEndDate || supplierData.contractEndDate,
+                    totalOrders: updated.totalOrders || editingSupplier.totalOrders || 0,
+                    monthlyDeliveries: updated.monthlyDeliveries || editingSupplier.monthlyDeliveries || 0,
+                    contactInfo: updated.contactInfo || supplierData.contactInfo,
+                    leadTimeDays: updated.leadTimeDays || supplierData.leadTimeDays || 0,
+                    isActive: updated.isActive !== undefined ? updated.isActive : (supplierData.isActive !== undefined ? supplierData.isActive : true),
+                    createdAt: updated.createdAt || editingSupplier.createdAt || new Date().toISOString(),
+                    updatedAt: updated.updatedAt || new Date().toISOString(),
+                    stockItems: updated.stockItems || editingSupplier.stockItems || [],
+                    inventories: updated.inventories || editingSupplier.inventories || []
+                };
+
+                setSuppliers(suppliers.map(s => s.id === editingSupplier.id ? updatedSupplier : s));
+                showNotification('success', `"${updatedSupplier.name}" tedarikçisi başarıyla güncellendi`);
+            } else {
+                // Yeni tedarikçi oluşturma
+                const response = await supplierApi.createSupplier({
+                    name: supplierData.name,
+                    category: supplierData.category,
+                    phone: supplierData.phone,
+                    email: supplierData.email,
+                    rating: supplierData.rating,
+                    status: supplierData.status as SupplierStatus,
+                    address: supplierData.address,
+                    contactPerson: supplierData.contactPerson,
+                    taxNumber: supplierData.taxNumber,
+                    paymentTerms: supplierData.paymentTerms,
+                    deliveryTime: supplierData.deliveryTime,
+                    minimumOrder: supplierData.minimumOrder,
+                    products: supplierData.products,
+                    contractStartDate: supplierData.contractStartDate,
+                    contractEndDate: supplierData.contractEndDate,
+                    contactInfo: supplierData.contactInfo,
+                    leadTimeDays: supplierData.leadTimeDays,
+                    isActive: supplierData.isActive
+                });
+
+                console.log('Create response:', response);
+                const created = response.data;
+                
+                const newSupplier: Supplier = {
+                    id: created.id || `temp-${Date.now()}`,
+                    name: created.name || supplierData.name,
+                    category: created.category || supplierData.category,
+                    phone: created.phone || supplierData.phone,
+                    email: created.email || supplierData.email,
+                    rating: created.rating || supplierData.rating,
+                    status: created.status || (supplierData.status as SupplierStatus),
+                    address: created.address || supplierData.address,
+                    contactPerson: created.contactPerson || supplierData.contactPerson,
+                    taxNumber: created.taxNumber || supplierData.taxNumber,
+                    paymentTerms: created.paymentTerms || supplierData.paymentTerms,
+                    deliveryTime: created.deliveryTime || supplierData.deliveryTime,
+                    minimumOrder: created.minimumOrder ? parseFloat(created.minimumOrder) : (supplierData.minimumOrder || 0),
+                    products: created.products || supplierData.products || [],
+                    contractStartDate: created.contractStartDate || supplierData.contractStartDate,
+                    contractEndDate: created.contractEndDate || supplierData.contractEndDate,
+                    totalOrders: created.totalOrders || 0,
+                    monthlyDeliveries: created.monthlyDeliveries || 0,
+                    contactInfo: created.contactInfo || supplierData.contactInfo,
+                    leadTimeDays: created.leadTimeDays || supplierData.leadTimeDays || 0,
+                    isActive: created.isActive !== undefined ? created.isActive : (supplierData.isActive !== undefined ? supplierData.isActive : true),
+                    createdAt: created.createdAt || new Date().toISOString(),
+                    updatedAt: created.updatedAt || new Date().toISOString(),
+                    stockItems: created.stockItems || [],
+                    inventories: created.inventories || []
+                };
+
+                setSuppliers([...suppliers, newSupplier]);
+                showNotification('success', `"${newSupplier.name}" tedarikçisi başarıyla oluşturuldu`);
+            }
+            setEditingSupplier(null);
+            setIsAddModalOpen(false);
+        } catch (error) {
+            console.error('Tedarikçi kaydetme hatası:', error);
+            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
+            const operation = editingSupplier ? 'güncellenirken' : 'oluşturulurken';
+            showNotification('error', `Tedarikçi ${operation} hata: ${errorMessage}`);
         }
-        setEditingSupplier(null);
-        setIsAddModalOpen(false);
     };
 
     // İstatistik hesaplamaları
-    const activeSuppliers = suppliers.filter(s => s.status === 'Aktif').length;
+    const activeSuppliers = suppliers.filter(s => s.status === 'ACTIVE').length;
     const totalMonthlyDeliveries = suppliers.reduce((sum, s) => sum + s.monthlyDeliveries, 0);
     const averageRating = suppliers.length > 0 
         ? (suppliers.reduce((sum, s) => sum + s.rating, 0) / suppliers.length).toFixed(1)
@@ -93,9 +254,9 @@ const SupplierManagement: React.FC = () => {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'Aktif': return 'bg-green-100 text-green-800';
-            case 'Pasif': return 'bg-red-100 text-red-800';
-            case 'Beklemede': return 'bg-yellow-100 text-yellow-800';
+            case 'ACTIVE': return 'bg-green-100 text-green-800';
+            case 'INACTIVE': return 'bg-red-100 text-red-800';
+            case 'PENDING': return 'bg-yellow-100 text-yellow-800';
             default: return 'bg-gray-100 text-gray-800';
         }
     };
@@ -161,7 +322,7 @@ const SupplierManagement: React.FC = () => {
                                         <div className="flex items-center gap-3 mb-1">
                                             <h4 className="font-semibold text-gray-800">{supplier.name}</h4>
                                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(supplier.status)}`}>
-                                                {supplier.status}
+                                                {getStatusLabel(supplier.status)}
                                             </span>
                                         </div>
                                         <p className="text-gray-600 text-sm">{supplier.category}</p>
