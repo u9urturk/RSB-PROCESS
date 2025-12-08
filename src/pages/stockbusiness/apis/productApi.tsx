@@ -107,7 +107,7 @@ export const productApi = {
    * Create new product
    * POST /products
    */
-  createProduct: async (productData: CreateProductDto): Promise<ProductSingleResponseDto> => {
+  createProduct: async (productData: CreateProductDto): Promise<ProductResponseDto> => {
     try {
       const response = await apiPost('/products', productData);
       console.log('Create product response:', response);

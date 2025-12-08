@@ -10,17 +10,13 @@ import StockDetailModal from "./modals/StockDetailModal";
 import PageTransition from "../../components/PageTransition";
 import { useNavigation } from "../../context/provider/NavigationProvider";
 import { CategoryProvider, useCategories } from "./provider/CategoryProvider";
-import { BaseUnitProvider } from "./provider/BaseUnitProvider";
-
-import mockData from "./mocks/stockData";
-import mockSuppliers from "./mocks/supplierData";
-import { warehouseData } from "./mocks/warehouseData";
+import { BaseUnitProvider, useBaseUnits } from "./provider/BaseUnitProvider";
+import { StockTypeProvider, useStockTypes } from "./provider/StockTypeProvider";
+import { InventoryProvider, useInventories } from "./provider/InventoryProvider";
+import { ProductProvider } from "./provider/ProductProvider";
+import { SupplierProvider, useSuppliers } from "./provider/SupplierProvider";
+import { WarehouseProvider, useWarehouses } from "./provider/WarehouseProvider";
 import { StockItem, StockItemAddDto } from "@/types/index";
-
-import stockTypeApi, { StockTypeResponseDto } from "./apis/stockTypeApi";
-import supplierApi, { SupplierResponseDto } from "./apis/supplierApi";
-import warehouseApi, { WarehouseResponseDto } from "./apis/warehouseApi";
-import inventoryApi, { InventoryResponseDto } from "./apis/inventoryApi";
 
 interface StockTableProps {
     items: StockItem[];
@@ -42,75 +38,36 @@ interface StockAddModalWrapperProps {
 
 const StockAddModalWrapper: React.FC<StockAddModalWrapperProps> = ({ open, onClose, onSubmit }) => {
     const { categories } = useCategories();
+    const { stockTypes } = useStockTypes();
+    const { suppliers } = useSuppliers();
+    const { warehouses } = useWarehouses();
+    const { baseUnits } = useBaseUnits();
     const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
-    const [stockTypes, setStockTypes] = useState<StockTypeResponseDto[]>([]);
-    const [suppliers, setSuppliers] = useState<SupplierResponseDto[]>([]);
-    const [warehouses, setWarehouses] = useState<WarehouseResponseDto[]>([]);
-    const [loadingData, setLoadingData] = useState(false);
-
-    // Fetch all required data
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoadingData(true);
-            try {
-                // Fetch stock types
-                const stockTypesResponse = await stockTypeApi.getAllStockTypes();
-                console.log('Fetched stock types:', stockTypesResponse.data);
-                setStockTypes(stockTypesResponse.data);
-
-                // Fetch suppliers
-                const suppliersResponse = await supplierApi.getAllSuppliers();
-                console.log('Fetched suppliers:', suppliersResponse.data);
-                // Backend'den gelen supplier'ları local interface'e uygun hale getir
-                const mappedSuppliers = suppliersResponse.data.map(supplier => ({
-                    ...supplier,
-                    minimumOrder: parseFloat(supplier.minimumOrder) || 0 // String'den number'a çevir
-                }));
-                setSuppliers(mappedSuppliers as any);
-
-                // Fetch warehouses
-                const warehousesResponse = await warehouseApi.getAllWarehouses();
-                console.log('Fetched warehouses:', warehousesResponse.data);
-                setWarehouses(warehousesResponse.data);
-
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            } finally {
-                setLoadingData(false);
-            }
-        };
-
-        fetchData();
-    }, []);
-
-
-    // Loading state için basit bir kontrol
-    if (loadingData && open) {
-        return (
-            <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-                <div className="bg-white p-6 rounded-xl">
-                    <div className="flex items-center gap-3">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
-                        <span>Veriler yükleniyor...</span>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <StockAddModal
             open={open}
             onClose={() => {
                 onClose();
-                setPendingBarcode(null); // modal kapatılırsa barcode temizle
+                setPendingBarcode(null);
             }}
             onAdd={onSubmit}
             initialBarcode={pendingBarcode || ""}
-            suppliers={suppliers.length > 0 ? (suppliers as any) : mockSuppliers} // Backend'den gelirse kullan, yoksa mock
+            suppliers={suppliers.map(supplier => ({
+                ...supplier,
+                minimumOrder: typeof supplier.minimumOrder === 'string'
+                    ? parseFloat(supplier.minimumOrder) || 0
+                    : supplier.minimumOrder
+            }))}
             stockTypes={stockTypes}
-            warehouses={warehouses.length > 0 ? (warehouses as any) : warehouseData} // Backend'den gelirse kullan, yoksa mock
+            warehouses={warehouses}
             categories={categories}
+            units={baseUnits.length > 0 ? baseUnits.map(unit => ({
+                id: unit.id,
+                name: unit.name,
+                symbol: unit.symbol || unit.shortName,
+                description: unit.desc
+            })) : []}
         />
     );
 };
@@ -119,7 +76,17 @@ export default function StockBusinessMain() {
     return (
         <CategoryProvider>
             <BaseUnitProvider>
-                <StockBusinessMainContent />
+                <StockTypeProvider>
+                    <ProductProvider>
+                        <SupplierProvider>
+                            <InventoryProvider>
+                                <WarehouseProvider>
+                                    <StockBusinessMainContent />
+                                </WarehouseProvider>
+                            </InventoryProvider>
+                        </SupplierProvider>
+                    </ProductProvider>
+                </StockTypeProvider>
             </BaseUnitProvider>
         </CategoryProvider>
     );
@@ -129,14 +96,8 @@ function StockBusinessMainContent() {
     const { setActivePath } = useNavigation();
     const navigate = useNavigate();
     const location = useLocation();
-    const [stocks, setStocks] = useState<StockItem[]>(() =>
-        mockData.map(item => ({
-            ...item,
-            id: item.id.toString(),
-            lastUpdated: new Date().toISOString(),
-            status: "active" as const
-        }))
-    );
+    const { inventories, loading: loadingInventory } = useInventories();
+    const [stocks, setStocks] = useState<StockItem[]>([]);
     const [search, setSearch] = useState<string>("");
     const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
     const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState<boolean>(false);
@@ -162,49 +123,6 @@ function StockBusinessMainContent() {
         }
     }, [location.pathname]);
 
-     // Inventory data state
-    const [inventoryData, setInventoryData] = useState<InventoryResponseDto[]>([]);
-    const [loadingInventory, setLoadingInventory] = useState<boolean>(false);
-    const [inventoryError, setInventoryError] = useState<string | null>(null);
-
-    // Fetch inventory data from API
-    useEffect(() => {
-        const fetchInventoryData = async () => {
-            try {
-                setLoadingInventory(true);
-                setInventoryError(null);
-                const response = await inventoryApi.getAllInventories();
-                console.log('Fetched inventories response:', response);
-                
-                // Handle API response structure
-                if (response && response.data) {
-                    setInventoryData(response.data); // response.data is InventoryResponseDto[]
-                } else {
-                    // Fallback for direct array response
-                    setInventoryData(response as any || []);
-                }
-            } catch (error) {
-                console.error('Error fetching inventories:', error);
-                setInventoryError('Inventory verileri yüklenirken hata oluştu');
-                setInventoryData([]); // Set empty array on error
-            } finally {
-                setLoadingInventory(false);
-            }
-        };
-
-        fetchInventoryData();
-    }, []);
-
-    // Debug inventory data (geçici olarak)
-    useEffect(() => {
-        console.log('Inventory Data State Updated:', {
-            inventoryData,
-            count: inventoryData.length,
-            loadingInventory,
-            inventoryError
-        });
-    }, [inventoryData, loadingInventory, inventoryError]);
-
 
     const handleTabChange = (tab: { id: string; path: string }) => {
         setActiveTab(tab.id);
@@ -215,11 +133,22 @@ function StockBusinessMainContent() {
         setActivePath('/dashboard/stockbusiness');
     }, [setActivePath]);
 
-    // Stok istatistikleri
-    const totalItems = inventoryData.length;
-    const lowStockItems = inventoryData.filter(item => item.quantity <= item.minQuantity).length;
-    const totalValue = inventoryData.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const outOfStockItems = inventoryData.filter(item => item.quantity === 0).length;
+    // Client-side stats hesaplama - provider'dan gelen inventories verisini kullan
+    const calculateStats = () => {
+        const totalItems = inventories.length;
+        const lowStockItems = inventories.filter(item => item.quantity <= item.minQuantity).length;
+        const totalValue = inventories.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+        const outOfStockItems = inventories.filter(item => item.quantity === 0).length;
+
+        return {
+            totalItems,
+            lowStockItems,
+            totalValue,
+            outOfStockItems
+        };
+    };
+
+    const stats = calculateStats();
 
     const handleBarcodeClick = useCallback(() => {
         setIsBarcodeModalOpen(true);
@@ -255,23 +184,21 @@ function StockBusinessMainContent() {
     }, []);
 
     const handleAddStock = useCallback((newStock: StockItemAddDto) => {
-        console.log('Adding new stock:', newStock); 
-        // setStocks(prev => [...prev, newStock]);
-        // setIsAddModalOpen(false);
-        // setPendingBarcode(null); // barcode eklenince temizle
+        setStocks(prev => [...prev, newStock]);
+        setIsAddModalOpen(false);
     }, []);
 
-    const filteredStocks = inventoryData.filter(stock => {
+    const filteredStocks = inventories.filter(stock => {
         return (
-            stock.name.toLowerCase().includes(search.toLowerCase()) ||
-            stock?.stockType.toLowerCase().includes(search.toLowerCase()) ||
-            stock.barcode?.toLowerCase().includes(search.toLowerCase())
+            stock?.name?.toLowerCase().includes(search.toLowerCase()) ||
+            stock?.stockType?.toLowerCase().includes(search.toLowerCase()) ||
+            stock?.barcode?.toLowerCase().includes(search.toLowerCase())
         );
     });
 
     const TableComponent = ({ items, onStockChange }: StockTableProps) => (
 
-        
+
 
 
         <StockTable
@@ -291,25 +218,25 @@ function StockBusinessMainContent() {
     const stockStats = [
         {
             title: "Toplam Ürün",
-            value: totalItems,
+            value: stats.totalItems,
             icon: <Package size={20} />,
             color: "from-blue-500 to-blue-600"
         },
         {
             title: "Düşük Stok",
-            value: lowStockItems,
+            value: stats.lowStockItems,
             icon: <AlertTriangle size={20} />,
             color: "from-red-500 to-red-600"
         },
         {
             title: "Toplam Değer",
-            value: `₺${totalValue.toLocaleString()}`,
+            value: `₺${stats.totalValue.toLocaleString()}`,
             icon: <TrendingUp size={20} />,
             color: "from-green-500 to-green-600"
         },
         {
             title: "Tükenen Ürün",
-            value: outOfStockItems,
+            value: stats.outOfStockItems,
             icon: <ShoppingBag size={20} />,
             color: "from-orange-500 to-orange-600"
         }
@@ -380,56 +307,67 @@ function StockBusinessMainContent() {
                     {/* Ana stok yönetimi içeriği - sadece stock tab'ında görünür */}
                     {activeTab === 'stock' && (
                         <>
-                            {/* Stat Cards */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-                                {stockStats.map((stat, index) => (
-                                    <div
-                                        key={index}
-                                        className="group"
-                                        style={{ animationDelay: `${index * 0.1}s` }}
-                                    >
-                                        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 animate-fade-in">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className={`p-2 sm:p-3 bg-gradient-to-br ${stat.color} rounded-xl text-white group-hover:scale-110 transition-transform duration-300`}>
-                                                    {stat.icon}
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-xs sm:text-sm text-gray-500 mb-1">
-                                                        {stat.title}
+                            {loadingInventory ? (
+                                <div className="flex items-center justify-center min-h-[400px]">
+                                    <div className="text-center">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                                        <p className="text-gray-600">Stok verileri yükleniyor...</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Stat Cards */}
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                                        {stockStats.map((stat, index) => (
+                                            <div
+                                                key={index}
+                                                className="group"
+                                                style={{ animationDelay: `${index * 0.1}s` }}
+                                            >
+                                                <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 animate-fade-in">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className={`p-2 sm:p-3 bg-gradient-to-br ${stat.color} rounded-xl text-white group-hover:scale-110 transition-transform duration-300`}>
+                                                            {stat.icon}
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-xs sm:text-sm text-gray-500 mb-1">
+                                                                {stat.title}
+                                                            </div>
+                                                            <div className="text-lg sm:text-2xl font-bold text-gray-800">
+                                                                {stat.value}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-lg sm:text-2xl font-bold text-gray-800">
-                                                        {stat.value}
-                                                    </div>
+                                                    <div className={`h-1 bg-gradient-to-r ${stat.color} rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}></div>
                                                 </div>
                                             </div>
-                                            <div className={`h-1 bg-gradient-to-r ${stat.color} rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}></div>
+                                        ))}
+                                    </div>
+
+                                    {/* Search and Add Section */}
+                                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
+                                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                                            <div className="flex-1 w-full sm:w-auto">
+                                                <StockSearchBar
+                                                    search={search}
+                                                    setSearch={setSearch}
+                                                    onBarcodeClick={handleBarcodeClick}
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => setIsAddModalOpen(true)}
+                                                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 justify-center font-semibold"
+                                            >
+                                                <Plus size={20} />
+                                                Yeni Stok Ekle
+                                            </button>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
 
-                            {/* Search and Add Section */}
-                            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
-                                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                                    <div className="flex-1 w-full sm:w-auto">
-                                        <StockSearchBar
-                                            search={search}
-                                            setSearch={setSearch}
-                                            onBarcodeClick={handleBarcodeClick}
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={() => setIsAddModalOpen(true)}
-                                        className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 justify-center font-semibold"
-                                    >
-                                        <Plus size={20} />
-                                        Yeni Stok Ekle
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Stock Table */}
-                            <TableComponent items={filteredStocks} onStockChange={handleStockChange} />
+                                    {/* Stock Table */}
+                                    <TableComponent items={filteredStocks} onStockChange={handleStockChange} />
+                                </>
+                            )}
                         </>
                     )}
 

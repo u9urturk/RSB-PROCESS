@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Package, Plus, Search, Edit, Trash2, Power, PowerOff } from 'lucide-react';
 import { BaseUnit, CreateBaseUnitDto, UpdateBaseUnitDto } from './apis/baseUnitApi';
 import { useBaseUnits } from './provider/BaseUnitProvider';
+import { useConfirm } from '../../context/provider/ConfirmProvider';
 import PageTransition from '../../components/PageTransition';
 import BaseUnitAddModal from './modals/BaseUnitAddModal';
 import BaseUnitEditModal from './modals/BaseUnitEditModal';
@@ -10,18 +11,35 @@ const BaseUnitManagement: React.FC = () => {
   const { 
     baseUnits,
     loading, 
-    stats,
     createBaseUnit,
     updateBaseUnit,
     deleteBaseUnit,
     searchBaseUnits,
     toggleBaseUnitStatus
   } = useBaseUnits();
-
+  const confirm = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingBaseUnit, setEditingBaseUnit] = useState<BaseUnit | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+
+  // Client-side stats hesaplama
+  const calculateStats = () => {
+    const totalUnits = baseUnits.length;
+    const activeUnits = baseUnits.filter(unit => unit.isActive).length;
+    const inactiveUnits = baseUnits.filter(unit => !unit.isActive).length;
+    // unitsWithProducts için şimdilik 0 döndürüyoruz, gerçek veri geldiğinde güncellenebilir
+    const unitsWithProducts = 0;
+
+    return {
+      totalUnits,
+      activeUnits,
+      inactiveUnits,
+      unitsWithProducts
+    };
+  };
+
+  const stats = calculateStats();
 
   // Birim ekleme
   const handleAddBaseUnit = async (unitData: CreateBaseUnitDto) => {
@@ -45,7 +63,23 @@ const BaseUnitManagement: React.FC = () => {
 
   // Birim silme
   const handleDeleteBaseUnit = async (id: string, name: string) => {
-    if (!window.confirm(`"${name}" birimini silmek istediğinizden emin misiniz?`)) {
+    const isConfirmed = await confirm({
+      title: 'Birim Silme Onayı',
+      message: `"${name}" birimini silmek istediğinizden emin misiniz?`,
+      confirmText: 'Sil',
+      cancelText: 'İptal',
+      type: 'danger',
+      details: [
+        { label: 'Birim Adı', value: name },
+        { label: 'İşlem', value: 'Kalıcı Silme' }
+      ],
+      warnings: [
+        'Bu işlem geri alınamaz',
+        'Bu birimle ilişkili tüm veriler silinecektir'
+      ]
+    });
+
+    if (!isConfirmed) {
       return;
     }
 

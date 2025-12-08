@@ -33,7 +33,7 @@ export interface InventoryResponseDto {
     barcode?: string;
     name: string;
     stockType: string;
-    unit: string;
+    unitType: string;
     quantity: number;
     minQuantity: number;
     maxQuantity: number;
@@ -131,7 +131,7 @@ export const inventoryApi = {
    * POST /inventories
    * Note: Lot number will be auto-generated with format LOT-YYYY-MMDD-XXXX
    */
-  createInventory: async (inventoryData: CreateInventoryDto): Promise<InventorySingleResponseDto> => {
+  createInventory: async (inventoryData: CreateInventoryDto): Promise<InventoryResponseDto> => {
     try {
       const response = await apiPost('/inventories', inventoryData);
       console.log('Create inventory response:', response);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Folder, Plus, Search, Edit, Trash2, Filter } from 'lucide-react';
 import { Category, CreateCategoryDto, UpdateCategoryDto } from './apis/categoryApi';
 import { useCategories } from './provider/CategoryProvider';
+import { useConfirm } from '../../context/provider/ConfirmProvider';
 import CategoryAddModal from './modals/CategoryAddModal';
 import CategoryEditModal from './modals/CategoryEditModal';
 import PageTransition from '../../components/PageTransition';
@@ -15,6 +16,7 @@ const CategoryManagement: React.FC = () => {
     deleteCategory,
     searchCategories,
   } = useCategories();
+  const confirm = useConfirm();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -39,7 +41,23 @@ const CategoryManagement: React.FC = () => {
   };
 
   const handleDeleteCategory = async (id: string, name: string) => {
-    if (!window.confirm(`"${name}" kategorisini silmek istediğinizden emin misiniz?`)) {
+    const isConfirmed = await confirm({
+      title: 'Kategori Silme Onayı',
+      message: `"${name}" kategorisini silmek istediğinizden emin misiniz?`,
+      confirmText: 'Sil',
+      cancelText: 'İptal',
+      type: 'danger',
+      details: [
+        { label: 'Kategori Adı', value: name },
+        { label: 'İşlem', value: 'Kalıcı Silme' }
+      ],
+      warnings: [
+        'Bu işlem geri alınamaz',
+        'Bu kategoriye ait tüm ürünler etkilenebilir'
+      ]
+    });
+
+    if (!isConfirmed) {
       return;
     }
 

@@ -1,21 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Building2, Plus, MapPin, Users, Edit, Trash2, Settings } from 'lucide-react';
 import WarehouseAddModal from './modals/WarehouseAddModal';
 import { useConfirm } from '@/context/provider/ConfirmProvider';
-import { useNotification } from '@/context/provider/NotificationProvider';
+import { useWarehouses } from './provider/WarehouseProvider';
 import { Warehouse } from '@/types/stock';
-import { warehouseApi, WarehouseStatus, WarehouseType } from './apis/warehouseApi';
-import { ErrorHandlerService } from '@/utils/ErrorHandlerService';
+import { WarehouseStatus, WarehouseType } from './apis/warehouseApi';
 
 
 
 const WarehouseManagement: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
-    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    
+    // Provider'dan gelen fonksiyonlar ve state
+    const {
+        warehouses,
+        stats,
+        createWarehouse,
+        updateWarehouse,
+        deleteWarehouse,
+        validateWarehouse,
+    } = useWarehouses();
+    
     const confirm = useConfirm();
-    const { showNotification } = useNotification();
 
     // Utility functions for displaying Turkish labels
     const getStatusLabel = (status: string) => {
@@ -37,47 +44,11 @@ const WarehouseManagement: React.FC = () => {
         }
     };
 
-    // Load warehouses from API
-    useEffect(() => {
-        if (isLoaded) return;
-
-        warehouseApi.getAllWarehouses().then(data => {
-            console.log('API Depo Verisi:', data);
-            const formattedData: Warehouse[] = data.data.map((item: any) => ({
-                id: item.id,
-                name: item.name,
-                location: item.location,
-                capacity: item.capacity,
-                capacityPercentage: item.capacityPercentage,
-                status: item.status,
-                manager: item.manager,
-                staffCount: item.staffCount,
-                area: item.area,
-                temperature: item.temperature,
-                warehouseType: item.warehouseType,
-                code: item.code,
-                isActive: item.isActive,
-                createdAt: item.createdAt,
-                updatedAt: item.updatedAt
-            }));
-
-
-            setWarehouses(formattedData);
-            setIsLoaded(true);
-        }).catch(error => {
-            console.error('Depolar yüklenirken hata:', error);
-            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-            showNotification('error', `Depolar yüklenirken hata: ${errorMessage}`);
-        });
-
-        return () => {
-        }
-    }, [])
-
     // Handler fonksiyonları
     const handleAddWarehouse = async (newWarehouse: Omit<Warehouse, 'id'>) => {
         try {
-            const created = await warehouseApi.createWarehouse({
+            // Provider'dan gelen validasyon
+            const validationErrors = validateWarehouse({
                 name: newWarehouse.name,
                 location: newWarehouse.location,
                 capacity: newWarehouse.capacity,
@@ -92,37 +63,36 @@ const WarehouseManagement: React.FC = () => {
                 isActive: newWarehouse.isActive
             });
 
-            const warehouseToAdd: Warehouse = {
-                id: created.id,
-                name: created.name,
-                location: created.location,
-                capacity: created.capacity,
-                capacityPercentage: created.capacityPercentage,
-                status: created.status,
-                manager: created.manager,
-                staffCount: created.staffCount,
-                area: created.area,
-                temperature: created.temperature,
-                warehouseType: created.warehouseType,
-                code: created.code,
-                isActive: created.isActive,
-                createdAt: created.createdAt,
-                updatedAt: created.updatedAt
-            };
+            if (validationErrors.length > 0) {
+                // İlk hatayı göster
+                return;
+            }
 
-            setWarehouses(prev => [...prev, warehouseToAdd]);
+            await createWarehouse({
+                name: newWarehouse.name,
+                location: newWarehouse.location,
+                capacity: newWarehouse.capacity,
+                capacityPercentage: newWarehouse.capacityPercentage,
+                status: newWarehouse.status as WarehouseStatus,
+                manager: newWarehouse.manager,
+                staffCount: newWarehouse.staffCount,
+                area: newWarehouse.area,
+                temperature: newWarehouse.temperature,
+                warehouseType: newWarehouse.warehouseType as WarehouseType,
+                code: newWarehouse.code,
+                isActive: newWarehouse.isActive
+            });
+
             setIsAddModalOpen(false);
-            showNotification('success', `"${warehouseToAdd.name}" deposu başarıyla oluşturuldu`);
         } catch (error) {
             console.error('Depo oluşturulurken hata:', error);
-            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-            showNotification('error', `Depo oluşturulurken hata: ${errorMessage}`);
         }
     };
 
     const handleUpdateWarehouse = async (id: string, updatedWarehouse: Omit<Warehouse, 'id'>) => {
         try {
-            const updated = await warehouseApi.updateWarehouse(id, {
+            // Provider'dan gelen validasyon
+            const validationErrors = validateWarehouse({
                 name: updatedWarehouse.name,
                 location: updatedWarehouse.location,
                 capacity: updatedWarehouse.capacity,
@@ -137,49 +107,38 @@ const WarehouseManagement: React.FC = () => {
                 isActive: updatedWarehouse.isActive
             });
 
-            const warehouseToUpdate: Warehouse = {
-                id: updated.id,
-                name: updated.name,
-                location: updated.location,
-                capacity: updated.capacity,
-                capacityPercentage: updated.capacityPercentage,
-                status: updated.status,
-                manager: updated.manager,
-                staffCount: updated.staffCount,
-                area: updated.area,
-                temperature: updated.temperature,
-                warehouseType: updated.warehouseType,
-                code: updated.code,
-                isActive: updated.isActive,
-                createdAt: updated.createdAt,
-                updatedAt: updated.updatedAt
-            };
+            if (validationErrors.length > 0) {
+                // İlk hatayı göster
+                return;
+            }
 
-            setWarehouses(prev => prev.map(w =>
-                w.id === id ? warehouseToUpdate : w
-            ));
+            await updateWarehouse(id, {
+                name: updatedWarehouse.name,
+                location: updatedWarehouse.location,
+                capacity: updatedWarehouse.capacity,
+                capacityPercentage: updatedWarehouse.capacityPercentage,
+                status: updatedWarehouse.status as WarehouseStatus,
+                manager: updatedWarehouse.manager,
+                staffCount: updatedWarehouse.staffCount,
+                area: updatedWarehouse.area,
+                temperature: updatedWarehouse.temperature,
+                warehouseType: updatedWarehouse.warehouseType as WarehouseType,
+                code: updatedWarehouse.code,
+                isActive: updatedWarehouse.isActive
+            });
+
             setEditingWarehouse(null);
             setIsAddModalOpen(false);
-            showNotification('success', `"${warehouseToUpdate.name}" deposu başarıyla güncellendi`);
         } catch (error) {
             console.error('Depo güncellenirken hata:', error);
-            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-            showNotification('error', `Depo güncellenirken hata: ${errorMessage}`);
         }
     };
 
     const handleDeleteWarehouse = async (id: string) => {
         try {
-            const warehouseToDelete = warehouses.find(w => w.id === id);
-            const warehouseName = warehouseToDelete?.name || 'Bilinmeyen';
-
-            await warehouseApi.deleteWarehouse(id);
-            setWarehouses(prev => prev.filter(w => w.id !== id));
-            showNotification('success', `"${warehouseName}" deposu başarıyla silindi`);
+            await deleteWarehouse(id);
         } catch (error) {
             console.error('Depo silinirken hata:', error);
-            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-            showNotification('error', `Depo silinirken hata: ${errorMessage}`);
         }
     };
 
@@ -225,11 +184,11 @@ const WarehouseManagement: React.FC = () => {
         setEditingWarehouse(null);
     };
 
-    // Stats hesaplamaları
-    const totalWarehouses = warehouses.length;
-    const activeLocations = warehouses.filter(w => w.status === 'ACTIVE').length;
+    // Stats hesaplamaları - provider'dan gelen veriler
+    const totalWarehouses = stats.totalWarehouses || warehouses.length;
+    const activeLocations = stats.activeWarehouses || warehouses.filter(w => w.status === 'ACTIVE').length;
     const totalStaff = warehouses.reduce((sum, w) => sum + w.staffCount, 0);
-    const averageCapacity = Math.round(
+    const averageCapacity = stats.averageCapacityPercentage || Math.round(
         warehouses.reduce((sum, w) => sum + w.capacityPercentage, 0) / warehouses.length
     );
     return (

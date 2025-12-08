@@ -1,63 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Package, Plus, Edit, Trash2, Tag } from 'lucide-react';
 import StockTypeAddModal from './modals/StockTypeAddModal';
 import { useConfirm } from '@/context/provider/ConfirmProvider';
-import { useNotification } from '@/context/provider/NotificationProvider';
+import { useStockTypes } from './provider/StockTypeProvider';
 import { StockType } from '@/types/stock';
-import { stockTypeApi } from './apis/stockTypeApi';
-import { validateStockType } from '@/utils/validation';
-import { ErrorHandlerService } from '@/utils/ErrorHandlerService';
 
 const StockTypeManagement: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingStockType, setEditingStockType] = useState<StockType | null>(null);   
-    // Restoran sektörüne uygun stok türleri - state olarak tanımlandı
-    const [stockTypes, setStockTypes] = useState<StockType[]>([]);
-    const [stockTypeStats, setStockTypeStats] = useState<any>(null);
-    const [isLoaded, setIsLoaded] = useState(false); // Duplicate load prevention
+    
+    // Provider'dan gelen fonksiyonlar ve state
+    const {
+        stockTypes,
+        stats,
+        createStockType,
+        updateStockType,
+        deleteStockType,
+        validateStockType,
+    } = useStockTypes();
+    
     const confirm = useConfirm();
-    const { showNotification } = useNotification();
 
-    useEffect(() => {
-      // Duplicate load prevention
-      if (isLoaded) return;
-
-      stockTypeApi.getAllStockTypes().then(data => {
-        const formattedData: StockType[] = data.data.map(item => ({
-          id: item.id,
-          name: item.name,
-          description: item.description || '',
-          color: item.color || 'from-gray-500 to-gray-600',
-          icon: item.icon || '📦',
-          examples: item.examples || [],
-          itemCount: item.itemCount,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt
-        }));
-
-        setStockTypes(formattedData);
-        setStockTypeStats({total: data.total, activeCount: data.activeCount, inactiveCount: data.inactiveCount,
-             totalProducts: data.totalProducts, averageProductsPerStockType: data.averageProductsPerStockType, 
-             mostUsedStockType: data.mostUsedStockType, topStockTypes: data.topStockTypes, lastUpdated: data.lastUpdated});
+    // En çok kullanılan stok türünü hesapla
+    const getMostUsedStockType = () => {
+        if (stockTypes.length === 0) return 'N/A';
         
-        setIsLoaded(true); // Mark as loaded
-        // Success bildirimi kaldırıldı - sadece user action'larda bildirim gösterelim
-      }).catch(error => {
-        console.error('Stok türleri yüklenirken hata:', error);
-        const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-        showNotification('error', `Stok türleri yüklenirken hata: ${errorMessage}`);
-      });
-
-
-      return () => {
-      }
-    }, [])
+        const sortedByItemCount = [...stockTypes].sort((a, b) => b.itemCount - a.itemCount);
+        return sortedByItemCount[0]?.name || 'N/A';
+    };
 
     // Yeni stok türü ekleme handler'ı
     const handleAddStockType = async (newStockType: Omit<StockType, 'id' | 'itemCount'>) => {
         try {
-            // Client-side validation
-            const validationResult = validateStockType({
+            // Provider'dan gelen validasyon
+            const validationErrors = validateStockType({
                 name: newStockType.name,
                 description: newStockType.description,
                 color: newStockType.color,
@@ -65,41 +41,30 @@ const StockTypeManagement: React.FC = () => {
                 examples: newStockType.examples
             });
 
-            if (!validationResult.isValid) {
-                showNotification('error', validationResult.error || 'Geçersiz veri');
+            if (validationErrors.length > 0) {
+                // İlk hatayı göster
                 return;
             }
 
-            const created = await stockTypeApi.createStockType(newStockType);
+            await createStockType({
+                name: newStockType.name,
+                description: newStockType.description,
+                color: newStockType.color,
+                icon: newStockType.icon,
+                examples: newStockType.examples
+            });
             
-            // API response'unu StockType formatına dönüştür
-            const stockTypeToAdd: StockType = {
-                id: created.id,
-                name: created.name,
-                description: created.description || '', // StockType'da zorunlu olduğu için default value
-                color: created.color || 'from-gray-500 to-gray-600',
-                icon: created.icon || '📦',
-                examples: created.examples || [],
-                itemCount: created.itemCount,
-                createdAt: created.createdAt,
-                updatedAt: created.updatedAt
-            };
-            
-            setStockTypes(prev => [...prev, stockTypeToAdd]);
             setIsAddModalOpen(false);
-            showNotification('success', `"${stockTypeToAdd.name}" stok türü başarıyla oluşturuldu`);
         } catch (error) {
             console.error('Stok türü oluşturulurken hata:', error);
-            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-            showNotification('error', `Stok türü oluşturulurken hata: ${errorMessage}`);
         }
     };
 
     // Stok türü güncelleme handler'ı
     const handleUpdateStockType = async (id: string, updatedStockType: Omit<StockType, 'id' | 'itemCount'>) => {
         try {
-            // Client-side validation
-            const validationResult = validateStockType({
+            // Provider'dan gelen validasyon
+            const validationErrors = validateStockType({
                 name: updatedStockType.name,
                 description: updatedStockType.description,
                 color: updatedStockType.color,
@@ -107,64 +72,55 @@ const StockTypeManagement: React.FC = () => {
                 examples: updatedStockType.examples
             });
 
-            if (!validationResult.isValid) {
-                showNotification('error', validationResult.error || 'Geçersiz veri');
+            if (validationErrors.length > 0) {
+                // İlk hatayı göster
                 return;
             }
 
-            const updated = await stockTypeApi.updateStockType(id, updatedStockType);
+            await updateStockType(id, {
+                name: updatedStockType.name,
+                description: updatedStockType.description,
+                color: updatedStockType.color,
+                icon: updatedStockType.icon,
+                examples: updatedStockType.examples
+            });
             
-            // API response'unu StockType formatına dönüştür
-            const stockTypeToUpdate: StockType = {
-                id: updated.id,
-                name: updated.name,
-                description: updated.description || '',
-                color: updated.color || 'from-gray-500 to-gray-600',
-                icon: updated.icon || '📦',
-                examples: updated.examples || [],
-                itemCount: updated.itemCount,
-                createdAt: updated.createdAt,
-                updatedAt: updated.updatedAt
-            };
-            
-            setStockTypes(prev => prev.map(type =>
-                type.id === id ? stockTypeToUpdate : type
-            ));
             setEditingStockType(null);
             setIsAddModalOpen(false);
-            showNotification('success', `"${stockTypeToUpdate.name}" stok türü başarıyla güncellendi`);
         } catch (error) {
             console.error('Stok türü güncellenirken hata:', error);
-            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-            showNotification('error', `Stok türü güncellenirken hata: ${errorMessage}`);
         }
     };
 
     // Stok türü silme handler'ı
     const handleDeleteStockType = async (id: string) => {
         try {
-            // Silinecek stok türünün adını al
-            const stockTypeToDelete = stockTypes.find(type => type.id === id);
-            const stockTypeName = stockTypeToDelete?.name || 'Bilinmeyen';
-
-            await stockTypeApi.deleteStockType(id);
-            setStockTypes(prev => prev.filter(type => type.id !== id));
-            showNotification('success', `"${stockTypeName}" stok türü başarıyla silindi`);
+            await deleteStockType(id);
         } catch (error) {
             console.error('Stok türü silinirken hata:', error);
-            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-            showNotification('error', `Stok türü silinirken hata: ${errorMessage}`);
         }
     };
 
     // Edit butonuna tıklanınca
-    const handleEditClick = (stockType: StockType) => {
-        setEditingStockType(stockType);
+    const handleEditClick = (stockType: any) => {
+        // StockType formatına dönüştür
+        const editableStockType: StockType = {
+            id: stockType.id,
+            name: stockType.name,
+            description: stockType.description || '',
+            color: stockType.color || 'from-gray-500 to-gray-600',
+            icon: stockType.icon || '📦',
+            examples: stockType.examples || [],
+            itemCount: stockType.itemCount,
+            createdAt: stockType.createdAt,
+            updatedAt: stockType.updatedAt
+        };
+        setEditingStockType(editableStockType);
         setIsAddModalOpen(true);
     };
 
     // Delete butonuna tıklanınca
-    const handleDeleteClick = async (stockType: StockType) => {
+    const handleDeleteClick = async (stockType: any) => {
         const result = await confirm({
             title: 'Stok Türünü Sil',
             message: `"${stockType.name}" stok türünü silmek istediğinizden emin misiniz?`,
@@ -175,7 +131,7 @@ const StockTypeManagement: React.FC = () => {
             data: stockType,
             details: [
                 { label: 'Stok Türü', value: stockType.name },
-                { label: 'Açıklama', value: stockType.description },
+                { label: 'Açıklama', value: stockType.description || '' },
                 { label: 'Ürün Sayısı', value: `${stockType.itemCount} adet` }
             ],
             warnings: [
@@ -239,7 +195,7 @@ const StockTypeManagement: React.FC = () => {
                         <div>
                             <p className="text-gray-600 text-sm">Toplam Ürün</p>
                             <p className="text-2xl font-bold text-gray-800">
-                                {stockTypeStats ? stockTypeStats.totalProducts : 0}
+                                {stats.totalProducts}
                             </p>
                         </div>
                         <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl text-white">
@@ -252,7 +208,7 @@ const StockTypeManagement: React.FC = () => {
                         <div>
                             <p className="text-gray-600 text-sm">En Çok Kullanılan</p>
                             <p className="text-2xl font-bold text-gray-800">
-                                {stockTypeStats?.mostUsedStockType?.mostUsedStockTypeName || 'N/A'}
+                                {getMostUsedStockType()}
                             </p>
                         </div>
                         <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl text-white">
@@ -310,7 +266,7 @@ const StockTypeManagement: React.FC = () => {
                             <div>
                                 <p className="text-sm text-gray-600 mb-2">Örnek ürünler:</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {type.examples.map((example, idx) => (
+                                    {(type.examples || []).map((example, idx) => (
                                         <span
                                             key={idx}
                                             className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs"

@@ -18,11 +18,10 @@ import {
     Warehouse
 } from "lucide-react";
 import { StockDetailModalProps } from "@/types/index";
-import { StockType, Supplier } from "@/types/stock";
-import { stockTypeDatas } from "../mocks/stockTypeData";
-import mockSuppliers from "../mocks/supplierData";
-import { warehouseData } from "../mocks/warehouseData";
 import { getUnitSymbol } from "../utils/unitService";
+import { useStockTypes } from "../provider/StockTypeProvider";
+import { useSuppliers } from "../provider/SupplierProvider";
+import { useWarehouses } from "../provider/WarehouseProvider";
 
 // Stok hareket türleri
 interface StockMovement {
@@ -40,14 +39,16 @@ interface StockMovement {
     totalPrice?: number; // Hesaplanan toplam fiyat
 }
 
-export default function StockDetailModal({ open, onClose, item }: StockDetailModalProps) {
+export default function StockDetailModal({ open, onClose, item }: Omit<StockDetailModalProps, 'stockTypes' | 'suppliers' | 'warehouses'>) {
     const [render, setRender] = useState(open);
-    const [stockTypes] = useState<StockType[]>(stockTypeDatas);
-    const [suppliers] = useState<Supplier[]>(mockSuppliers);
-    const [warehouses] = useState(warehouseData);
     const [isAnimating, setIsAnimating] = useState(false);
     const [activeTab, setActiveTab] = useState<'details' | 'history' | 'analytics'>('details');
     const [isTabChanging, setIsTabChanging] = useState(false);
+    
+    // Provider'lardan verileri al
+    const { stockTypes } = useStockTypes();
+    const { suppliers } = useSuppliers();
+    const { warehouses } = useWarehouses();
 
     // Mock stok hareketleri verisi
     const [stockMovements] = useState<StockMovement[]>([
@@ -55,7 +56,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             id: '1',
             type: 'in',
             quantity: 50,
-            unit: getUnitSymbol(item.unitId),
+            unit: getUnitSymbol(item.baseUnitId),
             date: '2024-10-01T10:30:00Z',
             supplierId: '1',
             userId: 'user1',
@@ -69,7 +70,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             id: '2',
             type: 'out',
             quantity: 15,
-            unit: getUnitSymbol(item.unitId),
+            unit: getUnitSymbol(item.baseUnitId),
             date: '2024-09-28T14:20:00Z',
             userId: 'user2',
             userName: 'Fatma Demir',
@@ -81,7 +82,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             id: '3',
             type: 'in',
             quantity: 30,
-            unit: getUnitSymbol(item.unitId),
+            unit: getUnitSymbol(item.baseUnitId),
             date: '2024-09-25T09:15:00Z',
             supplierId: '2',
             userId: 'user1',
@@ -95,7 +96,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             id: '4',
             type: 'adjustment',
             quantity: -5,
-            unit: getUnitSymbol(item.unitId),
+            unit: getUnitSymbol(item.baseUnitId),
             date: '2024-09-20T16:45:00Z',
             userId: 'user3',
             userName: 'Mehmet Kaya',
@@ -107,7 +108,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
             id: '5',
             type: 'in',
             quantity: 100,
-            unit: getUnitSymbol(item.unitId),
+            unit: getUnitSymbol(item.baseUnitId),
             date: '2024-09-15T09:00:00Z',
             supplierId: '1',
             userId: 'user1',
@@ -273,7 +274,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
                                                 <div className="text-2xl font-bold text-blue-800">
                                                     {item.quantity}
                                                 </div>
-                                                <div className="text-sm text-blue-600">{getUnitSymbol(item.unitId)}</div>
+                                                <div className="text-sm text-blue-600">{getUnitSymbol(item.baseUnitId)}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -303,7 +304,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
                                                 <div className="text-2xl font-bold text-amber-800">
                                                     {item.minQuantity}
                                                 </div>
-                                                <div className="text-sm text-amber-600">{getUnitSymbol(item.unitId)}</div>
+                                                <div className="text-sm text-amber-600">{getUnitSymbol(item.baseUnitId)}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -419,7 +420,7 @@ export default function StockDetailModal({ open, onClose, item }: StockDetailMod
                                         <div>
                                             <div className="text-sm text-gray-600">Birim Fiyat</div>
                                             <div className="font-semibold text-gray-800">
-                                                ₺{item.unitPrice.toLocaleString()} / {getUnitSymbol(item.unitId)}
+                                                ₺{item.unitPrice.toLocaleString()} / {item.unitType}
                                             </div>
                                         </div>
                                     </div>

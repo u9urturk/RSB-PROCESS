@@ -128,7 +128,7 @@ const SplashScreen: React.FC = () => {
                     transition={{ delay: 0.5, duration: 0.8 }}
                     className="text-6xl font-bold mb-4 tracking-tight bg-gradient-to-r from-white to-orange-100 bg-clip-text text-transparent"
                 >
-                    Trend Restoran
+                    ASpaio
                 </motion.h1>
 
                 {/* Subtitle */}

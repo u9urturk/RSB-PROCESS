@@ -1,3 +1,6 @@
+import { StockTypeResponseDto } from '@/pages/stockbusiness/apis/stockTypeApi';
+import { SupplierResponseDto } from '@/pages/stockbusiness/apis/supplierApi';
+import { WarehouseResponseDto } from '@/pages/stockbusiness/apis/warehouseApi';
 import React from 'react';
 
 
@@ -610,7 +613,7 @@ export interface StockItem {
     barcode?: string;
     name: string;
     stockType: string;
-    unit: string;
+    unitType: string;
     quantity: number;
     minQuantity: number;
     maxQuantity: number;
@@ -637,8 +640,8 @@ export interface StockItemAddDto {
     id: string;
     barcode?: string;
     name: string;
-    stockTypeId: string;
-    unitId: string;
+    stockType: string;
+    unitType: string;
     quantity: number;
     minQuantity: number;
     maxQuantity: number;
@@ -646,11 +649,18 @@ export interface StockItemAddDto {
     totalPrice?: number;
     status?: "active" | "inactive";
     lastUpdated: string;
-    supplierId?: string;
-    warehouseId?: string;
+    supplier?: string;
+    warehouse?: string;
     description?: string;
     notes?: string;
     lotNumber?: string;
+
+    productId: string;
+    warehouseId: string;
+    supplierId?: string;
+    categoryId: string;
+    stockTypeId: string;
+    baseUnitId: string;
 }
 
 export interface StockAddModalProps {
@@ -671,4 +681,7 @@ export interface StockDetailModalProps {
     open: boolean;
     onClose: () => void;
     item: StockItem;
+    stockTypes: StockTypeResponseDto[];
+    suppliers: SupplierResponseDto[];
+    warehouses: WarehouseResponseDto[];
 }

@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Package, X, Save, ArrowRight, ArrowLeft } from "lucide-react";
-import {  StockItemAddDto } from "@/types/index";
+import { StockItemAddDto } from "@/types/index";
 import { Supplier, Warehouse } from "@/types/stock";
-import { useNotification } from "@/context/provider/NotificationProvider";
-import productApi, { CreateProductDto, ProductStatus } from "../apis/productApi";
-import inventoryApi, { CreateInventoryDto } from "../apis/inventoryApi";
+import { CreateProductDto, ProductStatus } from "../apis/productApi";
+import { CreateInventoryDto } from "../apis/inventoryApi";
 import { StockTypeResponseDto } from "../apis/stockTypeApi";
-import { BaseUnit, baseUnitApi } from "../apis/baseUnitApi";
+import { useInventories } from "../provider/InventoryProvider";
+import { useProducts } from "../provider/ProductProvider";
 
 
 // Inventory Form Data Interface (Stage 2)
@@ -16,9 +16,9 @@ interface InventoryFormData {
     maxStockLevel: number;
     warehouseId: string;
     supplierId?: string;
-    expirationDate?: string;
-    lastCountedAt?: string;
-    unitPrice?: number; // Optional unit price
+    unitPrice?: number; // Birim fiyat alanı eklendi
+    lastCountedAt?: string; // ISO string format
+    expirationDate?: string; // ISO string format
 }
 
 interface StockAddModalProps {
@@ -26,17 +26,17 @@ interface StockAddModalProps {
     onClose: () => void;
     onAdd: (newStock: StockItemAddDto) => void;
     initialBarcode?: string;
-    suppliers?: Supplier[];
+    suppliers: Supplier[];
     stockTypes?: StockTypeResponseDto[];
     warehouses?: Warehouse[];
     categories?: Array<{ id: string; name: string; }>;
-    units?: BaseUnit[];
+    units?: Array<{ id: string; name: string; symbol?: string; description?: string; }>;
 }
 
-const StockAddModal: React.FC<StockAddModalProps> = ({ 
-    open, 
-    onClose, 
-    onAdd, 
+const StockAddModal: React.FC<StockAddModalProps> = ({
+    open,
+    onClose,
+    onAdd,
     initialBarcode = "",
     suppliers = [],
     stockTypes = [],
@@ -44,18 +44,14 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
     categories = [],
     units = []
 }) => {
-    // Notification hook
-    const { showNotification } = useNotification();
-    
-    // Local units state (if not provided via props)
-    const [localUnits, setLocalUnits] = useState<BaseUnit[]>([]);
-    const [loadingUnits, setLoadingUnits] = useState(false);
-    const hasFetchedUnits = useRef(false);
-    
+    // InventoryProvider hook
+    const { createInventory } = useInventories();
+    const {  createProduct } = useProducts();
+
     // Stage Management
     const [currentStage, setCurrentStage] = useState<1 | 2>(1);
     const [createdProductId, setCreatedProductId] = useState<string | null>(null);
-    
+
     // Product Form Data (Stage 1)
     const [productData, setProductData] = useState<CreateProductDto>({
         name: "",
@@ -76,9 +72,9 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
         maxStockLevel: 0,
         warehouseId: "",
         supplierId: "",
-        expirationDate: "",
+        unitPrice: 0,
         lastCountedAt: "",
-        unitPrice: 0
+        expirationDate: ""
     });
 
     const [render, setRender] = useState(open);
@@ -106,40 +102,14 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                 currentQuantity: 0,
                 minStockLevel: 0,
                 maxStockLevel: 0,
-                expirationDate: "",
+                unitPrice: 0,
                 lastCountedAt: "",
-                unitPrice: 0
+                expirationDate: ""
             });
-        } else {
-            // Modal kapandığında reset
-            hasFetchedUnits.current = false;
         }
     }, [open, initialBarcode]);
 
-    // Fetch units if not provided via props
     useEffect(() => {
-        const fetchUnits = async () => {
-            // Sadece modal açık ve units yok/boş ise ve daha önce fetch edilmemiş ise
-            if (open && (!units || units.length === 0) && !hasFetchedUnits.current && !loadingUnits) {
-                try {
-                    setLoadingUnits(true);
-                    hasFetchedUnits.current = true;
-                    const fetchedUnits = await baseUnitApi.getAllBaseUnits();
-                    setLocalUnits(fetchedUnits.filter(unit => unit.isActive)); // Sadece aktif olanları
-                } catch (error) {
-                    console.error('Error fetching units:', error);
-                    showNotification('error', 'Birimler yüklenirken hata oluştu');
-                    hasFetchedUnits.current = false; // Hata durumunda tekrar denemeye izin ver
-                } finally {
-                    setLoadingUnits(false);
-                }
-            }
-        };
-
-        fetchUnits();
-    }, [open, units, loadingUnits]);
-
-    useEffect(() => { 
         if (open) {
             setRender(true);
             setTimeout(() => setIsAnimating(true), 10);
@@ -148,17 +118,14 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
         }
     }, [open]);
 
-    useEffect(() => { 
-        if (!open && render) { 
-            const t = setTimeout(() => setRender(false), 200); 
-            return () => clearTimeout(t); 
-        } 
+    useEffect(() => {
+        if (!open && render) {
+            const t = setTimeout(() => setRender(false), 200);
+            return () => clearTimeout(t);
+        }
     }, [open, render]);
-    
-    if (!render) return null;
 
-    // Use units from props or local state
-    const availableUnits = units && units.length > 0 ? units : localUnits;
+    if (!render) return null;
 
     const handleClose = () => {
         setIsAnimating(false);
@@ -181,9 +148,9 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                 currentQuantity: 0,
                 minStockLevel: 0,
                 maxStockLevel: 0,
-                expirationDate: "",
+                unitPrice: 0,
                 lastCountedAt: "",
-                unitPrice: 0
+                expirationDate: ""
             });
             setCurrentStage(1);
             setCreatedProductId(null);
@@ -194,19 +161,19 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
     const handleStage1Validation = () => {
         // Validate required fields for Stage 1
         if (!productData.name.trim()) {
-            showNotification('error', 'Ürün adı zorunludur!');
+            console.log('error', 'Ürün adı zorunludur!');
             return false;
         }
         if (!productData.categoryId) {
-            showNotification('error', 'Kategori seçimi zorunludur!');
+            console.log('error', 'Kategori seçimi zorunludur!');
             return false;
         }
         if (!productData.stockTypeId) {
-            showNotification('error', 'Stok tipi seçimi zorunludur!');
+            console.log('error', 'Stok tipi seçimi zorunludur!');
             return false;
         }
         if (!productData.baseUnitId) {
-            showNotification('error', 'Birim seçimi zorunludur!');
+            console.log('error', 'Birim seçimi zorunludur!');
             return false;
         }
         return true;
@@ -214,93 +181,45 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
 
     const handleNextStage = async () => {
         if (handleStage1Validation()) {
-            showNotification('success', 'Ürün bilgileri doğrulandı!');
-            
+            console.log('success', 'Ürün bilgileri doğrulandı!');
+
             // TODO: Here we will call the backend to create the product
             console.log('Product data to be sent to backend:', productData);
-            
-            // Simulate backend call
+
             try {
-                const productResponse = await productApi.createProduct(productData);
-                console.log('Full product response:', productResponse);
-                
-                // Handle different response structures
-                let productId: string;
-                if (productResponse?.data?.id) {
-                    // Standard API response structure
-                    productId = productResponse.data.id;
-                } else if ((productResponse as any)?.id) {
-                    // Direct product response
-                    productId = (productResponse as any).id;
-                } else {
-                    console.error('Unexpected response structure:', productResponse);
-                    throw new Error('Ürün ID\'si alınamadı');
-                }
-                
-                setCreatedProductId(productId);
+                const productResponse = await createProduct(productData);
+                setCreatedProductId(productResponse.id);
                 setCurrentStage(2);
-                showNotification('success', 'Ürün başarıyla oluşturuldu! Stok bilgilerini giriniz.');
+                console.log('success', 'Ürün başarıyla oluşturuldu! Stok bilgilerini giriniz.');
             } catch (error) {
                 console.error('Error creating product:', error);
-                showNotification('error', 'Ürün oluşturulurken hata oluştu!');
+                console.log('error', 'Ürün oluşturulurken hata oluştu!');
             }
         }
     };
 
     const handleStage2Submit = async () => {
         if (!createdProductId) {
-            showNotification('error', 'Ürün bilgisi bulunamadı! Lütfen tekrar deneyin.');
+            console.log('error', 'Ürün bilgisi bulunamadı! Lütfen tekrar deneyin.');
             return;
         }
 
         // Validate Stage 2 fields
         if (!inventoryData.warehouseId) {
-            showNotification('error', 'Depo seçimi zorunludur!');
+            console.log('error', 'Depo seçimi zorunludur!');
             return;
         }
         if (inventoryData.currentQuantity < 0) {
-            showNotification('error', 'Miktar 0 veya daha büyük olmalıdır!');
+            console.log('error', 'Miktar 0 veya daha büyük olmalıdır!');
             return;
         }
         if (inventoryData.minStockLevel < 0) {
-            showNotification('error', 'Minimum stok seviyesi 0 veya daha büyük olmalıdır!');
+            console.log('error', 'Minimum stok seviyesi 0 veya daha büyük olmalıdır!');
             return;
         }
         if (inventoryData.maxStockLevel < inventoryData.minStockLevel) {
-            showNotification('error', 'Maksimum stok seviyesi minimum stok seviyesinden küçük olamaz!');
+            console.log('error', 'Maksimum stok seviyesi minimum stok seviyesinden küçük olamaz!');
             return;
-        }
-        if (inventoryData.unitPrice !== undefined && inventoryData.unitPrice !== null) {
-            // unitPrice varsa number olduğundan emin ol ve negatif kontrolü yap
-            const unitPriceNumber = Number(inventoryData.unitPrice);
-            if (isNaN(unitPriceNumber) || unitPriceNumber < 0) {
-                showNotification('error', 'Birim fiyat geçerli bir sayı olmalı ve 0 veya daha büyük olmalıdır!');
-                return;
-            }
-        }
-
-        // Date validations
-        const now = new Date();
-    
-        if (inventoryData.expirationDate) {
-            const expirationDate = new Date(inventoryData.expirationDate);
-            // Son kullanma tarihi için sadece tarih karşılaştırması (saat önemli değil)
-            const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const expirationDateOnly = new Date(expirationDate.getFullYear(), expirationDate.getMonth(), expirationDate.getDate());
-            
-            if (expirationDateOnly < todayDate) {
-                showNotification('error', 'Son kullanma tarihi bugünden önce olamaz!');
-                return;
-            }
-        }
-
-        if (inventoryData.lastCountedAt) {
-            const lastCountedDateTime = new Date(inventoryData.lastCountedAt);
-            // Son sayım tarihi ve saati şu andan ileri olamaz
-            if (lastCountedDateTime > now) {
-                showNotification('error', 'Son sayım tarihi ve saati gelecekte olamaz!');
-                return;
-            }
         }
 
         try {
@@ -309,81 +228,73 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                 productId: createdProductId,
                 warehouseId: inventoryData.warehouseId,
                 supplierId: inventoryData.supplierId || undefined,
-                currentQuantity: Number(inventoryData.currentQuantity),
-                minStockLevel: Number(inventoryData.minStockLevel),
-                maxStockLevel: Number(inventoryData.maxStockLevel),
-                unitPrice: inventoryData.unitPrice ? Number(inventoryData.unitPrice) : undefined, // Explicit number conversion
+                currentQuantity: inventoryData.currentQuantity,
+                minStockLevel: inventoryData.minStockLevel,
+                maxStockLevel: inventoryData.maxStockLevel,
+                unitPrice: inventoryData.unitPrice || undefined,
                 lastCountedAt: inventoryData.lastCountedAt || undefined,
                 expirationDate: inventoryData.expirationDate || undefined
             };
 
             console.log('Inventory data to be sent to backend:', inventoryPayload);
-            const inventoryResponse = await inventoryApi.createInventory(inventoryPayload);
-            console.log('Full inventory response:', inventoryResponse);
-            
-            // Handle different response structures - flexible parsing like Product API
-            let inventoryId: string;
-            let inventoryResponseData: any;
-            if (inventoryResponse?.data?.id) {
-                // Standard API response structure
-                inventoryId = inventoryResponse.data.id;
-                inventoryResponseData = inventoryResponse.data;
-            } else if ((inventoryResponse as any)?.id) {
-                // Direct inventory response
-                inventoryId = (inventoryResponse as any).id;
-                inventoryResponseData = inventoryResponse as any;
-            } else {
-                console.error('Unexpected inventory response structure:', inventoryResponse);
-                throw new Error('Inventory ID\'si alınamadı');
-            }
-            
-            // Create final stock item for local state management (if needed)
+            const inventoryResponse = await createInventory(inventoryPayload);
+
+            // Get string values for display
+            const selectedStockType = stockTypes.find(st => st.id === productData.stockTypeId);
+            const selectedUnit = units.find(unit => unit.id === productData.baseUnitId);
+            const selectedWarehouse = warehouses.find(wh => wh.id === inventoryData.warehouseId);
+            const selectedSupplier = suppliers.find(sup => sup.id === inventoryData.supplierId);
+
             const finalStockItem: StockItemAddDto = {
-                id: inventoryId,
+                id: inventoryResponse.id,
+                barcode: productData.barcode,
                 name: productData.name,
-                stockTypeId: productData.stockTypeId,
+                stockType: selectedStockType?.name || '',
+                unitType: selectedUnit?.name || '',
                 quantity: inventoryData.currentQuantity,
-                unitId: productData.baseUnitId,
-                unitPrice: inventoryData.unitPrice || 0,
-                totalPrice: (inventoryData.unitPrice || 0) * inventoryData.currentQuantity,
                 minQuantity: inventoryData.minStockLevel,
                 maxQuantity: inventoryData.maxStockLevel,
+                unitPrice: inventoryData.unitPrice || 0,
+                totalPrice: inventoryData.currentQuantity * (inventoryData.unitPrice || 0),
                 status: productData.status.toLowerCase() as "active" | "inactive",
-                lastUpdated: inventoryResponseData.updatedAt || inventoryResponseData.createdAt || new Date().toISOString(),
-                barcode: productData.barcode,
+                lastUpdated: inventoryResponse.lastUpdated || new Date().toISOString(),
+                supplier: selectedSupplier?.name,
+                warehouse: selectedWarehouse?.name,
                 description: productData.description,
+                notes: productData.note,
+                lotNumber: inventoryResponse.lotNumber,
+
+                // IDs for backend relations
+                productId: createdProductId,
                 warehouseId: inventoryData.warehouseId,
                 supplierId: inventoryData.supplierId,
-                notes: productData.note,
-                lotNumber: inventoryResponseData.lotNumber || undefined
+                categoryId: productData.categoryId,
+                stockTypeId: productData.stockTypeId,
+                baseUnitId: productData.baseUnitId
             };
 
-            showNotification('success', 'Stok başarıyla eklendi!');
-            console.log('Final stock item:', finalStockItem);
-            console.log('Inventory response:', inventoryResponse);
-            
-            // Call parent callback and close modal
+            console.log('success', 'Stok başarıyla eklendi!');
             onAdd(finalStockItem);
             onClose();
         } catch (error) {
             console.error('Error creating inventory:', error);
-            showNotification('error', 'Stok oluşturulurken hata oluştu!');
+            console.log('error', 'Stok oluşturulurken hata oluştu!');
         }
     };
 
     return (
-        <div 
+        <div
             className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-200 ease-out ${isAnimating
                 ? 'bg-opacity-50 bg-gray-700/20 backdrop-blur-sm'
                 : 'bg-opacity-0 backdrop-blur-none'
-            }`}
+                }`}
             onClick={handleClose}
         >
-            <div 
+            <div
                 className={`bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transition-all duration-200 ease-out transform ${isAnimating
                     ? 'scale-100 opacity-100 translate-y-0'
                     : 'scale-95 opacity-0 translate-y-4'
-                }`}
+                    }`}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="bg-gradient-to-r sticky top-0 from-orange-500 to-red-600 text-white p-6 rounded-t-2xl">
@@ -406,50 +317,45 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                             <X size={24} />
                         </button>
                     </div>
-                    
+
                     {/* Progress Indicator */}
                     <div className="mt-6">
                         <div className="flex items-center justify-center">
                             {/* Stage 1 */}
                             <div className="flex items-center">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${
-                                    currentStage >= 1 
-                                        ? 'bg-white text-orange-600' 
-                                        : 'bg-white/20 text-white/60'
-                                }`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${currentStage >= 1
+                                    ? 'bg-white text-orange-600'
+                                    : 'bg-white/20 text-white/60'
+                                    }`}>
                                     1
                                 </div>
-                                <span className={`ml-3 font-medium transition-all duration-200 ${
-                                    currentStage === 1 ? 'text-white' : 'text-white/70'
-                                }`}>
+                                <span className={`ml-3 font-medium transition-all duration-200 ${currentStage === 1 ? 'text-white' : 'text-white/70'
+                                    }`}>
                                     Ürün Bilgileri
                                 </span>
                             </div>
-                            
+
                             {/* Progress Line */}
-                            <div className={`mx-6 h-0.5 w-16 transition-all duration-200 ${
-                                currentStage >= 2 ? 'bg-white' : 'bg-white/30'
-                            }`}></div>
-                            
+                            <div className={`mx-6 h-0.5 w-16 transition-all duration-200 ${currentStage >= 2 ? 'bg-white' : 'bg-white/30'
+                                }`}></div>
+
                             {/* Stage 2 */}
                             <div className="flex items-center">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${
-                                    currentStage >= 2 
-                                        ? 'bg-white text-orange-600' 
-                                        : 'bg-white/20 text-white/60'
-                                }`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 ${currentStage >= 2
+                                    ? 'bg-white text-orange-600'
+                                    : 'bg-white/20 text-white/60'
+                                    }`}>
                                     2
                                 </div>
-                                <span className={`ml-3 font-medium transition-all duration-200 ${
-                                    currentStage === 2 ? 'text-white' : 'text-white/70'
-                                }`}>
+                                <span className={`ml-3 font-medium transition-all duration-200 ${currentStage === 2 ? 'text-white' : 'text-white/70'
+                                    }`}>
                                     Stok Bilgileri
                                 </span>
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <div className="p-6">
                     {currentStage === 1 && (
                         <>
@@ -457,7 +363,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                             <h3 className="text-lg font-semibold text-gray-800 mb-6 border-b border-gray-200 pb-3">
                                 Ürün Bilgileri
                             </h3>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {/* Barkod */}
                                 <div className="space-y-2">
@@ -538,14 +444,11 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                                         value={productData.baseUnitId}
                                         onChange={(e) => setProductData(prev => ({ ...prev, baseUnitId: e.target.value }))}
                                         className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 hover:border-orange-300"
-                                        disabled={loadingUnits}
                                     >
-                                        <option value="">
-                                            {loadingUnits ? 'Birimler yükleniyor...' : 'Birim Seçiniz'}
-                                        </option>
-                                        {availableUnits.map((unit) => (
+                                        <option value="">Birim Seçiniz</option>
+                                        {units.map((unit) => (
                                             <option key={unit.id} value={unit.id}>
-                                                {unit.name} ({unit.symbol || unit.shortName}) {unit.desc && `- ${unit.desc}`}
+                                                {unit.name} ({unit.symbol}) - {unit.description}
                                             </option>
                                         ))}
                                     </select>
@@ -743,8 +646,8 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                                         type="number"
                                         min="0"
                                         step="0.01"
-                                        value={inventoryData.unitPrice || 0}
-                                        onChange={(e) => setInventoryData(prev => ({ ...prev, unitPrice: Number(e.target.value) }))}
+                                        value={inventoryData.unitPrice || ""}
+                                        onChange={(e) => setInventoryData(prev => ({ ...prev, unitPrice: e.target.value ? Number(e.target.value) : undefined }))}
                                         className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 hover:border-orange-300"
                                         placeholder="0.00"
                                     />
@@ -753,44 +656,14 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                                 {/* Son Sayım Tarihi */}
                                 <div className="space-y-2">
                                     <label className="block text-sm font-semibold text-gray-700">
-                                        Son Sayım Tarihi ve Saati
+                                        Son Sayım Tarihi
                                     </label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="datetime-local"
-                                            value={inventoryData.lastCountedAt || ""}
-                                            onChange={(e) => setInventoryData(prev => ({ ...prev, lastCountedAt: e.target.value || undefined }))}
-                                            className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 hover:border-orange-300"
-                                            placeholder="YYYY-MM-DD HH:MM"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const now = new Date();
-                                                // ISO string'i datetime-local format'ına çevir (timezone offset'siz)
-                                                const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-                                                setInventoryData(prev => ({ ...prev, lastCountedAt: localDateTime }));
-                                            }}
-                                            className="px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-200 font-medium text-sm whitespace-nowrap"
-                                        >
-                                            Şimdi
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-gray-500">
-                                        Son stok sayımının yapıldığı tarih ve saat
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Lot Number Bilgi Mesajı */}
-                            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                                <div className="flex items-center gap-2 text-blue-700">
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                    </svg>
-                                    <span className="text-sm font-medium">
-                                        <strong>Lot Numarası:</strong> Sistem tarafından otomatik olarak oluşturulacaktır (Format: LOT-YYYY-MMDD-XXXX)
-                                    </span>
+                                    <input
+                                        type="datetime-local"
+                                        value={inventoryData.lastCountedAt || ""}
+                                        onChange={(e) => setInventoryData(prev => ({ ...prev, lastCountedAt: e.target.value || undefined }))}
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 hover:border-orange-300"
+                                    />
                                 </div>
                             </div>
                         </>
@@ -817,7 +690,7 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
                                 </button>
                             </>
                         )}
-                        
+
                         {currentStage === 2 && (
                             <>
                                 <button
@@ -846,3 +719,5 @@ const StockAddModal: React.FC<StockAddModalProps> = ({
 };
 
 export default StockAddModal;
+
+

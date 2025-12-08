@@ -118,7 +118,7 @@ export default function StockChangeModal({ open, onClose, item, type, onSubmit }
                                 <span className="text-sm text-gray-600">Mevcut Stok</span>
                             </div>
                             <div className="text-lg font-bold text-gray-800">
-                                {item.quantity} {item.unit}
+                                {item.quantity} {item.unitType}
                             </div>
                         </div>
                         
@@ -173,7 +173,7 @@ export default function StockChangeModal({ open, onClose, item, type, onSubmit }
                             {/* Amount Input */}
                             <div className="space-y-2">
                                 <label className="block text-sm font-semibold text-gray-700">
-                                    {isAdd ? "Eklenecek Miktar" : "Çıkarılacak Miktar"} ({item.unit})
+                                    {isAdd ? "Eklenecek Miktar" : "Çıkarılacak Miktar"} ({item.unitType})
                                 </label>
                                 <div className="relative">
                                     <input
@@ -272,7 +272,7 @@ export default function StockChangeModal({ open, onClose, item, type, onSubmit }
                                             {isAdd 
                                                 ? item.quantity + amount 
                                                 : Math.max(0, item.quantity - amount)
-                                            } {item.unit}
+                                            } {item.unitType}
                                         </div>
                                     </div>
                                     {isAdd && (

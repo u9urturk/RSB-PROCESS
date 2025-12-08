@@ -1,19 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Truck, Plus, Phone, Mail, Star, Edit, Trash2, Package } from 'lucide-react';
 import SupplierAddModal from './modals/SupplierAddModal';
 import { useConfirm } from '@/context/provider/ConfirmProvider';
 import { useNotification } from '@/context/provider/NotificationProvider';
+import { useSuppliers } from './provider/SupplierProvider';
 import { Supplier } from '@/types/stock';
-import { supplierApi, SupplierStatus } from './apis/supplierApi';
-import { ErrorHandlerService } from '@/utils/ErrorHandlerService';
+import { SupplierStatus } from './apis/supplierApi';
 
 
 
 const SupplierManagement: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    
+    // Provider'dan gelen fonksiyonlar ve state
+    const {
+        suppliers,
+        stats,
+        createSupplier,
+        updateSupplier,
+        deleteSupplier,
+        validateSupplier,
+    } = useSuppliers();
+    
     const confirm = useConfirm();
     const { showNotification } = useNotification();
 
@@ -27,61 +36,46 @@ const SupplierManagement: React.FC = () => {
         }
     };
 
-    // Load suppliers from API
-    useEffect(() => {
-        if (isLoaded) return;
-
-        supplierApi.getAllSuppliers().then(response => {
-            console.log('API Tedarikçi Verisi:', response);
-            const formattedData: Supplier[] = response.data.map((item: any) => ({
-                id: item.id,
-                name: item.name,
-                category: item.category,
-                phone: item.phone,
-                email: item.email,
-                rating: item.rating,
-                status: item.status,
-                address: item.address,
-                contactPerson: item.contactPerson,
-                taxNumber: item.taxNumber,
-                paymentTerms: item.paymentTerms,
-                deliveryTime: item.deliveryTime,
-                minimumOrder: parseFloat(item.minimumOrder) || 0, // Backend'den string geliyor
-                products: item.products,
-                contractStartDate: item.contractStartDate,
-                contractEndDate: item.contractEndDate,
-                totalOrders: item.totalOrders,
-                monthlyDeliveries: item.monthlyDeliveries,
-                contactInfo: item.contactInfo,
-                leadTimeDays: item.leadTimeDays,
-                isActive: item.isActive,
-                createdAt: item.createdAt,
-                updatedAt: item.updatedAt,
-                stockItems: item.stockItems,
-                inventories: item.inventories
-            }));
-
-            setSuppliers(formattedData);
-            setIsLoaded(true);
-        }).catch(error => {
-            console.error('Tedarikçiler yüklenirken hata:', error);
-            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-            showNotification('error', `Tedarikçiler yüklenirken hata: ${errorMessage}`);
-        });
-    }, [isLoaded, showNotification]);
-
     // Handler functions
     const handleAddSupplier = () => {
         setEditingSupplier(null);
         setIsAddModalOpen(true);
     };
 
-    const handleEditSupplier = (supplier: Supplier) => {
-        setEditingSupplier(supplier);
+    const handleEditSupplier = (supplier: any) => {
+        // Supplier formatına dönüştür
+        const editableSupplier: Supplier = {
+            id: supplier.id,
+            name: supplier.name,
+            category: supplier.category,
+            phone: supplier.phone,
+            email: supplier.email,
+            rating: supplier.rating,
+            status: supplier.status,
+            address: supplier.address,
+            contactPerson: supplier.contactPerson,
+            taxNumber: supplier.taxNumber,
+            paymentTerms: supplier.paymentTerms,
+            deliveryTime: supplier.deliveryTime,
+            minimumOrder: typeof supplier.minimumOrder === 'string' ? parseFloat(supplier.minimumOrder) : supplier.minimumOrder,
+            products: supplier.products || [],
+            contractStartDate: supplier.contractStartDate,
+            contractEndDate: supplier.contractEndDate,
+            totalOrders: supplier.totalOrders || 0,
+            monthlyDeliveries: supplier.monthlyDeliveries || 0,
+            contactInfo: supplier.contactInfo,
+            leadTimeDays: supplier.leadTimeDays || 0,
+            isActive: supplier.isActive,
+            createdAt: supplier.createdAt,
+            updatedAt: supplier.updatedAt,
+            stockItems: supplier.stockItems || [],
+            inventories: supplier.inventories || []
+        };
+        setEditingSupplier(editableSupplier);
         setIsAddModalOpen(true);
     };
 
-    const handleDeleteSupplier = async (supplier: Supplier) => {
+    const handleDeleteSupplier = async (supplier: any) => {
         const result = await confirm({
             title: 'Tedarikçi Sil',
             message: `"${supplier.name}" tedarikçisini silmek istediğinizden emin misiniz?`,
@@ -95,8 +89,8 @@ const SupplierManagement: React.FC = () => {
                 { label: 'Kategori', value: supplier.category },
                 { label: 'Telefon', value: supplier.phone },
                 { label: 'E-posta', value: supplier.email },
-                { label: 'Toplam Sipariş', value: supplier.totalOrders.toString() },
-                { label: 'Aylık Teslimat', value: supplier.monthlyDeliveries.toString() },
+                { label: 'Toplam Sipariş', value: (supplier.totalOrders || 0).toString() },
+                { label: 'Aylık Teslimat', value: (supplier.monthlyDeliveries || 0).toString() },
                 { label: 'Değerlendirme', value: `${supplier.rating}/5` }
             ],
             warnings: [
@@ -109,22 +103,49 @@ const SupplierManagement: React.FC = () => {
 
         if (result) {
             try {
-                await supplierApi.deleteSupplier(supplier.id);
-                setSuppliers(suppliers.filter(s => s.id !== supplier.id));
-                showNotification('success', `"${supplier.name}" tedarikçisi başarıyla silindi`);
+                await deleteSupplier(supplier.id);
             } catch (error) {
                 console.error('Tedarikçi silinirken hata:', error);
-                const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-                showNotification('error', `Tedarikçi silinirken hata: ${errorMessage}`);
             }
         }
     };
 
-    const handleSaveSupplier = async (supplierData: Omit<Supplier, 'id' | 'totalOrders' | 'monthlyDeliveries'>) => {
+    const handleSaveSupplier = async (supplierData: Omit<Supplier, 'id' | 'totalOrders' | 'monthlyDeliveries'>): Promise<void> => {
+        // Provider'dan gelen validasyon
+        const validationErrors = validateSupplier({
+            name: supplierData.name,
+            category: supplierData.category,
+            phone: supplierData.phone,
+            email: supplierData.email,
+            rating: supplierData.rating,
+            status: supplierData.status as SupplierStatus,
+            address: supplierData.address,
+            contactPerson: supplierData.contactPerson,
+            taxNumber: supplierData.taxNumber,
+            paymentTerms: supplierData.paymentTerms,
+            deliveryTime: supplierData.deliveryTime,
+            minimumOrder: supplierData.minimumOrder,
+            products: supplierData.products,
+            contractStartDate: supplierData.contractStartDate,
+            contractEndDate: supplierData.contractEndDate,
+            contactInfo: supplierData.contactInfo,
+            leadTimeDays: supplierData.leadTimeDays,
+            isActive: supplierData.isActive
+        });
+
+        if (validationErrors.length > 0) {
+            // Hataları notification ile göster
+            validationErrors.forEach(error => {
+                showNotification('error', error);
+            });
+            // Promise reject ederek modal'ın kapanmasını engelle
+            throw new Error('Validasyon hataları var');
+        }
+
         try {
             if (editingSupplier) {
                 // Tedarikçi güncelleme
-                const response = await supplierApi.updateSupplier(editingSupplier.id, {
+                await updateSupplier(editingSupplier.id, {
                     name: supplierData.name,
                     category: supplierData.category,
                     phone: supplierData.phone,
@@ -144,43 +165,9 @@ const SupplierManagement: React.FC = () => {
                     leadTimeDays: supplierData.leadTimeDays,
                     isActive: supplierData.isActive
                 });
-
-                console.log('Update response:', response);
-                const updated = response.data;
-
-                const updatedSupplier: Supplier = {
-                    id: updated.id || editingSupplier.id,
-                    name: updated.name || supplierData.name,
-                    category: updated.category || supplierData.category,
-                    phone: updated.phone || supplierData.phone,
-                    email: updated.email || supplierData.email,
-                    rating: updated.rating || supplierData.rating,
-                    status: updated.status || (supplierData.status as SupplierStatus),
-                    address: updated.address || supplierData.address,
-                    contactPerson: updated.contactPerson || supplierData.contactPerson,
-                    taxNumber: updated.taxNumber || supplierData.taxNumber,
-                    paymentTerms: updated.paymentTerms || supplierData.paymentTerms,
-                    deliveryTime: updated.deliveryTime || supplierData.deliveryTime,
-                    minimumOrder: updated.minimumOrder ? parseFloat(updated.minimumOrder) : (supplierData.minimumOrder || 0),
-                    products: updated.products || supplierData.products || [],
-                    contractStartDate: updated.contractStartDate || supplierData.contractStartDate,
-                    contractEndDate: updated.contractEndDate || supplierData.contractEndDate,
-                    totalOrders: updated.totalOrders || editingSupplier.totalOrders || 0,
-                    monthlyDeliveries: updated.monthlyDeliveries || editingSupplier.monthlyDeliveries || 0,
-                    contactInfo: updated.contactInfo || supplierData.contactInfo,
-                    leadTimeDays: updated.leadTimeDays || supplierData.leadTimeDays || 0,
-                    isActive: updated.isActive !== undefined ? updated.isActive : (supplierData.isActive !== undefined ? supplierData.isActive : true),
-                    createdAt: updated.createdAt || editingSupplier.createdAt || new Date().toISOString(),
-                    updatedAt: updated.updatedAt || new Date().toISOString(),
-                    stockItems: updated.stockItems || editingSupplier.stockItems || [],
-                    inventories: updated.inventories || editingSupplier.inventories || []
-                };
-
-                setSuppliers(suppliers.map(s => s.id === editingSupplier.id ? updatedSupplier : s));
-                showNotification('success', `"${updatedSupplier.name}" tedarikçisi başarıyla güncellendi`);
             } else {
                 // Yeni tedarikçi oluşturma
-                const response = await supplierApi.createSupplier({
+                await createSupplier({
                     name: supplierData.name,
                     category: supplierData.category,
                     phone: supplierData.phone,
@@ -200,57 +187,24 @@ const SupplierManagement: React.FC = () => {
                     leadTimeDays: supplierData.leadTimeDays,
                     isActive: supplierData.isActive
                 });
-
-                console.log('Create response:', response);
-                const created = response.data;
-                
-                const newSupplier: Supplier = {
-                    id: created.id || `temp-${Date.now()}`,
-                    name: created.name || supplierData.name,
-                    category: created.category || supplierData.category,
-                    phone: created.phone || supplierData.phone,
-                    email: created.email || supplierData.email,
-                    rating: created.rating || supplierData.rating,
-                    status: created.status || (supplierData.status as SupplierStatus),
-                    address: created.address || supplierData.address,
-                    contactPerson: created.contactPerson || supplierData.contactPerson,
-                    taxNumber: created.taxNumber || supplierData.taxNumber,
-                    paymentTerms: created.paymentTerms || supplierData.paymentTerms,
-                    deliveryTime: created.deliveryTime || supplierData.deliveryTime,
-                    minimumOrder: created.minimumOrder ? parseFloat(created.minimumOrder) : (supplierData.minimumOrder || 0),
-                    products: created.products || supplierData.products || [],
-                    contractStartDate: created.contractStartDate || supplierData.contractStartDate,
-                    contractEndDate: created.contractEndDate || supplierData.contractEndDate,
-                    totalOrders: created.totalOrders || 0,
-                    monthlyDeliveries: created.monthlyDeliveries || 0,
-                    contactInfo: created.contactInfo || supplierData.contactInfo,
-                    leadTimeDays: created.leadTimeDays || supplierData.leadTimeDays || 0,
-                    isActive: created.isActive !== undefined ? created.isActive : (supplierData.isActive !== undefined ? supplierData.isActive : true),
-                    createdAt: created.createdAt || new Date().toISOString(),
-                    updatedAt: created.updatedAt || new Date().toISOString(),
-                    stockItems: created.stockItems || [],
-                    inventories: created.inventories || []
-                };
-
-                setSuppliers([...suppliers, newSupplier]);
-                showNotification('success', `"${newSupplier.name}" tedarikçisi başarıyla oluşturuldu`);
             }
+            
+            // Başarılı kaydetme sonrası state'leri temizle
             setEditingSupplier(null);
-            setIsAddModalOpen(false);
+            // Modal kapanması handleSubmit'teki handleClose() tarafından yapılacak
         } catch (error) {
             console.error('Tedarikçi kaydetme hatası:', error);
-            const errorMessage = ErrorHandlerService.extractErrorMessage(error);
-            const operation = editingSupplier ? 'güncellenirken' : 'oluşturulurken';
-            showNotification('error', `Tedarikçi ${operation} hata: ${errorMessage}`);
+            showNotification('error', 'Tedarikçi kaydedilemedi. Lütfen tekrar deneyin.');
+            throw error; // Error'u tekrar fırlat ki modal kapanmasın
         }
     };
 
-    // İstatistik hesaplamaları
-    const activeSuppliers = suppliers.filter(s => s.status === 'ACTIVE').length;
-    const totalMonthlyDeliveries = suppliers.reduce((sum, s) => sum + s.monthlyDeliveries, 0);
-    const averageRating = suppliers.length > 0 
+    // İstatistik hesaplamaları - provider'dan gelen veriler
+    const activeSuppliers = stats.activeSuppliers || suppliers.filter(s => s.status === 'ACTIVE').length;
+    const totalMonthlyDeliveries = suppliers.reduce((sum, s) => sum + (s.monthlyDeliveries || 0), 0);
+    const averageRating = stats.averageRating || (suppliers.length > 0 
         ? (suppliers.reduce((sum, s) => sum + s.rating, 0) / suppliers.length).toFixed(1)
-        : '0.0';
+        : '0.0');
 
     const getStatusColor = (status: string) => {
         switch (status) {

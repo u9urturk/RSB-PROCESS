@@ -1,7 +1,7 @@
 import { memo} from "react";
 import { Package, Search } from "lucide-react";
 import StockRow from "./StockRow";
-import { StockItem } from "../provider";
+import { StockItem } from "@/types/index";
 
 interface StockTableProps {
     items: StockItem[];

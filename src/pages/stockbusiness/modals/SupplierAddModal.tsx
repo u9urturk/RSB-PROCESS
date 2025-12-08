@@ -6,7 +6,7 @@ import { Supplier } from '@/types/stock';
 interface SupplierAddModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (supplier: Omit<Supplier, 'id' | 'totalOrders' | 'monthlyDeliveries'>) => void;
+    onSave: (supplier: Omit<Supplier, 'id' | 'totalOrders' | 'monthlyDeliveries'>) => Promise<void>;
     editingSupplier?: Supplier | null;
 }
 
@@ -32,7 +32,10 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
         minimumOrder: 1000,
         products: [] as string[],
         contractStartDate: '',
-        contractEndDate: ''
+        contractEndDate: '',
+        contactInfo: '',
+        leadTimeDays: 1,
+        isActive: true
     });
 
     const [newProduct, setNewProduct] = useState('');
@@ -94,7 +97,10 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
                     minimumOrder: editingSupplier.minimumOrder,
                     products: [...editingSupplier.products],
                     contractStartDate: formatDateForInput(editingSupplier.contractStartDate),
-                    contractEndDate: formatDateForInput(editingSupplier.contractEndDate)
+                    contractEndDate: formatDateForInput(editingSupplier.contractEndDate),
+                    contactInfo: editingSupplier.contactInfo || '',
+                    leadTimeDays: editingSupplier.leadTimeDays || 1,
+                    isActive: editingSupplier.isActive !== undefined ? editingSupplier.isActive : true
                 });
             } else {
                 // Reset form for new supplier
@@ -113,7 +119,10 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
                     minimumOrder: 1000,
                     products: [],
                     contractStartDate: '',
-                    contractEndDate: ''
+                    contractEndDate: '',
+                    contactInfo: '',
+                    leadTimeDays: 1,
+                    isActive: true
                 });
             }
         } else {
@@ -135,7 +144,7 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         // Validation
@@ -145,8 +154,14 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
             return;
         }
 
-        onSave(formData);
-        handleClose();
+        try {
+            await onSave(formData);
+            // Sadece başarılı olduğunda modal'ı kapat
+            handleClose();
+        } catch (error) {
+            // Hata durumunda modal açık kalır
+            console.error('Form kaydetme hatası:', error);
+        }
     };
 
     const handleInputChange = (field: string, value: any) => {
@@ -319,8 +334,23 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
                         />
                     </div>
 
+                    {/* İletişim Bilgileri */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <Phone size={16} className="inline mr-2" />
+                            Ek İletişim Bilgileri
+                        </label>
+                        <textarea
+                            value={formData.contactInfo}
+                            onChange={(e) => handleInputChange('contactInfo', e.target.value)}
+                            rows={2}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="Ek iletişim bilgileri, notlar veya özel talimatlar"
+                        />
+                    </div>
+
                     {/* Ticari Bilgiler */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 <CreditCard size={16} className="inline mr-2" />
@@ -361,6 +391,20 @@ const SupplierAddModal: React.FC<SupplierAddModalProps> = ({
                                 step="100"
                                 value={formData.minimumOrder}
                                 onChange={(e) => handleInputChange('minimumOrder', parseInt(e.target.value))}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Tedarik Süresi (Gün)
+                            </label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="60"
+                                value={formData.leadTimeDays}
+                                onChange={(e) => handleInputChange('leadTimeDays', parseInt(e.target.value))}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             />
                         </div>
