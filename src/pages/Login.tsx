@@ -321,7 +321,7 @@ const Login: React.FC = () => {
             loginState.updateStep('qr');
             showNotification('success', data.message);
         } catch (error: any) {
-            console.log(error)
+            // console.log(error)
             if (error.message.includes('already exists') || error.message.includes('User exists')) {
                 loginState.updateStep('verification');
                 showNotification('info', 'Merhaba ! . Lütfen OTP kodunu girin.');

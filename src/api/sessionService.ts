@@ -32,7 +32,7 @@ class SessionApiService {
     try {
       // Backend'den direkt array geliyor, wrapped response değil
       const backendSessions = await apiGet<BackendSessionData[]>('/profile/me/sessions');
-      console.log('Fetched sessions:', backendSessions);
+      // console.log('Fetched sessions:', backendSessions);
       
       // Backend verilerini frontend formatına çevir
       const transformedSessions = (backendSessions || []).map(session => 

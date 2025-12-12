@@ -52,9 +52,9 @@ export const categoryApi = {
    */
   getAllCategories: async (): Promise<Category[]> => {
     try {
-      console.log('Fetching all categories...');
+      // console.log('Fetching all categories...');
       const response = await apiGet<Category[]>('/categories');
-      console.log('Categories fetched successfully:', response);
+      // console.log('Categories fetched successfully:', response);
       return response;
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -69,9 +69,9 @@ export const categoryApi = {
    */
   getCategoryById: async (id: string): Promise<Category> => {
     try {
-      console.log('Fetching category by id:', id);
+      // console.log('Fetching category by id:', id);
       const response = await apiGet<Category>(`/categories/${id}`);
-      console.log('Category fetched successfully:', response);
+      // console.log('Category fetched successfully:', response);
       return response;
     } catch (error) {
       console.error('Error fetching category:', error);
@@ -86,9 +86,9 @@ export const categoryApi = {
    */
   createCategory: async (categoryData: CreateCategoryDto): Promise<Category> => {
     try {
-      console.log('Creating category:', categoryData);
+      // console.log('Creating category:', categoryData);
       const response = await apiPost<Category>('/categories', categoryData);
-      console.log('Category created successfully:', response);
+      // console.log('Category created successfully:', response);
       return response;
     } catch (error) {
       console.error('Error creating category:', error);
@@ -103,9 +103,9 @@ export const categoryApi = {
    */
   updateCategory: async (id: string, categoryData: UpdateCategoryDto): Promise<Category> => {
     try {
-      console.log('Updating category:', id, categoryData);
+      // console.log('Updating category:', id, categoryData);
       const response = await apiPut<Category>(`/categories/${id}`, categoryData);
-      console.log('Category updated successfully:', response);
+      // console.log('Category updated successfully:', response);
       return response;
     } catch (error) {
       console.error('Error updating category:', error);
@@ -120,9 +120,9 @@ export const categoryApi = {
    */
   deleteCategory: async (id: string): Promise<void> => {
     try {
-      console.log('Deleting category:', id);
+      // console.log('Deleting category:', id);
       await apiDelete(`/categories/${id}`);
-      console.log('Category deleted successfully');
+      // console.log('Category deleted successfully');
     } catch (error) {
       console.error('Error deleting category:', error);
       ErrorHandlerService.handleError(error, 'CategoryApi.deleteCategory');
@@ -220,9 +220,9 @@ export const categoryApi = {
    */
   getCategoriesWithProductCounts: async (): Promise<CategoryWithProductCount[]> => {
     try {
-      console.log('Fetching categories with product counts...');
-      const response = await apiGet<CategoryWithProductCount[]>('/api/v1/categories/with-product-counts');
-      console.log('Categories with product counts fetched successfully:', response);
+      // console.log('Fetching categories with product counts...');
+      const response = await apiGet<CategoryWithProductCount[]>('/categories?includeCounts=true');
+      // console.log('Categories with product counts fetched successfully:', response);
       return response;
     } catch (error) {
       console.error('Error fetching categories with product counts:', error);

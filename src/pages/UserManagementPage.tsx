@@ -99,7 +99,7 @@ export default function UserManagementPage() {
         const newRoleId = roles.find(role => role.name === newRole)?.id;
         if (!newRoleId) return <InfoBalloon show={true} text="Yeni rol bulunamadı." className="bg-white shadow p-4 rounded animate-fade-in" />;
         setRoleChangeLoading(true);
-        console.log('Role changed:', userId, oldRoleId, newRoleId);
+        // console.log('Role changed:', userId, oldRoleId, newRoleId);
 
         await roleService.updateUserRole(userId, oldRoleId, newRoleId)
         setTimeout(() => {

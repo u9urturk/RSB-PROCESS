@@ -96,9 +96,9 @@ export const SupplierProvider: React.FC<SupplierProviderProps> = ({ children }) 
     try {
       const statsData = await supplierApi.getSupplierStats();
       setStats(statsData);
-      console.log(`Toplam tedarikçi sayısı: ${statsData.totalSuppliers}`);
-      console.log(`Aktif tedarikçiler: ${statsData.activeSuppliers}`);
-      console.log(`Ortalama rating: ${statsData.averageRating}`);
+      // console.log(`Toplam tedarikçi sayısı: ${statsData.totalSuppliers}`);
+      // console.log(`Aktif tedarikçiler: ${statsData.activeSuppliers}`);
+      // console.log(`Ortalama rating: ${statsData.averageRating}`);
     } catch (error) {
       console.error('Error loading supplier stats:', error);
       // Stats yüklenemezse fallback değerler

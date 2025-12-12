@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Plus, Minus, X, TrendingUp, Package, DollarSign, Truck } from "lucide-react";
 import { StockChangeModalProps } from "@/types/index";
 import { Supplier } from "@/types/stock";
-import mockSuppliers from "../mocks/supplierData";
 
 export default function StockChangeModal({ open, onClose, item, type, onSubmit }: StockChangeModalProps) {
     const [amount, setAmount] = useState<number>(0);
@@ -12,7 +11,7 @@ export default function StockChangeModal({ open, onClose, item, type, onSubmit }
     const [notes, setNotes] = useState<string>("");
     const [render, setRender] = useState(open);
     const [isAnimating, setIsAnimating] = useState(false);
-    const [suppliers] = useState<Supplier[]>(mockSuppliers);
+    const [suppliers] = useState<Supplier[]>([]);
 
     useEffect(() => { 
         if (open) {

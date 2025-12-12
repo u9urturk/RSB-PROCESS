@@ -11,7 +11,7 @@ export function useWebSocket() {
 
   // Session revoked handler
   const handleSessionRevoked = useCallback((data: any) => {
-    console.log('Session revoked:', data);
+    // console.log('Session revoked:', data);
     
     // Eğer iptal edilen session mevcut kullanıcının session'ı ise logout yap
     if (data.sessionId === user?.sessionId) {
@@ -24,7 +24,7 @@ export function useWebSocket() {
         });
       } else {
         // Manuel logout durumunda sadece logout işlemini gerçekleştir
-        console.log('Manual logout detected, skipping notification');
+        // console.log('Manual logout detected, skipping notification');
       }
     } else {
       // Başka bir session iptal edildi, sadece bilgi ver
@@ -68,7 +68,7 @@ export function useWebSocket() {
       setConnected(true);
       setError(null);
       // WebSocket bağlantısı sessizce kurulur, notification gereksiz
-      console.log('✅ WebSocket connected successfully');
+      // console.log('✅ WebSocket connected successfully');
     };
 
     const handleDisconnect = () => {

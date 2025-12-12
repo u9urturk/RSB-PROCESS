@@ -1,440 +1,377 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import inventoryApi, { 
-  InventoryResponseDto, 
-  CreateInventoryDto, 
-  UpdateInventoryDto, 
-  InventoryStatsDto
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import inventoryApi, {
+  InventoryResponseDto,
+  SubInventoryResponseDto,
+  CreateInventoryDto,
+  UpdateInventoryDto,
+  CreateSubInventoryDto,
+  UpdateSubInventoryDto,
+  StockAdjustmentDto,
+  InventoryStatsDto,
+  LowStockItemDto,
+  AdjustmentType
 } from '../apis/inventoryApi';
-import { useNotification } from '../../../context/provider/NotificationProvider';
+import { useNotification } from '@/context/provider/NotificationProvider';
 
-interface InventoryContextType {
-  // State
+// Context State Interface
+interface InventoryContextState {
+  // Parent Inventories
   inventories: InventoryResponseDto[];
-  loading: boolean;
-  error: string | null;
-  stats: InventoryStatsDto;
+  selectedInventory: InventoryResponseDto | null;
   
-  // Actions
-  loadInventories: () => Promise<void>;
-  loadStats: () => Promise<void>;
-  createInventory: (data: CreateInventoryDto) => Promise<InventoryResponseDto>;
-  updateInventory: (id: string, data: UpdateInventoryDto) => Promise<InventoryResponseDto>;
+  // Sub-Inventories (Batches)
+  subInventories: SubInventoryResponseDto[];
+  selectedSubInventory: SubInventoryResponseDto | null;
+  
+  // Statistics
+  stats: InventoryStatsDto | null;
+  lowStockItems: LowStockItemDto[];
+  
+  // Loading States
+  loading: boolean;
+  loadingSubInventories: boolean;
+  loadingStats: boolean;
+  
+  // CRUD Operations - Parent Inventory
+  createInventory: (data: CreateInventoryDto) => Promise<void>;
+  updateInventory: (id: string, data: UpdateInventoryDto) => Promise<void>;
   deleteInventory: (id: string) => Promise<void>;
-  getInventoryById: (id: string) => InventoryResponseDto | undefined;
-  searchInventories: (searchTerm: string) => Promise<InventoryResponseDto[]>;
-  getLowStockInventories: () => Promise<InventoryResponseDto[]>;
-  getExpiringInventories: (daysAhead?: number) => Promise<InventoryResponseDto[]>;
-  getInventoriesByWarehouse: (warehouseId: string) => Promise<InventoryResponseDto[]>;
-  getInventoriesBySupplier: (supplierId: string) => Promise<InventoryResponseDto[]>;
-  getInventoriesByProduct: (productId: string) => Promise<InventoryResponseDto[]>;
-  getInventoryByLotNumber: (lotNumber: string) => Promise<InventoryResponseDto>;
-  bulkUpdateInventories: (updates: Array<{ id: string; currentQuantity: number }>) => Promise<InventoryResponseDto[]>;
+  getInventoryById: (id: string) => Promise<void>;
+  getInventoryByProductId: (productId: string) => Promise<void>;
+  setSelectedInventory: (inventory: InventoryResponseDto | null) => void;
+  
+  // CRUD Operations - Sub-Inventory
+  createSubInventory: (data: CreateSubInventoryDto) => Promise<void>;
+  updateSubInventory: (id: string, data: UpdateSubInventoryDto) => Promise<void>;
+  deleteSubInventory: (id: string) => Promise<void>;
+  getSubInventoryById: (id: string) => Promise<void>;
+  getAllSubInventories: (inventoryId?: string) => Promise<void>;
+  setSelectedSubInventory: (subInventory: SubInventoryResponseDto | null) => void;
+  
+  // Stock Operations
+  adjustStock: (data: StockAdjustmentDto) => Promise<void>;
+  
+  // Reports & Stats
+  loadInventoryStats: (id: string) => Promise<void>;
+  loadLowStockItems: (threshold?: number) => Promise<void>;
+  
+  // Utility
   refreshInventories: () => Promise<void>;
+  clearSelection: () => void;
 }
 
-const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
+const InventoryContext = createContext<InventoryContextState | undefined>(undefined);
 
 interface InventoryProviderProps {
   children: ReactNode;
 }
 
 export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }) => {
-  const [inventories, setInventories] = useState<InventoryResponseDto[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<InventoryStatsDto>({
-    totalInventoryItems: 0,
-    lowStockItems: 0,
-    overStockItems: 0,
-    expiringSoonItems: 0,
-    totalValue: 0,
-    averageStockLevel: 0,
-    warehouseDistribution: {},
-    supplierDistribution: {},
-    stockLevelsByCategory: {
-      low: 0,
-      normal: 0,
-      high: 0
-    },
-    recentMovements: {
-      totalMovements: 0,
-      inMovements: 0,
-      outMovements: 0,
-      adjustments: 0
-    }
-  });
   const { showNotification } = useNotification();
+  
+  // State
+  const [inventories, setInventories] = useState<InventoryResponseDto[]>([]);
+  const [selectedInventory, setSelectedInventory] = useState<InventoryResponseDto | null>(null);
+  
+  const [subInventories, setSubInventories] = useState<SubInventoryResponseDto[]>([]);
+  const [selectedSubInventory, setSelectedSubInventory] = useState<SubInventoryResponseDto | null>(null);
+  
+  const [stats, setStats] = useState<InventoryStatsDto | null>(null);
+  const [lowStockItems, setLowStockItems] = useState<LowStockItemDto[]>([]);
+  
+  const [loading, setLoading] = useState(false);
+  const [loadingSubInventories, setLoadingSubInventories] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
 
-  // Inventory'leri yükle
-  const loadInventories = async () => {
+  // Load all inventories on mount
+  useEffect(() => {
+    refreshInventories();
+  }, []);
+
+  // ==================== PARENT INVENTORY OPERATIONS ====================
+
+  const refreshInventories = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      setError(null);
       const response = await inventoryApi.getAllInventories();
-      
-      // Handle API response structure
-      if (response && response.data) {
-        setInventories(response.data);
-      } else {
-        // Fallback for direct array response
-        setInventories(response as any || []);
-      }
+      setInventories(response.data || []);
     } catch (error) {
+      showNotification('error', 'Envanter listesi yüklenemedi');
       console.error('Error loading inventories:', error);
-      setError('Inventory verileri yüklenemedi');
-      showNotification('error', 'Inventory verileri yüklenirken hata oluştu');
-      setInventories([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
-  };
+  }, [showNotification]);
 
-  // İstatistikleri yükle
-  const loadStats = async () => {
+  const createInventory = useCallback(async (data: CreateInventoryDto) => {
     try {
-      const statsData = await inventoryApi.getInventoryStats();
-      setStats(statsData);
-      console.log(`Toplam inventory sayısı: ${statsData.totalInventoryItems}`);
-      console.log(`Düşük stok uyarısı: ${statsData.lowStockItems}`);
-      console.log(`Yaklaşan son kullanma: ${statsData.expiringSoonItems}`);
-    } catch (error) {
-      console.error('Error loading inventory stats:', error);
-      // Stats yüklenemezse fallback değerler
-      setStats(prev => ({
-        ...prev,
-        totalInventoryItems: inventories.length,
-        lowStockItems: inventories.filter(inv => inv.quantity <= inv.minQuantity).length,
-        totalValue: inventories.reduce((sum, inv) => sum + (inv.quantity * inv.unitPrice), 0)
-      }));
-    }
-  };
-
-  // Inventory oluştur
-  const createInventory = async (data: CreateInventoryDto): Promise<InventoryResponseDto> => {
-    try {
-      // Basic validation
-      if (!data.productId) {
-        throw new Error('Ürün ID\'si zorunludur');
-      }
-      if (!data.warehouseId) {
-        throw new Error('Depo ID\'si zorunludur');
-      }
-      if (data.currentQuantity < 0) {
-        throw new Error('Miktar 0 veya daha büyük olmalıdır');
-      }
-      if (data.minStockLevel < 0) {
-        throw new Error('Minimum stok seviyesi 0 veya daha büyük olmalıdır');
-      }
-      if (data.maxStockLevel < data.minStockLevel) {
-        throw new Error('Maksimum stok seviyesi minimum stok seviyesinden küçük olamaz');
+      // Validation
+      if (data.maxStockLevel <= data.minStockLevel) {
+        throw new Error('Maksimum stok seviyesi minimum stok seviyesinden büyük olmalıdır');
       }
 
-      console.log('Creating inventory with data:', data);
       const newInventory = await inventoryApi.createInventory(data);
-      console.log('API response - new inventory:', newInventory);
-
-      // Inventory'yi state'e ekle
-      setInventories(prev => {
-        const updatedInventories = [...prev, newInventory];
-        console.log('Updated inventories state:', updatedInventories);
-        return updatedInventories;
-      });
-
-      showNotification('success', 'Inventory başarıyla oluşturuldu');
       
-      // Stats'ları güncelle
-      await loadStats();
+      setInventories(prev => [...prev, newInventory]);
+      showNotification('success', 'Envanter başarıyla oluşturuldu');
       
-      return newInventory;
-    } catch (error) {
-      console.error('Error creating inventory:', error);
-      const message = error instanceof Error ? error.message : 'Inventory oluşturulamadı';
-      showNotification('error', message);
+      return;
+    } catch (error: any) {
+      showNotification('error', error.message || 'Envanter oluşturulurken hata oluştu');
       throw error;
     }
-  };
+  }, [showNotification]);
 
-  // Inventory güncelle
-  const updateInventory = async (id: string, data: UpdateInventoryDto): Promise<InventoryResponseDto> => {
+  const updateInventory = useCallback(async (id: string, data: UpdateInventoryDto) => {
     try {
-      // Basic validation
-      if (data.currentQuantity !== undefined && data.currentQuantity < 0) {
-        throw new Error('Miktar 0 veya daha büyük olmalıdır');
-      }
-      if (data.minStockLevel !== undefined && data.minStockLevel < 0) {
-        throw new Error('Minimum stok seviyesi 0 veya daha büyük olmalıdır');
-      }
-      if (data.maxStockLevel !== undefined && data.minStockLevel !== undefined && data.maxStockLevel < data.minStockLevel) {
-        throw new Error('Maksimum stok seviyesi minimum stok seviyesinden küçük olamaz');
+      // Validation
+      if (data.maxStockLevel && data.minStockLevel && data.maxStockLevel <= data.minStockLevel) {
+        throw new Error('Maksimum stok seviyesi minimum stok seviyesinden büyük olmalıdır');
       }
 
       const response = await inventoryApi.updateInventory(id, data);
-      let updatedInventory: InventoryResponseDto;
       
-      // Handle different response structures
-      if (response?.data) {
-        updatedInventory = response.data;
-      } else {
-        updatedInventory = response as any;
+      setInventories(prev =>
+        prev.map(inv => (inv.id === id ? response.data : inv))
+      );
+      
+      if (selectedInventory?.id === id) {
+        setSelectedInventory(response.data);
       }
-
-      setInventories(prev => prev.map(inv => inv.id === id ? updatedInventory : inv));
-      showNotification('success', 'Inventory başarıyla güncellendi');
       
-      // // Stats'ları güncelle
-      // await loadStats();
-      
-      return updatedInventory;
-    } catch (error) {
-      console.error('Error updating inventory:', error);
-      const message = error instanceof Error ? error.message : 'Inventory güncellenemedi';
-      showNotification('error', message);
+      showNotification('success', 'Envanter başarıyla güncellendi');
+    } catch (error: any) {
+      showNotification('error', error.message || 'Envanter güncellenirken hata oluştu');
       throw error;
     }
-  };
+  }, [selectedInventory, showNotification]);
 
-  // Inventory sil
-  const deleteInventory = async (id: string): Promise<void> => {
+  const deleteInventory = useCallback(async (id: string) => {
     try {
       await inventoryApi.deleteInventory(id);
+      
       setInventories(prev => prev.filter(inv => inv.id !== id));
-      showNotification('success', 'Inventory başarıyla silindi');
       
-      // Stats'ları güncelle
-      await loadStats();
-    } catch (error) {
-      console.error('Error deleting inventory:', error);
-      showNotification('error', 'Inventory silinemedi');
+      if (selectedInventory?.id === id) {
+        setSelectedInventory(null);
+      }
+      
+      showNotification('success', 'Envanter başarıyla silindi');
+    } catch (error: any) {
+      showNotification('error', error.message || 'Envanter silinirken hata oluştu');
       throw error;
     }
-  };
+  }, [selectedInventory, showNotification]);
 
-  // ID'ye göre inventory bul
-  const getInventoryById = (id: string): InventoryResponseDto | undefined => {
-    return inventories.find(inv => inv.id === id);
-  };
-
-  // Inventory ara
-  const searchInventories = async (searchTerm: string): Promise<InventoryResponseDto[]> => {
+  const getInventoryById = useCallback(async (id: string) => {
     try {
-      if (!searchTerm.trim()) return inventories;
-      
-      const response = await inventoryApi.searchInventories(searchTerm);
-      
-      // Handle API response structure
-      if (response && response.data) {
-        return response.data;
-      } else {
-        return response as any || [];
-      }
+      const response = await inventoryApi.getInventoryById(id);
+      setSelectedInventory(response.data);
+    } catch (error: any) {
+      showNotification('error', 'Envanter bulunamadı');
+      throw error;
+    }
+  }, [showNotification]);
+
+  const getInventoryByProductId = useCallback(async (productId: string) => {
+    try {
+      const response = await inventoryApi.getInventoryByProductId(productId);
+      setSelectedInventory(response.data);
+    } catch (error: any) {
+      showNotification('error', 'Ürün için envanter bulunamadı');
+      throw error;
+    }
+  }, [showNotification]);
+
+  // ==================== SUB-INVENTORY OPERATIONS ====================
+
+  const getAllSubInventories = useCallback(async (inventoryId?: string) => {
+    setLoadingSubInventories(true);
+    try {
+      const response = await inventoryApi.getAllSubInventories(inventoryId);
+      setSubInventories(response.data || []);
     } catch (error) {
-      console.error('Error searching inventories:', error);
-      showNotification('error', 'Arama işlemi başarısız oldu');
+      showNotification('error', 'Alt envanter listesi yüklenemedi');
+      console.error('Error loading sub-inventories:', error);
+    } finally {
+      setLoadingSubInventories(false);
+    }
+  }, [showNotification]);
+
+  const createSubInventory = useCallback(async (data: CreateSubInventoryDto) => {
+    try {
+      // Validation
+      if (data.quantity <= 0) {
+        throw new Error('Miktar 0\'dan büyük olmalıdır');
+      }
+      if (data.unitPrice <= 0) {
+        throw new Error('Birim fiyat 0\'dan büyük olmalıdır');
+      }
+
+      const newSubInventory = await inventoryApi.createSubInventory(data);
       
-      // Fallback to local search
-      const term = searchTerm.toLowerCase();
-      return inventories.filter(inventory =>
-        inventory.name.toLowerCase().includes(term) ||
-        (inventory.barcode && inventory.barcode.toLowerCase().includes(term)) ||
-        (inventory.lotNumber && inventory.lotNumber.toLowerCase().includes(term)) ||
-        (inventory.description && inventory.description.toLowerCase().includes(term))
+      setSubInventories(prev => [...prev, newSubInventory]);
+      
+      // Refresh parent inventory to update totals
+      await refreshInventories();
+      
+      showNotification('success', 'Parti/Lot başarıyla oluşturuldu');
+    } catch (error: any) {
+      showNotification('error', error.message || 'Parti oluşturulurken hata oluştu');
+      throw error;
+    }
+  }, [showNotification, refreshInventories]);
+
+  const updateSubInventory = useCallback(async (id: string, data: UpdateSubInventoryDto) => {
+    try {
+      const response = await inventoryApi.updateSubInventory(id, data);
+      
+      setSubInventories(prev =>
+        prev.map(sub => (sub.id === id ? response.data : sub))
       );
-    }
-  };
-
-  // Düşük stok inventory'lerini getir
-  const getLowStockInventories = async (): Promise<InventoryResponseDto[]> => {
-    try {
-      const response = await inventoryApi.getLowStockInventories();
       
-      // Handle API response structure
-      if (response && response.data) {
-        return response.data;
-      } else {
-        return response as any || [];
+      if (selectedSubInventory?.id === id) {
+        setSelectedSubInventory(response.data);
       }
-    } catch (error) {
-      console.error('Error getting low stock inventories:', error);
-      showNotification('error', 'Düşük stok verileri yüklenemedi');
       
-      // Fallback to local calculation
-      return inventories.filter(inv => inv.quantity <= inv.minQuantity);
-    }
-  };
-
-  // Yaklaşan son kullanma tarihli inventory'leri getir
-  const getExpiringInventories = async (daysAhead: number = 30): Promise<InventoryResponseDto[]> => {
-    try {
-      const response = await inventoryApi.getExpiringInventories(daysAhead);
+      // Refresh parent inventory to update totals
+      await refreshInventories();
       
-      // Handle API response structure
-      if (response && response.data) {
-        return response.data;
-      } else {
-        return response as any || [];
-      }
-    } catch (error) {
-      console.error('Error getting expiring inventories:', error);
-      showNotification('error', 'Son kullanma tarihi verileri yüklenemedi');
-      return [];
-    }
-  };
-
-  // Depoya göre inventory'leri getir
-  const getInventoriesByWarehouse = async (warehouseId: string): Promise<InventoryResponseDto[]> => {
-    try {
-      const response = await inventoryApi.getInventoriesByWarehouse(warehouseId);
-      
-      // Handle API response structure
-      if (response && response.data) {
-        return response.data;
-      } else {
-        return response as any || [];
-      }
-    } catch (error) {
-      console.error('Error getting inventories by warehouse:', error);
-      showNotification('error', 'Depo inventory verileri yüklenemedi');
-      
-      // Fallback to local filter
-      return inventories.filter(inv => inv.warehouseId === warehouseId);
-    }
-  };
-
-  // Tedarikçiye göre inventory'leri getir
-  const getInventoriesBySupplier = async (supplierId: string): Promise<InventoryResponseDto[]> => {
-    try {
-      const response = await inventoryApi.getInventoriesBySupplier(supplierId);
-      
-      // Handle API response structure
-      if (response && response.data) {
-        return response.data;
-      } else {
-        return response as any || [];
-      }
-    } catch (error) {
-      console.error('Error getting inventories by supplier:', error);
-      showNotification('error', 'Tedarikçi inventory verileri yüklenemedi');
-      
-      // Fallback to local filter
-      return inventories.filter(inv => inv.supplierId === supplierId);
-    }
-  };
-
-  // Ürüne göre inventory'leri getir
-  const getInventoriesByProduct = async (productId: string): Promise<InventoryResponseDto[]> => {
-    try {
-      const response = await inventoryApi.getInventoriesByProduct(productId);
-      
-      // Handle API response structure
-      if (response && response.data) {
-        return response.data;
-      } else {
-        return response as any || [];
-      }
-    } catch (error) {
-      console.error('Error getting inventories by product:', error);
-      showNotification('error', 'Ürün inventory verileri yüklenemedi');
-      
-      // Fallback to local filter
-      return inventories.filter(inv => inv.productId === productId);
-    }
-  };
-
-  // Lot numarasına göre inventory getir
-  const getInventoryByLotNumber = async (lotNumber: string): Promise<InventoryResponseDto> => {
-    try {
-      const response = await inventoryApi.getInventoryByLotNumber(lotNumber);
-      
-      // Handle API response structure
-      if (response?.data) {
-        return response.data;
-      } else {
-        return response as any;
-      }
-    } catch (error) {
-      console.error('Error getting inventory by lot number:', error);
-      showNotification('error', 'Lot numarası ile inventory bulunamadı');
+      showNotification('success', 'Parti başarıyla güncellendi');
+    } catch (error: any) {
+      showNotification('error', error.message || 'Parti güncellenirken hata oluştu');
       throw error;
     }
-  };
+  }, [selectedSubInventory, showNotification, refreshInventories]);
 
-  // Toplu inventory güncelleme
-  const bulkUpdateInventories = async (updates: Array<{ id: string; currentQuantity: number }>): Promise<InventoryResponseDto[]> => {
+  const deleteSubInventory = useCallback(async (id: string) => {
     try {
-      const response = await inventoryApi.bulkUpdateInventories(updates);
+      await inventoryApi.deleteSubInventory(id);
       
-      // Handle API response structure
-      let updatedInventories: InventoryResponseDto[];
-      if (response && response.data) {
-        updatedInventories = response.data;
-      } else {
-        updatedInventories = response as any || [];
+      setSubInventories(prev => prev.filter(sub => sub.id !== id));
+      
+      if (selectedSubInventory?.id === id) {
+        setSelectedSubInventory(null);
       }
-
-      // Update local state
-      setInventories(prev => {
-        const newInventories = [...prev];
-        updatedInventories.forEach(updated => {
-          const index = newInventories.findIndex(inv => inv.id === updated.id);
-          if (index !== -1) {
-            newInventories[index] = updated;
-          }
-        });
-        return newInventories;
-      });
-
-      showNotification('success', `${updates.length} inventory kaydı başarıyla güncellendi`);
       
-      // Stats'ları güncelle
-      await loadStats();
+      // Refresh parent inventory to update totals
+      await refreshInventories();
       
-      return updatedInventories;
-    } catch (error) {
-      console.error('Error bulk updating inventories:', error);
-      showNotification('error', 'Toplu güncelleme işlemi başarısız oldu');
+      showNotification('success', 'Parti başarıyla silindi');
+    } catch (error: any) {
+      showNotification('error', error.message || 'Parti silinirken hata oluştu');
       throw error;
     }
-  };
+  }, [selectedSubInventory, showNotification, refreshInventories]);
 
-  // Inventory'leri yenile
-  const refreshInventories = async (): Promise<void> => {
-    await loadInventories();
-    await loadStats();
-  };
+  const getSubInventoryById = useCallback(async (id: string) => {
+    try {
+      const response = await inventoryApi.getSubInventoryById(id);
+      setSelectedSubInventory(response.data);
+    } catch (error: any) {
+      showNotification('error', 'Parti bulunamadı');
+      throw error;
+    }
+  }, [showNotification]);
 
-  // Component mount edildiğinde inventory'leri ve stats'ları yükle
-  useEffect(() => {
-    loadInventories();
-    loadStats();
+  // ==================== STOCK OPERATIONS ====================
+
+  const adjustStock = useCallback(async (data: StockAdjustmentDto) => {
+    try {
+      // Validation
+      if (data.quantity <= 0) {
+        throw new Error('Miktar 0\'dan büyük olmalıdır');
+      }
+
+      const response = await inventoryApi.adjustStock(data);
+      
+      // Update sub-inventory in state
+      setSubInventories(prev =>
+        prev.map(sub => (sub.id === data.subInventoryId ? response.data : sub))
+      );
+      
+      // Refresh parent inventory to update totals
+      await refreshInventories();
+      
+      const actionText = data.type === AdjustmentType.ADD ? 'eklendi' : 'çıkarıldı';
+      showNotification('success', `Stok başarıyla ${actionText}`);
+    } catch (error: any) {
+      showNotification('error', error.message || 'Stok ayarlanırken hata oluştu');
+      throw error;
+    }
+  }, [showNotification, refreshInventories]);
+
+  // ==================== REPORTS & STATISTICS ====================
+
+  const loadInventoryStats = useCallback(async (id: string) => {
+    setLoadingStats(true);
+    try {
+      const statsData = await inventoryApi.getInventoryStats(id);
+      setStats(statsData);
+    } catch (error) {
+      showNotification('error', 'İstatistikler yüklenemedi');
+      console.error('Error loading inventory stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, [showNotification]);
+
+  const loadLowStockItems = useCallback(async (threshold?: number) => {
+    try {
+      const response = await inventoryApi.getLowStockItems(threshold);
+      setLowStockItems(response.data || []);
+    } catch (error) {
+      showNotification('error', 'Düşük stok raporu yüklenemedi');
+      console.error('Error loading low stock items:', error);
+    }
+  }, [showNotification]);
+
+  // ==================== UTILITY ====================
+
+  const clearSelection = useCallback(() => {
+    setSelectedInventory(null);
+    setSelectedSubInventory(null);
+    setStats(null);
   }, []);
 
-  // Inventory'ler değiştiğinde stats'ları güncelle
-  useEffect(() => {
-    if (inventories.length > 0) {
-      loadStats();
-    }
-  }, [inventories]);
-
-  const value: InventoryContextType = {
+  const value: InventoryContextState = {
+    // State
     inventories,
-    loading,
-    error,
+    selectedInventory,
+    subInventories,
+    selectedSubInventory,
     stats,
-    loadInventories,
-    loadStats,
+    lowStockItems,
+    loading,
+    loadingSubInventories,
+    loadingStats,
+    
+    // Parent Inventory Operations
     createInventory,
     updateInventory,
     deleteInventory,
     getInventoryById,
-    searchInventories,
-    getLowStockInventories,
-    getExpiringInventories,
-    getInventoriesByWarehouse,
-    getInventoriesBySupplier,
-    getInventoriesByProduct,
-    getInventoryByLotNumber,
-    bulkUpdateInventories,
-    refreshInventories
+    getInventoryByProductId,
+    setSelectedInventory,
+    
+    // Sub-Inventory Operations
+    createSubInventory,
+    updateSubInventory,
+    deleteSubInventory,
+    getSubInventoryById,
+    getAllSubInventories,
+    setSelectedSubInventory,
+    
+    // Stock Operations
+    adjustStock,
+    
+    // Reports & Stats
+    loadInventoryStats,
+    loadLowStockItems,
+    
+    // Utility
+    refreshInventories,
+    clearSelection,
   };
 
   return (
@@ -444,11 +381,13 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
   );
 };
 
-// Custom hook
-export const useInventories = (): InventoryContextType => {
+// Custom Hook
+export const useInventory = (): InventoryContextState => {
   const context = useContext(InventoryContext);
-  if (context === undefined) {
-    throw new Error('useInventories must be used within an InventoryProvider');
+  if (!context) {
+    throw new Error('useInventory must be used within an InventoryProvider');
   }
   return context;
 };
+
+export default InventoryProvider;

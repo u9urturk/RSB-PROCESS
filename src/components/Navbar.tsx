@@ -3,9 +3,9 @@ import { IoFastFoodOutline } from 'react-icons/io5';
 import { FiBell, FiMessageSquare, FiMenu, FiX, FiUser } from 'react-icons/fi';
 import { LogOut } from 'lucide-react';
 import Menu from './Menu';
-import { NavbarProps } from '../types';
 import { useAuth } from '../context/provider/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { NavbarProps } from '../types';
 
 const Navbar: React.FC<NavbarProps> = ({ 
     title = "Başlık", 

@@ -3,74 +3,26 @@ import { Package, Plus, AlertTriangle, TrendingUp, Clock, ShoppingBag } from "lu
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import StockTable from "./components/StockTable";
 import StockSearchBar from "./components/StockSearchBar";
-import StockAddModal from "./modals/StockAddModal";
 import BarcodeScannerModal from "./modals/BarcodeScannerModal";
 import StockChangeModal from "./modals/StockChangeModal";
 import StockDetailModal from "./modals/StockDetailModal";
+import StockAddLayout from "./modules/stockadd/layout";
 import PageTransition from "../../components/PageTransition";
 import { useNavigation } from "../../context/provider/NavigationProvider";
-import { CategoryProvider, useCategories } from "./provider/CategoryProvider";
-import { BaseUnitProvider, useBaseUnits } from "./provider/BaseUnitProvider";
-import { StockTypeProvider, useStockTypes } from "./provider/StockTypeProvider";
-import { InventoryProvider, useInventories } from "./provider/InventoryProvider";
+import { CategoryProvider } from "./provider/CategoryProvider";
+import { BaseUnitProvider } from "./provider/BaseUnitProvider";
+import { StockTypeProvider } from "./provider/StockTypeProvider";
+import { InventoryProvider } from "./provider/InventoryProvider";
 import { ProductProvider } from "./provider/ProductProvider";
-import { SupplierProvider, useSuppliers } from "./provider/SupplierProvider";
-import { WarehouseProvider, useWarehouses } from "./provider/WarehouseProvider";
-import { StockItem, StockItemAddDto } from "@/types/index";
+import { SupplierProvider } from "./provider/SupplierProvider";
+import { WarehouseProvider } from "./provider/WarehouseProvider";
+import { StockItem } from "@/types/index";
+import { useNotification } from "@/context/provider/NotificationProvider";
 
 interface StockTableProps {
     items: StockItem[];
     onStockChange: (id: string, amount: number, type: "add" | "remove") => void;
 }
-
-interface StockAddModalProps {
-    open: boolean;
-    onClose: () => void;
-    onSubmit: (item: StockItemAddDto) => void;
-}
-
-// StockAddModal wrapper component that uses categories from context
-interface StockAddModalWrapperProps {
-    open: boolean;
-    onClose: () => void;
-    onSubmit: (item: StockItemAddDto) => void;
-}
-
-const StockAddModalWrapper: React.FC<StockAddModalWrapperProps> = ({ open, onClose, onSubmit }) => {
-    const { categories } = useCategories();
-    const { stockTypes } = useStockTypes();
-    const { suppliers } = useSuppliers();
-    const { warehouses } = useWarehouses();
-    const { baseUnits } = useBaseUnits();
-    const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
-
-    return (
-        <StockAddModal
-            open={open}
-            onClose={() => {
-                onClose();
-                setPendingBarcode(null);
-            }}
-            onAdd={onSubmit}
-            initialBarcode={pendingBarcode || ""}
-            suppliers={suppliers.map(supplier => ({
-                ...supplier,
-                minimumOrder: typeof supplier.minimumOrder === 'string'
-                    ? parseFloat(supplier.minimumOrder) || 0
-                    : supplier.minimumOrder
-            }))}
-            stockTypes={stockTypes}
-            warehouses={warehouses}
-            categories={categories}
-            units={baseUnits.length > 0 ? baseUnits.map(unit => ({
-                id: unit.id,
-                name: unit.name,
-                symbol: unit.symbol || unit.shortName,
-                description: unit.desc
-            })) : []}
-        />
-    );
-};
 
 export default function StockBusinessMain() {
     return (
@@ -96,14 +48,14 @@ function StockBusinessMainContent() {
     const { setActivePath } = useNavigation();
     const navigate = useNavigate();
     const location = useLocation();
-    const { inventories, loading: loadingInventory } = useInventories();
     const [stocks, setStocks] = useState<StockItem[]>([]);
     const [search, setSearch] = useState<string>("");
-    const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
     const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState<boolean>(false);
     const [activeDetail, setActiveDetail] = useState<StockItem | null>(null);
     const [activeChange, setActiveChange] = useState<{ item: StockItem; type: 'add' | 'remove' } | null>(null);
+    const [isStockAddModalOpen, setIsStockAddModalOpen] = useState<boolean>(false);
     const [activeTab, setActiveTab] = useState<string>('stock');
+    const { showNotification } = useNotification();
 
     // URL'e göre aktif tab'ı belirle
     useEffect(() => {
@@ -133,22 +85,6 @@ function StockBusinessMainContent() {
         setActivePath('/dashboard/stockbusiness');
     }, [setActivePath]);
 
-    // Client-side stats hesaplama - provider'dan gelen inventories verisini kullan
-    const calculateStats = () => {
-        const totalItems = inventories.length;
-        const lowStockItems = inventories.filter(item => item.quantity <= item.minQuantity).length;
-        const totalValue = inventories.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-        const outOfStockItems = inventories.filter(item => item.quantity === 0).length;
-
-        return {
-            totalItems,
-            lowStockItems,
-            totalValue,
-            outOfStockItems
-        };
-    };
-
-    const stats = calculateStats();
 
     const handleBarcodeClick = useCallback(() => {
         setIsBarcodeModalOpen(true);
@@ -162,7 +98,7 @@ function StockBusinessMainContent() {
         const found = stocks.some(stock => stock.barcode === barcode);
         if (!found) {
             // Barcode bulunamadı, ekleme modalını aç
-            setIsAddModalOpen(true);
+            showNotification("warning", "Barkod bulunamadı. Lütfen yeni stok ekleyin.");
         }
     }, [stocks]);
 
@@ -183,24 +119,15 @@ function StockBusinessMainContent() {
         }));
     }, []);
 
-    const handleAddStock = useCallback((newStock: StockItemAddDto) => {
-        setStocks(prev => [...prev, newStock]);
-        setIsAddModalOpen(false);
-    }, []);
-
-    const filteredStocks = inventories.filter(stock => {
-        return (
-            stock?.name?.toLowerCase().includes(search.toLowerCase()) ||
-            stock?.stockType?.toLowerCase().includes(search.toLowerCase()) ||
-            stock?.barcode?.toLowerCase().includes(search.toLowerCase())
-        );
-    });
+    // const filteredStocks = inventories.filter(stock => {
+    //     return (
+    //         stock?.name?.toLowerCase().includes(search.toLowerCase()) ||
+    //         stock?.stockType?.toLowerCase().includes(search.toLowerCase()) ||
+    //         stock?.barcode?.toLowerCase().includes(search.toLowerCase())
+    //     );
+    // });
 
     const TableComponent = ({ items, onStockChange }: StockTableProps) => (
-
-
-
-
         <StockTable
             items={items}
             onStockChange={onStockChange}
@@ -209,34 +136,29 @@ function StockBusinessMainContent() {
             onOpenDetail={(item) => setActiveDetail(item)}
         />
     );
-
-    const ModalComponent = ({ open, onClose, onSubmit }: StockAddModalProps) => {
-        return <StockAddModalWrapper open={open} onClose={onClose} onSubmit={onSubmit} />;
-    };
-
-    // Stok kartları
+    
     const stockStats = [
         {
             title: "Toplam Ürün",
-            value: stats.totalItems,
+            value: null,
             icon: <Package size={20} />,
             color: "from-blue-500 to-blue-600"
         },
         {
             title: "Düşük Stok",
-            value: stats.lowStockItems,
+            value: null,
             icon: <AlertTriangle size={20} />,
             color: "from-red-500 to-red-600"
         },
         {
             title: "Toplam Değer",
-            value: `₺${stats.totalValue.toLocaleString()}`,
+            value: null,
             icon: <TrendingUp size={20} />,
             color: "from-green-500 to-green-600"
         },
         {
             title: "Tükenen Ürün",
-            value: stats.outOfStockItems,
+            value: null,
             icon: <ShoppingBag size={20} />,
             color: "from-orange-500 to-orange-600"
         }
@@ -307,7 +229,7 @@ function StockBusinessMainContent() {
                     {/* Ana stok yönetimi içeriği - sadece stock tab'ında görünür */}
                     {activeTab === 'stock' && (
                         <>
-                            {loadingInventory ? (
+                            {false ? (
                                 <div className="flex items-center justify-center min-h-[400px]">
                                     <div className="text-center">
                                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
@@ -355,7 +277,7 @@ function StockBusinessMainContent() {
                                                 />
                                             </div>
                                             <button
-                                                onClick={() => setIsAddModalOpen(true)}
+                                                onClick={() => setIsStockAddModalOpen(true)}
                                                 className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center gap-2 justify-center font-semibold"
                                             >
                                                 <Plus size={20} />
@@ -365,7 +287,7 @@ function StockBusinessMainContent() {
                                     </div>
 
                                     {/* Stock Table */}
-                                    <TableComponent items={filteredStocks} onStockChange={handleStockChange} />
+                                    <TableComponent items={[]} onStockChange={handleStockChange} />
                                 </>
                             )}
                         </>
@@ -379,12 +301,6 @@ function StockBusinessMainContent() {
                     )}
                 </div>
             </div>
-
-            <ModalComponent
-                open={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
-                onSubmit={handleAddStock}
-            />
             <BarcodeScannerModal
                 open={isBarcodeModalOpen}
                 onClose={() => setIsBarcodeModalOpen(false)}
@@ -426,6 +342,25 @@ function StockBusinessMainContent() {
                     item={activeDetail}
                 />
             )}
+            <StockAddLayout
+                open={isStockAddModalOpen}
+                onClose={() => setIsStockAddModalOpen(false)}
+                onComplete={async (data) => {
+                    try {
+                        // TODO: API çağrıları ile kayıt işlemleri
+                        // 1. Product oluştur veya mevcut olanı kullan
+                        // 2. Inventory oluştur veya mevcut olanı kullan
+                        // 3. SubInventory oluştur
+                        
+                        console.log('Stock Add Data:', data);
+                        showNotification('success', 'Stok başarıyla eklendi!');
+                        setIsStockAddModalOpen(false);
+                    } catch (error) {
+                        console.error('Stock add error:', error);
+                        showNotification('error', 'Stok eklenirken bir hata oluştu');
+                    }
+                }}
+            />
         </PageTransition>
     );
 }

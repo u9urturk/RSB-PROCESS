@@ -1,5 +1,17 @@
 import { motion } from "framer-motion";
-import { PageTransitionProps, PageVariant } from "../types";
+
+// Local type definitions
+interface PageVariant {
+    initial: { opacity: number };
+    animate: { opacity: number; transition: { duration: number; ease: string } };
+    exit: { opacity: number; transition: { duration: number; ease: string } };
+}
+
+interface PageTransitionProps {
+    children: React.ReactNode;
+    variant?: number;
+    className?: string;
+}
 
 const pageVariantsList: PageVariant[] = [
     {

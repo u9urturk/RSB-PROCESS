@@ -10,7 +10,6 @@ export enum ProductStatus {
 
 // Create Product DTO Interface
 export interface CreateProductDto {
-  barcode?: string;
   name: string;
   description?: string;
   note?: string;
@@ -23,7 +22,6 @@ export interface CreateProductDto {
 
 // Update Product DTO Interface
 export interface UpdateProductDto {
-  barcode?: string;
   name?: string;
   description?: string;
   note?: string;
@@ -78,7 +76,7 @@ export const productApi = {
   getAllProducts: async (): Promise<ProductListResponseDto> => {
     try {
       const response = await apiGet('/products');
-      console.log('Get all products response:', response);
+      // console.log('Get all products response:', response);
       return response;
     } catch (error) {
       console.error('Get all products error:', error);
@@ -94,7 +92,7 @@ export const productApi = {
   getProductById: async (id: string): Promise<ProductSingleResponseDto> => {
     try {
       const response = await apiGet(`/products/${id}`);
-      console.log(`Get product ${id} response:`, response);
+      // console.log(`Get product ${id} response:`, response);
       return response;
     } catch (error) {
       console.error(`Get product ${id} error:`, error);
@@ -110,7 +108,7 @@ export const productApi = {
   createProduct: async (productData: CreateProductDto): Promise<ProductResponseDto> => {
     try {
       const response = await apiPost('/products', productData);
-      console.log('Create product response:', response);
+      // console.log('Create product response:', response);
       return response;
     } catch (error) {
       console.error('Create product error:', error);
@@ -126,7 +124,7 @@ export const productApi = {
   updateProduct: async (id: string, productData: UpdateProductDto): Promise<ProductSingleResponseDto> => {
     try {
       const response = await apiPut(`/products/${id}`, productData);
-      console.log(`Update product ${id} response:`, response);
+      // console.log(`Update product ${id} response:`, response);
       return response;
     } catch (error) {
       console.error(`Update product ${id} error:`, error);
@@ -142,7 +140,7 @@ export const productApi = {
   deleteProduct: async (id: string): Promise<void> => {
     try {
       await apiDelete(`/products/${id}`);
-      console.log(`Delete product ${id} success`);
+      // console.log(`Delete product ${id} success`);
     } catch (error) {
       console.error(`Delete product ${id} error:`, error);
       ErrorHandlerService.handleError(error, 'ProductApi.deleteProduct');
@@ -157,7 +155,7 @@ export const productApi = {
   getProductsByStatus: async (status: ProductStatus): Promise<ProductListResponseDto> => {
     try {
       const response = await apiGet(`/products?status=${status}`);
-      console.log(`Get products by status ${status} response:`, response);
+      // console.log(`Get products by status ${status} response:`, response);
       return response;
     } catch (error) {
       console.error(`Get products by status ${status} error:`, error);
@@ -173,7 +171,7 @@ export const productApi = {
   getProductsByCategory: async (categoryId: string): Promise<ProductListResponseDto> => {
     try {
       const response = await apiGet(`/products?categoryId=${categoryId}`);
-      console.log(`Get products by category ${categoryId} response:`, response);
+      // console.log(`Get products by category ${categoryId} response:`, response);
       return response;
     } catch (error) {
       console.error(`Get products by category ${categoryId} error:`, error);
@@ -189,7 +187,7 @@ export const productApi = {
   getProductsByStockType: async (stockTypeId: string): Promise<ProductListResponseDto> => {
     try {
       const response = await apiGet(`/products?stockTypeId=${stockTypeId}`);
-      console.log(`Get products by stock type ${stockTypeId} response:`, response);
+      // console.log(`Get products by stock type ${stockTypeId} response:`, response);
       return response;
     } catch (error) {
       console.error(`Get products by stock type ${stockTypeId} error:`, error);
@@ -205,7 +203,7 @@ export const productApi = {
   searchProducts: async (searchQuery: string): Promise<ProductListResponseDto> => {
     try {
       const response = await apiGet(`/products?search=${encodeURIComponent(searchQuery)}`);
-      console.log(`Search products "${searchQuery}" response:`, response);
+      // console.log(`Search products "${searchQuery}" response:`, response);
       return response;
     } catch (error) {
       console.error(`Search products "${searchQuery}" error:`, error);
@@ -214,21 +212,7 @@ export const productApi = {
     }
   },
 
-  /**
-   * Get product by barcode
-   * GET /products?barcode=1234567890
-   */
-  getProductByBarcode: async (barcode: string): Promise<ProductSingleResponseDto> => {
-    try {
-      const response = await apiGet(`/products?barcode=${barcode}`);
-      console.log(`Get product by barcode ${barcode} response:`, response);
-      return response;
-    } catch (error) {
-      console.error(`Get product by barcode ${barcode} error:`, error);
-      ErrorHandlerService.handleError(error, 'ProductApi.getProductByBarcode');
-      throw error;
-    }
-  }
+
 };
 
 export default productApi;

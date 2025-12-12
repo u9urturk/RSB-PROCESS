@@ -37,11 +37,9 @@ interface ProductContextType {
   getProductsByStatus: (status: ProductStatus) => Promise<ProductResponseDto[]>;
   getProductsByCategory: (categoryId: string) => Promise<ProductResponseDto[]>;
   getProductsByStockType: (stockTypeId: string) => Promise<ProductResponseDto[]>;
-  getProductByBarcode: (barcode: string) => Promise<ProductResponseDto>;
   getActiveProducts: () => ProductResponseDto[];
   validateProduct: (data: Partial<CreateProductDto | UpdateProductDto>) => string[];
   checkProductNameUnique: (name: string, excludeId?: string) => Promise<boolean>;
-  checkBarcodeUnique: (barcode: string, excludeId?: string) => Promise<boolean>;
   refreshProducts: () => Promise<void>;
 }
 
@@ -126,9 +124,9 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         productsWithoutBarcode
       });
 
-      console.log(`Toplam ürün sayısı: ${products.length}`);
-      console.log(`Aktif ürünler: ${activeProducts}`);
-      console.log(`Barkodlu ürünler: ${productsWithBarcode}`);
+      // console.log(`Toplam ürün sayısı: ${products.length}`);
+      // console.log(`Aktif ürünler: ${activeProducts}`);
+      // console.log(`Barkodlu ürünler: ${productsWithBarcode}`);
     } catch (error) {
       console.error('Error calculating product stats:', error);
     }
@@ -157,14 +155,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     if (data.note !== undefined && data.note) {
       if (data.note.length > 500) {
         errors.push('Not en fazla 500 karakter olabilir');
-      }
-    }
-
-    if (data.barcode !== undefined && data.barcode) {
-      if (data.barcode.length < 6) {
-        errors.push('Barkod en az 6 karakter olmalıdır');
-      } else if (data.barcode.length > 50) {
-        errors.push('Barkod en fazla 50 karakter olabilir');
       }
     }
 
@@ -212,32 +202,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   };
 
-  // Barkod benzersizlik kontrolü
-  const checkBarcodeUnique = async (barcode: string, excludeId?: string): Promise<boolean> => {
-    try {
-      if (!barcode || !barcode.trim()) return true; // Empty barcode is allowed
-      
-      // Try API first
-      try {
-        const response = await productApi.getProductByBarcode(barcode);
-        if (response?.data) {
-          return excludeId ? response.data.id === excludeId : false;
-        }
-        return true;
-      } catch (apiError) {
-        // Fallback to local check
-        const existingProduct = products.find(p => 
-          p.barcode === barcode && 
-          (!excludeId || p.id !== excludeId)
-        );
-        return !existingProduct;
-      }
-    } catch (error) {
-      console.error('Error checking barcode uniqueness:', error);
-      return true; // Default to allow if check fails
-    }
-  };
-
+ 
   // Ürün oluştur
   const createProduct = async (data: CreateProductDto): Promise<ProductResponseDto> => {
     try {
@@ -253,12 +218,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         throw new Error('Bu ürün adı zaten mevcut');
       }
 
-      if (data.barcode) {
-        const isBarcodeUnique = await checkBarcodeUnique(data.barcode);
-        if (!isBarcodeUnique) {
-          throw new Error('Bu barkod zaten mevcut');
-        }
-      }
 
       const response = await productApi.createProduct(data);
       let newProduct: ProductResponseDto;
@@ -271,7 +230,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       }
 
       setProducts(prev => [...prev, newProduct]);
-      console.log('Ürün oluşturuldu.')      
+      // console.log('Ürün oluşturuldu.')      
       // Stats'ları güncelle
       await loadStats();
       
@@ -301,12 +260,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
         }
       }
 
-      if (data.barcode) {
-        const isBarcodeUnique = await checkBarcodeUnique(data.barcode, id);
-        if (!isBarcodeUnique) {
-          throw new Error('Bu barkod zaten mevcut');
-        }
-      }
 
       const response = await productApi.updateProduct(id, data);
       let updatedProduct: ProductResponseDto;
@@ -319,7 +272,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
       }
 
       setProducts(prev => prev.map(product => product.id === id ? updatedProduct : product));
-      console.log('Ürün güncellendi.')
+      // console.log('Ürün güncellendi.')
       // Stats'ları güncelle
       await loadStats();
       
@@ -337,7 +290,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     try {
       await productApi.deleteProduct(id);
       setProducts(prev => prev.filter(product => product.id !== id));
-      console.log('Ürün silindi.')      
+      // console.log('Ürün silindi.')      
       // Stats'ları güncelle
       await loadStats();
     } catch (error) {
@@ -439,24 +392,6 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     }
   };
 
-  // Barkoda göre ürün getir
-  const getProductByBarcode = async (barcode: string): Promise<ProductResponseDto> => {
-    try {
-      const response = await productApi.getProductByBarcode(barcode);
-      
-      // Handle API response structure
-      if (response?.data) {
-        return response.data;
-      } else {
-        return response as any;
-      }
-    } catch (error) {
-      console.error('Error getting product by barcode:', error);
-      showNotification('error', 'Barkod ile ürün bulunamadı');
-      throw error;
-    }
-  };
-
   // Sadece aktif ürünleri getir
   const getActiveProducts = (): ProductResponseDto[] => {
     return products.filter(product => product.status === ProductStatus.ACTIVE);
@@ -495,11 +430,9 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
     getProductsByStatus,
     getProductsByCategory,
     getProductsByStockType,
-    getProductByBarcode,
     getActiveProducts,
     validateProduct,
     checkProductNameUnique,
-    checkBarcodeUnique,
     refreshProducts
   };
 

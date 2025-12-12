@@ -12,7 +12,7 @@ export function WebSocketDemoPage() {
     showNotification('warning', 'Oturumunuz başka bir yerden sonlandırıldı! Giriş sayfasına yönlendiriliyorsunuz...', {
       countdown: 5,
       onComplete: () => {
-        console.log('Session revoked notification completed!');
+        // console.log('Session revoked notification completed!');
         showNotification('info', 'Bu sadece bir test - gerçek uygulamada giriş sayfasına yönlendirilirsiniz');
       }
     });
@@ -22,7 +22,7 @@ export function WebSocketDemoPage() {
     showNotification('error', 'Kimlik doğrulama hatası! Giriş sayfasına yönlendiriliyorsunuz...', {
       countdown: 3,
       onComplete: () => {
-        console.log('Auth error notification completed!');
+        // console.log('Auth error notification completed!');
         showNotification('info', 'Bu sadece bir test - gerçek uygulamada giriş sayfasına yönlendirilirsiniz');
       }
     });

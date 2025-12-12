@@ -36,12 +36,12 @@ class WebSocketManager {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      console.log('✅ WebSocket connected');
+      // console.log('✅ WebSocket connected');
       this.reconnectAttempts = 0;
     });
 
     this.socket.on('disconnect', (reason) => {
-      console.log('🔌 WebSocket disconnected:', reason);
+      // console.log('🔌 WebSocket disconnected:', reason);
     });
 
     this.socket.on('connect_error', (error) => {

@@ -97,9 +97,9 @@ export const WarehouseProvider: React.FC<WarehouseProviderProps> = ({ children }
     try {
       const statsData = await warehouseApi.getWarehouseStats();
       setStats(statsData);
-      console.log(`Toplam depo sayısı: ${statsData.totalWarehouses}`);
-      console.log(`Aktif depolar: ${statsData.activeWarehouses}`);
-      console.log(`Toplam kapasite: ${statsData.totalCapacity}`);
+      // console.log(`Toplam depo sayısı: ${statsData.totalWarehouses}`);
+      // console.log(`Aktif depolar: ${statsData.activeWarehouses}`);
+      // console.log(`Toplam kapasite: ${statsData.totalCapacity}`);
     } catch (error) {
       console.error('Error loading warehouse stats:', error);
       // Stats yüklenemezse fallback değerler

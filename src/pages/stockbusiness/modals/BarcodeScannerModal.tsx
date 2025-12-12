@@ -27,7 +27,7 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
     }, [onResult]);
 
     const handleClose = useCallback(() => {
-        console.log('BarcodeScannerModal - Closing modal and cleaning up camera...');
+        // console.log('BarcodeScannerModal - Closing modal and cleaning up camera...');
 
 
         // State'i reset et (permission durumunu koruyoruz)
@@ -41,7 +41,7 @@ export default function BarcodeScannerModal({ open, onClose, onResult }: Barcode
     }, [onClose]);
 
     const handleCancel = useCallback(() => {
-        console.log('BarcodeScannerModal - Scan cancelled by user');
+        // console.log('BarcodeScannerModal - Scan cancelled by user');
         handleClose();
     }, [handleClose]);
 

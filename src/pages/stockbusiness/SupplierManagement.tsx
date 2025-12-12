@@ -200,9 +200,9 @@ const SupplierManagement: React.FC = () => {
     };
 
     // İstatistik hesaplamaları - provider'dan gelen veriler
-    const activeSuppliers = stats.activeSuppliers || suppliers.filter(s => s.status === 'ACTIVE').length;
+    const activeSuppliers = stats?.activeSuppliers || suppliers.filter(s => s.status === 'ACTIVE').length;
     const totalMonthlyDeliveries = suppliers.reduce((sum, s) => sum + (s.monthlyDeliveries || 0), 0);
-    const averageRating = stats.averageRating || (suppliers.length > 0 
+    const averageRating = stats?.averageRating || (suppliers.length > 0 
         ? (suppliers.reduce((sum, s) => sum + s.rating, 0) / suppliers.length).toFixed(1)
         : '0.0');
 

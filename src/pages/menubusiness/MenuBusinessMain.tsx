@@ -6,8 +6,8 @@ import { menuData, MENU_CATEGORIES } from "./mocks/menuData";
 import { useConfirm } from "../../context/provider/ConfirmProvider";
 import { useNavigation } from "../../context/provider/NavigationProvider";
 import { useNotification } from "../../context/provider/NotificationProvider";
-import { MenuItemDetailed } from "../../types";
 import "./animations.css";
+import { MenuItemDetailed } from "@/types/index";
 
 const mockFetchMenuData = (): Promise<MenuItemDetailed[]> => {
     return new Promise((resolve) => {

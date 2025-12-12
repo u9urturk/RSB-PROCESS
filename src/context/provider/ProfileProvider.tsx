@@ -118,12 +118,12 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const sorted = [...active].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const keep = sorted[0]?.id; // assume most recently created is current
     const candidates = sorted.filter(s => s.id !== keep);
-    console.log('[RT][UI] bulkRevoke start keep=', keep, 'candidates=', candidates.map(c => c.id));
+    // console.log('[RT][UI] bulkRevoke start keep=', keep, 'candidates=', candidates.map(c => c.id));
     let revoked = 0; let errors = 0;
     for (const sess of candidates) {
       try {
         await profileService.revokeSession(sess.id);
-        console.log('[RT][UI] bulk revoke ok', sess.id);
+        // console.log('[RT][UI] bulk revoke ok', sess.id);
         revoked++;
       } catch (e: any) {
         console.warn('[RT][UI] bulk revoke failed', sess.id, e);
@@ -131,7 +131,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     }
     try { await refreshSessions(); } catch { /* ignore */ }
-    console.log('[RT][UI] bulkRevoke finished revoked=', revoked, 'errors=', errors);
+    // console.log('[RT][UI] bulkRevoke finished revoked=', revoked, 'errors=', errors);
     return { revoked, errors };
   }, [state.sessions, refreshSessions]);
 

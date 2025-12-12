@@ -130,11 +130,11 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
                     const newOrders = [...existingOrders, ...processedOrderItems];
                     const totalAmount = newOrders.reduce((sum, order) => sum + order.total, 0);
 
-                    console.log("Adding orders to table:", {
-                        tableId,
-                        processedOrderItems,
-                        totalOrders: newOrders.length
-                    });
+                    // console.log("Adding orders to table:", {
+                    //     tableId,
+                    //     processedOrderItems,
+                    //     totalOrders: newOrders.length
+                    // });
 
                     return {
                         ...table, 
@@ -155,11 +155,11 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
 
     // Sipariş güncelleme
     const updateOrderInTable = (tableId: string, orderItemId: string, updateData: any): void => {
-        console.log("RestaurantProvider updateOrderInTable called:", {
-            tableId,
-            orderItemId,
-            updateData
-        });
+        // console.log("RestaurantProvider updateOrderInTable called:", {
+        //     tableId,
+        //     orderItemId,
+        //     updateData
+        // });
 
         setTables(prev => {
             const updated = prev.map(table => {
@@ -168,7 +168,7 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
                         if (order.id === orderItemId) {
                             const updated = { ...order, ...updateData };
                             updated.total = updated.price * updated.quantity;
-                            console.log("Updated order:", updated);
+                            // console.log("Updated order:", updated);
                             return updated;
                         }
                         return order;
@@ -236,7 +236,7 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
             cleanStatus: false
         });
 
-        console.log(`Payment processed: ${paymentMethod}, Amount: ${totalAmount}`);
+        // console.log(`Payment processed: ${paymentMethod}, Amount: ${totalAmount}`);
     };
 
     // Garson yönetimi metotları
@@ -324,7 +324,7 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
             setTables(updatedTables);
 
             // Başarı mesajı (opsiyonel - notification context'i varsa)
-            console.log(`Sipariş ${sourceTable.name || sourceTable.number} masasından ${targetTable.name || targetTable.number} masasına başarıyla aktarıldı`);
+            // console.log(`Sipariş ${sourceTable.name || sourceTable.number} masasından ${targetTable.name || targetTable.number} masasına başarıyla aktarıldı`);
             
             return true;
 

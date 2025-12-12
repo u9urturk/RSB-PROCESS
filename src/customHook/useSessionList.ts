@@ -30,7 +30,7 @@ export function useSessionList() {
       // Remove from local state
       setSessions(prev => prev.filter(s => s.sessionId !== sessionId));
       
-      console.log(`Session ${sessionId} revoked successfully`);
+      // console.log(`Session ${sessionId} revoked successfully`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to revoke session';
       setError(errorMessage);
@@ -46,7 +46,7 @@ export function useSessionList() {
       // Keep only current session in local state
       setSessions(prev => prev.filter(s => s.current));
       
-      console.log('All other sessions revoked successfully');
+      // console.log('All other sessions revoked successfully');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to revoke other sessions';
       setError(errorMessage);

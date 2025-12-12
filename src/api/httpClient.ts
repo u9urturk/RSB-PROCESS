@@ -43,12 +43,12 @@ httpClient.interceptors.request.use(
         }
 
         if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase() || '')) {
-            console.log('🔍 Request Debug:', {
-                method: config.method,
-                url: config.url,
-                headers: config.headers,
-                hasAccessToken: !isAuthEndpoint && !!getAccessToken()
-            });
+            // console.log('🔍 Request Debug:', {
+            //     method: config.method,
+            //     url: config.url,
+            //     headers: config.headers,
+            //     hasAccessToken: !isAuthEndpoint && !!getAccessToken()
+            // });
         }
 
         return config;
@@ -108,7 +108,7 @@ httpClient.interceptors.response.use(
         }
 
         if (error.response?.status === 409) {
-            console.log('Conflict detected:', (error.response?.data as any)?.message);
+            // console.log('Conflict detected:', (error.response?.data as any)?.message);
         }
 
         if (error.response?.status === 500) {

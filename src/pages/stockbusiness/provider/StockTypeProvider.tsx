@@ -94,9 +94,9 @@ export const StockTypeProvider: React.FC<StockTypeProviderProps> = ({ children }
     try {
       const statsData = await stockTypeApi.getStockTypeStats();
       setStats(statsData);
-      console.log(`Toplam stok tipi sayısı: ${statsData.totalStockTypes}`);
-      console.log(`Aktif stok tipleri: ${statsData.activeStockTypes}`);
-      console.log(`En çok kullanılan: ${statsData.mostUsedStockType?.name || 'Yok'}`);
+      // console.log(`Toplam stok tipi sayısı: ${statsData.totalStockTypes}`);
+      // console.log(`Aktif stok tipleri: ${statsData.activeStockTypes}`);
+      // console.log(`En çok kullanılan: ${statsData.mostUsedStockType?.name || 'Yok'}`);
     } catch (error) {
       console.error('Error loading stock type stats:', error);
       // Stats yüklenemezse fallback değerler

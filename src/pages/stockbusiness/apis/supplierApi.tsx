@@ -152,7 +152,7 @@ export const supplierApi = {
         success:true,
         timestamp:new Date().getDate().toString()
       }
-      console.log(res)
+      // console.log(res)
       return res; // Return the full response with { success, data, timestamp }
     } catch (error) {
       console.error('Create supplier error:', error);

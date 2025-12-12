@@ -58,8 +58,8 @@ export const CategoryProvider: React.FC<CategoryProviderProps> = ({ children }) 
     try {
       const statsData = await categoryApi.getCategoryStats();
       setStats(statsData);
-      console.log(`Ürünü olan kategoriler: ${statsData.categoriesWithProducts}`);
-      console.log(`Boş kategoriler: ${statsData.emptyCategories}`);
+      // console.log(`Ürünü olan kategoriler: ${statsData.categoriesWithProducts}`);
+      // console.log(`Boş kategoriler: ${statsData.emptyCategories}`);
     } catch (error) {
       console.error('Error loading category stats:', error);
       // Stats yüklenemezse fallback değerler
@@ -75,7 +75,7 @@ export const CategoryProvider: React.FC<CategoryProviderProps> = ({ children }) 
   const getCategoriesWithProductCounts = async (): Promise<CategoryWithProductCount[]> => {
     try {
       const categoriesWithCounts = await categoryApi.getCategoriesWithProductCounts();
-      console.log('Categories with product counts:', categoriesWithCounts);
+      // console.log('Categories with product counts:', categoriesWithCounts);
       return categoriesWithCounts;
     } catch (error) {
       console.error('Error getting categories with product counts:', error);

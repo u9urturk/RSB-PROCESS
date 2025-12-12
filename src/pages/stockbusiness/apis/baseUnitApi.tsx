@@ -62,9 +62,9 @@ export const baseUnitApi = {
    */
   getAllBaseUnits: async (): Promise<BaseUnit[]> => {
     try {
-      console.log('Fetching all base units...');
+      // console.log('Fetching all base units...');
       const response = await apiGet<BaseUnit[]>('/base-units');
-      console.log('Base units fetched successfully:', response);
+      // console.log('Base units fetched successfully:', response);
       return response;
     } catch (error) {
       console.error('Error fetching base units:', error);
@@ -79,9 +79,9 @@ export const baseUnitApi = {
    */
   getBaseUnitById: async (id: string): Promise<BaseUnit> => {
     try {
-      console.log(`Fetching base unit with id: ${id}`);
+      // console.log(`Fetching base unit with id: ${id}`);
       const response = await apiGet<BaseUnit>(`/base-units/${id}`);
-      console.log('Base unit fetched successfully:', response);
+      // console.log('Base unit fetched successfully:', response);
       return response;
     } catch (error) {
       console.error(`Error fetching base unit with id ${id}:`, error);
@@ -96,7 +96,7 @@ export const baseUnitApi = {
    */
   createBaseUnit: async (data: CreateBaseUnitDto): Promise<BaseUnit> => {
     try {
-      console.log('Creating base unit:', data);
+      // console.log('Creating base unit:', data);
       
       // Frontend validasyonu
       const errors = baseUnitApi.validateBaseUnit(data);
@@ -105,7 +105,7 @@ export const baseUnitApi = {
       }
 
       const response = await apiPost<BaseUnit>('/base-units', data);
-      console.log('Base unit created successfully:', response);
+      // console.log('Base unit created successfully:', response);
       return response;
     } catch (error) {
       console.error('Error creating base unit:', error);
@@ -120,7 +120,7 @@ export const baseUnitApi = {
    */
   updateBaseUnit: async (id: string, data: UpdateBaseUnitDto): Promise<BaseUnit> => {
     try {
-      console.log(`Updating base unit ${id}:`, data);
+      // console.log(`Updating base unit ${id}:`, data);
       
       // Frontend validasyonu
       const errors = baseUnitApi.validateBaseUnit(data);
@@ -129,7 +129,7 @@ export const baseUnitApi = {
       }
 
       const response = await apiPut<BaseUnit>(`/base-units/${id}`, data);
-      console.log('Base unit updated successfully:', response);
+      // console.log('Base unit updated successfully:', response);
       return response;
     } catch (error) {
       console.error(`Error updating base unit with id ${id}:`, error);
@@ -144,9 +144,9 @@ export const baseUnitApi = {
    */
   deleteBaseUnit: async (id: string): Promise<void> => {
     try {
-      console.log(`Deleting base unit with id: ${id}`);
+      // console.log(`Deleting base unit with id: ${id}`);
       await apiDelete(`/base-units/${id}`);
-      console.log('Base unit deleted successfully');
+      // console.log('Base unit deleted successfully');
     } catch (error) {
       console.error(`Error deleting base unit with id ${id}:`, error);
       ErrorHandlerService.handleError(error, 'BaseUnitApi.deleteBaseUnit');
@@ -216,9 +216,9 @@ export const baseUnitApi = {
    */
   getBaseUnitStats: async (): Promise<BaseUnitStats> => {
     try {
-      console.log('Fetching base unit stats...');
+      // console.log('Fetching base unit stats...');
       const response = await apiGet<BaseUnitStats>('/base-units/stats');
-      console.log('Base unit stats fetched successfully:', response);
+      // console.log('Base unit stats fetched successfully:', response);
       return response;
     } catch (error) {
       console.error('Error fetching base unit stats:', error);
