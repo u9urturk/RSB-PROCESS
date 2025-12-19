@@ -2,9 +2,10 @@ import { memo} from "react";
 import { Package, Search } from "lucide-react";
 import StockRow from "./StockRow";
 import { StockItem } from "@/types/index";
+import { InventorySummaryItem } from "../apis/inventoryApi";
 
 interface StockTableProps {
-    items: StockItem[];
+    items: InventorySummaryItem[];
     onStockChange: (id: string, amount: number, type: "add" | "remove") => void;
     onOpenAdd: (item: StockItem) => void;
     onOpenRemove: (item: StockItem) => void;
@@ -47,7 +48,7 @@ function StockTable({ items, onStockChange, onOpenAdd, onOpenRemove, onOpenDetai
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {items.map((item, index) => (
                     <div
-                        key={item.id}
+                        key={item.inventoryId}
                         className="animate-fade-in"
                         style={{ animationDelay: `${index * 0.1}s` }}
                     >

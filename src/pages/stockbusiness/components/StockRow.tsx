@@ -1,10 +1,10 @@
 import { memo, useCallback } from "react";
 import { Package, Plus, Minus, AlertTriangle, Eye, TrendingUp, Clock, Zap } from "lucide-react";
 import { StockItem } from "@/types/index";
-import { getUnitSymbol } from "../utils/unitService";
+import { InventorySummaryItem } from "../apis/inventoryApi";
 
 interface StockRowProps {
-    item: any;
+    item: InventorySummaryItem;
     onStockChange: (id: string, amount: number, type: "add" | "remove") => void; // still used for progress updates elsewhere maybe
     onOpenAdd: (item: StockItem) => void;
     onOpenRemove: (item: StockItem) => void;
@@ -13,22 +13,22 @@ interface StockRowProps {
 
 function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }: StockRowProps) {
 
-    const isLow = item.quantity <= item.minQuantity;
+    const isLow = item.totalStock <= item.minStock;
     // onStockChange may be used by parent components; reference it to avoid unused-variable warnings
     void onStockChange;
 
     // useCallback ile event handler'lar optimize edildi
     const handleAddOpen = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        onOpenAdd(item);
+        onOpenAdd(item as any); // Type conversion for compatibility
     }, [item, onOpenAdd]);
 
     const handleRemoveOpen = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        onOpenRemove(item);
+        onOpenRemove(item as any); // Type conversion for compatibility
     }, [item, onOpenRemove]);
 
-    const handleDetailOpen = useCallback(() => onOpenDetail(item), [item, onOpenDetail]);
+    const handleDetailOpen = useCallback(() => onOpenDetail(item as any), [item, onOpenDetail]);
 
     // Stok değişikliği işleyicileri - inline handlers used by parent modals via onOpenAdd/onOpenRemove
 
@@ -48,11 +48,11 @@ function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }
             <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                     <h3 className="font-bold text-lg text-gray-800 mb-1 group-hover:text-orange-600 transition-colors">
-                        {item.name}
+                        {item.productName}
                     </h3>
                     <div className="flex items-center gap-2">
                         <span className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 font-medium">
-                            {item.stockType}
+                            {item.stockType.name}
                         </span>
                         {isLow && (
                             <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-medium flex items-center gap-1">
@@ -73,16 +73,16 @@ function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }
             <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="text-center p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
                     <div className="text-2xl font-bold text-gray-800">
-                        {item.quantity}
+                        {item.totalStock}
                     </div>
-                    <div className="text-sm text-gray-500">{getUnitSymbol(item.unitId)}</div>
+                    <div className="text-sm text-gray-500">{item.baseUnit.symbol || item.baseUnit.name}</div>
                     <div className="text-xs text-gray-400 mt-1">Mevcut Stok</div>
                 </div>
                 <div className="text-center p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl">
                     <div className="text-2xl font-bold text-orange-600">
-                        {item.minQuantity}
+                        {item.minStock}
                     </div>
-                    <div className="text-sm text-orange-500">{getUnitSymbol(item.unitId)}</div>
+                    <div className="text-sm text-orange-500">{item.baseUnit.symbol || item.baseUnit.name}</div>
                     <div className="text-xs text-orange-400 mt-1">Min. Stok</div>
                 </div>
             </div>
@@ -104,7 +104,7 @@ function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }
                         Birim Fiyat
                     </span>
                     <span className="font-medium text-gray-700">
-                        ₺{item.unitPrice.toLocaleString()}
+                        ₺{item.averagePrice.toLocaleString()}
                     </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
@@ -113,13 +113,13 @@ function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }
                         Güncelleme
                     </span>
                     <span className="font-medium text-gray-700">
-                        {new Date(item.lastUpdated).toLocaleString('tr-TR', {
+                        {item.lastCountedAt ? new Date(item.lastCountedAt).toLocaleString('tr-TR', {
                             year: 'numeric',
                             month: '2-digit',
                             day: '2-digit',
                             hour: '2-digit',
                             minute: '2-digit'
-                        })}
+                        }) : 'Yok'}
                     </span>
                 </div>
             </div>
@@ -129,14 +129,14 @@ function StockRow({ item, onStockChange, onOpenAdd, onOpenRemove, onOpenDetail }
                 <div className="flex justify-between items-center mb-2">
                     <span className="text-xs text-gray-500">Stok Durumu</span>
                     <span className="text-xs text-gray-500">
-                        {Math.round((item.quantity / (item.maxQuantity || 100)) * 100)}%
+                        {item.minStock > 0 ? Math.round((item.totalStock / (item.minStock * 10)) * 100) : 100}%
                     </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                         className={`h-2 rounded-full transition-all duration-300 ${isLow ? "bg-gradient-to-r from-red-500 to-red-600" : "bg-gradient-to-r from-green-500 to-green-600"
                             }`}
-                        style={{ width: `${Math.min(100, (item.quantity / (item.maxQuantity || 100)) * 100)}%` }}
+                        style={{ width: `${Math.min(100, item.minStock > 0 ? (item.totalStock / (item.minStock * 10)) * 100 : 100)}%` }}
                     ></div>
                 </div>
             </div>

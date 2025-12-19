@@ -1,54 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Package, Warehouse, ShoppingCart, AlertCircle, ChevronRight } from 'lucide-react';
 import { ProductStatus } from '../../apis/productApi';
+import { QuickAddInventoryDto } from '../../apis/inventoryApi';
+import { useInventory } from '../../provider/InventoryProvider';
 import ProductStep from './steps/ProductStep';
 import InventoryStep from './steps/InventoryStep';
 import SubInventoryStep from './steps/SubInventoryStep';
 
-// Step Types
+// Step Types - Bu interface'ler QuickAddInventoryDto ile uyumlu hale getirildi
 export interface ProductStepData {
   isExisting: boolean;
   productId?: string;
+  productName: string;
   barcode?: string;
-  name: string;
-  description?: string;
+  categoryId?: string;
+  baseUnitId?: string;
+  productDescription?: string;
   note?: string;
   imageUrls?: string[];
-  status: ProductStatus;
-  categoryId: string;
-  stockTypeId: string;
-  baseUnitId: string;
+  status?: ProductStatus;
 }
 
 export interface InventoryStepData {
-  isExisting: boolean;
-  inventoryId?: string;
-  productId: string;
   minStockLevel: number;
   maxStockLevel: number;
+  inventoryDesc?: string;
   lastCountedAt?: string;
-  expirationDate?: string;
-  desc?: string;
+  stockTypeId?: string;
 }
 
 export interface SubInventoryStepData {
-  inventoryId: string;
   warehouseId: string;
-  supplierId?: string;
+  supplierId: string;
   quantity: number;
   unitPrice: number;
   expirationDate?: string;
-  desc?: string;
+  subInventoryDesc?: string;
+  barcode: string;
+
 }
 
 interface StockAddLayoutProps {
   open: boolean;
   onClose: () => void;
-  onComplete: (data: {
-    product: ProductStepData;
-    inventory: InventoryStepData;
-    subInventory: SubInventoryStepData;
-  }) => Promise<void>;
+  onComplete?: (response: any) => void; // Quick Add response'u döner
 }
 
 enum StepEnum {
@@ -60,7 +55,8 @@ enum StepEnum {
 const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComplete }) => {
   const [currentStep, setCurrentStep] = useState<StepEnum>(StepEnum.PRODUCT);
   const [loading, setLoading] = useState(false);
-  
+  const { quickAddInventory } = useInventory();
+
   // Step Data
   const [productData, setProductData] = useState<ProductStepData | null>(null);
   const [inventoryData, setInventoryData] = useState<InventoryStepData | null>(null);
@@ -77,31 +73,63 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
   }, [open]);
 
   const handleProductComplete = (data: ProductStepData) => {
+    console.log('Product step completed:', data);
     setProductData(data);
     setCurrentStep(StepEnum.INVENTORY);
   };
 
   const handleInventoryComplete = (data: InventoryStepData) => {
+    console.log('Inventory step completed:', data);
     setInventoryData(data);
     setCurrentStep(StepEnum.SUBINVENTORY);
   };
 
   const handleSubInventoryComplete = async (data: SubInventoryStepData) => {
+    console.log('SubInventory step completed:', data);
     setSubInventoryData(data);
     setLoading(true);
-    
+
     try {
-        console.log('Finalizing stock add with data:', {
-          product: productData,
-          inventory: inventoryData,
-          subInventory: data
-        });
       if (productData && inventoryData) {
-        await onComplete({
-          product: productData,
-          inventory: inventoryData,
-          subInventory: data
-        });
+        // QuickAddInventoryDto format'ına dönüştür
+        const quickAddData: QuickAddInventoryDto = {
+          // Product Information
+          productName: productData.productName,
+          categoryId: productData.categoryId,
+          baseUnitId: productData.baseUnitId,
+          stockTypeId: inventoryData.stockTypeId,
+          productDescription: productData.productDescription,
+          barcode: data.barcode && data.barcode.trim() !== '' ? data.barcode : undefined,
+
+          // Inventory Settings
+          minStockLevel: inventoryData.minStockLevel,
+          maxStockLevel: inventoryData.maxStockLevel,
+          inventoryDesc: inventoryData.inventoryDesc,
+
+          // Batch Information (SubInventory)
+          quantity: data.quantity,
+          unitPrice: data.unitPrice,
+          supplierId: data.supplierId,
+          warehouseId: data.warehouseId,
+          expirationDate: data.expirationDate && data.expirationDate.trim() !== ''
+            ? `${data.expirationDate}T00:00:00.000Z`
+            : undefined,
+          subInventoryDesc: data.subInventoryDesc,
+
+        };
+
+        console.log('Quick Add request data:', quickAddData);
+
+        // Quick Add API çağrısı
+        const response = await quickAddInventory(quickAddData);
+
+        console.log('Quick Add response:', response);
+
+        // Başarılı response callback
+        if (onComplete) {
+          onComplete(response);
+        }
+
         onClose();
       }
     } catch (error) {
@@ -118,6 +146,49 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
     } else if (currentStep === StepEnum.SUBINVENTORY) {
       setCurrentStep(StepEnum.INVENTORY);
       setSubInventoryData(null);
+    }
+  };
+
+  // Test function for Quick Add API
+  const handleTestQuickAdd = async () => {
+    setLoading(true);
+    try {
+      const testData: QuickAddInventoryDto = {
+        productName: "Organic Tomatoes",
+        categoryId: "d6d46758-8252-4061-9d6f-51b42f07ad86",
+        baseUnitId: "bf7d3d1f-0d9c-4400-afbe-21ee2b537f80",
+        stockTypeId: "1bc28b51-4dfa-405c-9026-b73a135a054a",
+        productDescription: "Fresh organic tomatoes from local farms",
+        minStockLevel: 10,
+        maxStockLevel: 1000,
+        inventoryDesc: "Premium quality batch",
+        barcode: "12345678901233",
+        quantity: 100,
+        unitPrice: 2.5,
+        supplierId: "31e3bda7-8c6d-40f8-8668-15aee3bb1899",
+        warehouseId: "6ca8f072-687b-4100-b9c3-737405bc24c0",
+        expirationDate: "2025-12-31T23:59:59.000Z",
+        lastCountedAt: "2025-12-31T23:59:59.000Z",
+        subInventoryDesc: "Batch #123 - Received in excellent condition"
+      };
+
+      console.log('🧪 TEST - Quick Add request:', testData);
+      const response = await quickAddInventory(testData);
+      console.log('🧪 TEST - Quick Add response:', response);
+
+      alert('Test başarılı! Console\'u kontrol edin.');
+
+      if (onComplete) {
+        onComplete(response);
+      }
+
+      onClose();
+    } catch (error: any) {
+      console.error('🧪 TEST - Quick Add error:', error);
+      console.error('🧪 TEST - Error response:', error.response?.data);
+      alert(`Test başarısız: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -157,7 +228,7 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
   if (!open) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-gray-500/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
@@ -171,13 +242,24 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
                 3 adımlı kayıt süreci ile sisteme yeni stok ekleyin
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-              disabled={loading}
-            >
-              <X size={24} />
-            </button>
+            <div className="flex gap-2">
+              {/* Test Button */}
+              <button
+                onClick={handleTestQuickAdd}
+                className="text-white hover:bg-white/20 rounded-lg px-4 py-2 transition-colors flex items-center gap-2 border border-white/30"
+                disabled={loading}
+                title="Quick Add API Test"
+              >
+                <span className="text-sm font-medium">🧪 Test API</span>
+              </button>
+              <button
+                onClick={onClose}
+                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                disabled={loading}
+              >
+                <X size={24} />
+              </button>
+            </div>
           </div>
 
           {/* Progress Steps */}
@@ -206,7 +288,7 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Connector Arrow */}
                 {index < steps.length - 1 && (
                   <div className="absolute top-1/2 -right-2 transform -translate-y-1/2 translate-x-1/2 z-10">
@@ -226,14 +308,14 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
             <div className="text-sm text-blue-800">
               {currentStep === StepEnum.PRODUCT && (
                 <>
-                  <strong>Ürün Aşaması:</strong> Barkod ile ürün arayın. Eğer ürün sistemde kayıtlı ise 
-                  bilgileri görüntülenecek ve onaylamanız yeterli olacaktır. Ürün sistemde yoksa yeni 
+                  <strong>Ürün Aşaması:</strong> Barkod ile ürün arayın. Eğer ürün sistemde kayıtlı ise
+                  bilgileri görüntülenecek ve onaylamanız yeterli olacaktır. Ürün sistemde yoksa yeni
                   ürün bilgilerini girin.
                 </>
               )}
               {currentStep === StepEnum.INVENTORY && (
                 <>
-                  <strong>Envanter Aşaması:</strong> {productData?.isExisting 
+                  <strong>Envanter Aşaması:</strong> {productData?.isExisting
                     ? 'Ürün sistemde kayıtlı olduğu için envanter bilgileri de mevcut. Bilgileri kontrol edin ve onaylayın.'
                     : 'Yeni ürün için envanter ayarlarını yapın. Minimum ve maksimum stok seviyelerini belirleyin.'
                   }
@@ -241,7 +323,7 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
               )}
               {currentStep === StepEnum.SUBINVENTORY && (
                 <>
-                  <strong>Parti/Lot Aşaması:</strong> Son adımda depo, tedarikçi ve miktar bilgilerini girin. 
+                  <strong>Parti/Lot Aşaması:</strong> Son adımda depo, tedarikçi ve miktar bilgilerini girin.
                   Bu bilgiler her stok girişinde farklı olabilir.
                 </>
               )}
@@ -265,8 +347,9 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
             />
           )}
 
-          {currentStep === StepEnum.SUBINVENTORY && inventoryData && (
+          {currentStep === StepEnum.SUBINVENTORY && inventoryData && productData && (
             <SubInventoryStep
+              productData={productData}
               inventoryData={inventoryData}
               onComplete={handleSubInventoryComplete}
               onBack={handleBack}

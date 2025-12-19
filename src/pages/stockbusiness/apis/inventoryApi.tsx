@@ -1,6 +1,12 @@
 import { apiGet, apiPost, apiPut, apiDelete } from '@/api/httpClient';
 import { ErrorHandlerService } from '@/utils/ErrorHandlerService';
 
+  // Check Product Exists DTO Interface
+export interface CheckProductExistsDto {
+  productName?: string;
+  barcode?: string;
+}
+
 // Create Inventory DTO Interface (Parent Inventory)
 export interface CreateInventoryDto {
   productId: string;
@@ -55,6 +61,75 @@ export interface StockAdjustmentDto {
   quantity: number;
 }
 
+// Quick Add Inventory DTO Interface (combines Product + Inventory + SubInventory)
+export interface QuickAddInventoryDto {
+  // Product Information
+  productName: string;              // Required - Product name (min: 1 character)
+  categoryId?: string;              // Required if new product
+  baseUnitId?: string;              // Required if new product
+  stockTypeId?: string;             // Required if new product
+  productDescription?: string;      // Optional
+  barcode?: string;                 // Optional - for barcode scanning
+
+  // Inventory Settings
+  minStockLevel: number;            // Required - Min stock level (>= 0)
+  maxStockLevel: number;            // Required - Max stock level (>= minStockLevel)
+  inventoryDesc?: string;           // Optional
+  lastCountedAt?: string;           // Optional
+
+  // Batch Information (SubInventory)
+  quantity: number;                 // Required - Quantity (> 0)
+  unitPrice: number;                // Required - Unit price (> 0)
+  supplierId: string;               // Required - Supplier UUID
+  warehouseId: string;              // Required - Warehouse UUID
+  expirationDate?: string;          // Optional - ISO 8601 date
+  subInventoryDesc?: string;        // Optional - Batch notes
+}
+
+// Quick Add Response Interface
+// Quick Add Response Interface
+export interface QuickAddResponseDto {
+  message: string;
+  isNewProduct: boolean;
+  isNewInventory: boolean;
+  inventory: {
+    id: string;
+    productId: string;
+    totalQuantity: number;
+    minStockLevel: number;
+    maxStockLevel: number;
+    desc?: string;
+    lastCountedAt?: string;
+
+  };
+  addedBatch: {
+    id: string;
+    quantity: number;
+    unitPrice: number;
+    supplierId: string;
+    warehouseId: string;
+    expirationDate?: string;
+    desc?: string;
+
+  };
+}
+
+// Search Inventory Response Interface
+export interface SearchInventoryResponseDto {
+  success: boolean;
+  data: Array<{
+    productId: string;
+    productName: string;
+    barcode?: string;
+    inventory: {
+      id: string;
+      totalQuantity: number;
+      minStockLevel: number;
+    } | null;
+  }>;
+  timestamp: string;
+}
+
 // Inventory Response DTO Interface
 export interface InventoryResponseDto {
   id: string;
@@ -78,6 +153,52 @@ export interface InventoryResponseDto {
   subInventories?: SubInventoryResponseDto[]; // Child batches
   createdAt: string;
   updatedAt: string;
+}
+
+// Inventory Summary Item Interface (from backend /summary/all endpoint)
+export interface InventorySummaryItem {
+  inventoryId: string;
+  productId: string;
+  productName: string;
+  barcode: string | null;
+  minStock: number;
+  averagePrice: number;
+  lastCountedAt: string | null;
+  totalStock: number;
+  stockStatus: "LOW_STOCK" | "NORMAL" | "OVERSTOCKED";
+  batchCount: number;
+  category: {
+    id: string;
+    name: string;
+  };
+  baseUnit: {
+    id: string;
+    name: string;
+    symbol: string | null;
+  };
+  stockType: {
+    id: string;
+    name: string;
+    icon: string;
+  };
+}
+
+// Inventory Summary Response Interface
+export interface InventorySummaryResponseDto {
+  total: number;
+  lowStockCount: number;
+  normalStockCount: number;
+  overstockedCount: number;
+  totalInventoryValue: number;
+  items: InventorySummaryItem[];
+}
+
+export interface InventorySummaryStats {
+  total: number;
+  lowStockCount: number;
+  normalStockCount: number;
+  overstockedCount: number;
+  totalInventoryValue: number;
 }
 
 // Sub-Inventory Response DTO Interface
@@ -156,14 +277,14 @@ export interface LowStockResponseDto {
 // API Functions
 export const inventoryApi = {
   // ==================== INVENTORY ENDPOINTS ====================
-  
+
   /**
    * Create new inventory (parent)
-   * POST /api/v1/inventory
+   * POST inventory
    */
   createInventory: async (inventoryData: CreateInventoryDto): Promise<InventoryResponseDto> => {
     try {
-      const response = await apiPost('/api/v1/inventory', inventoryData);
+      const response = await apiPost('inventory', inventoryData);
       // console.log('Create inventory response:', response);
       return response;
     } catch (error) {
@@ -175,11 +296,11 @@ export const inventoryApi = {
 
   /**
    * Get all inventory records
-   * GET /api/v1/inventory
+   * GET inventory
    */
   getAllInventories: async (): Promise<InventoryListResponseDto> => {
     try {
-      const response = await apiGet('/api/v1/inventory');
+      const response = await apiGet('inventory');
       // console.log('Get all inventories response:', response);
       return response;
     } catch (error) {
@@ -189,13 +310,25 @@ export const inventoryApi = {
     }
   },
 
+  getSummaryAll: async (): Promise<InventorySummaryResponseDto> => {
+    try {
+      const response = await apiGet('inventory/summary/all');
+      console.log('Get all inventories response:', response.items);
+      return response;
+    } catch (error) {
+      // console.error('Get all inventories error:', error);
+      ErrorHandlerService.handleError(error, 'InventoryApi.getSummaryAll');
+      throw error;
+    }
+  },
+
   /**
    * Get inventory record by ID
-   * GET /api/v1/inventory/:id
+   * GET inventory/:id
    */
   getInventoryById: async (id: string): Promise<InventorySingleResponseDto> => {
     try {
-      const response = await apiGet(`/api/v1/inventory/${id}`);
+      const response = await apiGet(`inventory/${id}`);
       // console.log(`Get inventory ${id} response:`, response);
       return response;
     } catch (error) {
@@ -207,11 +340,11 @@ export const inventoryApi = {
 
   /**
    * Get inventory by product ID
-   * GET /api/v1/inventory/product/:productId
+   * GET inventory/product/:productId
    */
   getInventoryByProductId: async (productId: string): Promise<InventorySingleResponseDto> => {
     try {
-      const response = await apiGet(`/api/v1/inventory/product/${productId}`);
+      const response = await apiGet(`inventory/product/${productId}`);
       // console.log(`Get inventory for product ${productId} response:`, response);
       return response;
     } catch (error) {
@@ -223,11 +356,11 @@ export const inventoryApi = {
 
   /**
    * Update inventory record
-   * PUT /api/v1/inventory/:id
+   * PUT inventory/:id
    */
   updateInventory: async (id: string, inventoryData: UpdateInventoryDto): Promise<InventorySingleResponseDto> => {
     try {
-      const response = await apiPut(`/api/v1/inventory/${id}`, inventoryData);
+      const response = await apiPut(`inventory/${id}`, inventoryData);
       // console.log(`Update inventory ${id} response:`, response);
       return response;
     } catch (error) {
@@ -239,11 +372,11 @@ export const inventoryApi = {
 
   /**
    * Delete inventory record
-   * DELETE /api/v1/inventory/:id
+   * DELETE inventory/:id
    */
   deleteInventory: async (id: string): Promise<void> => {
     try {
-      await apiDelete(`/api/v1/inventory/${id}`);
+      await apiDelete(`inventory/${id}`);
       // console.log(`Delete inventory ${id} success`);
     } catch (error) {
       console.error(`Delete inventory ${id} error:`, error);
@@ -254,11 +387,11 @@ export const inventoryApi = {
 
   /**
    * Get inventory statistics
-   * GET /api/v1/inventory/:id/stats
+   * GET inventory/:id/stats
    */
   getInventoryStats: async (id: string): Promise<InventoryStatsDto> => {
     try {
-      const response = await apiGet(`/api/v1/inventory/${id}/stats`);
+      const response = await apiGet(`inventory/${id}/stats`);
       // console.log(`Get inventory ${id} stats response:`, response);
       return response;
     } catch (error) {
@@ -272,11 +405,11 @@ export const inventoryApi = {
 
   /**
    * Create sub-inventory (batch/lot)
-   * POST /api/v1/inventory/sub
+   * POST inventory/sub
    */
   createSubInventory: async (subInventoryData: CreateSubInventoryDto): Promise<SubInventoryResponseDto> => {
     try {
-      const response = await apiPost('/api/v1/inventory/sub', subInventoryData);
+      const response = await apiPost('inventory/sub', subInventoryData);
       // console.log('Create sub-inventory response:', response);
       return response;
     } catch (error) {
@@ -288,13 +421,13 @@ export const inventoryApi = {
 
   /**
    * Get all sub-inventories
-   * GET /api/v1/inventory/sub/all?inventoryId=xxx
+   * GET inventory/sub/all?inventoryId=xxx
    */
   getAllSubInventories: async (inventoryId?: string): Promise<SubInventoryListResponseDto> => {
     try {
-      const url = inventoryId 
-        ? `/api/v1/inventory/sub/all?inventoryId=${inventoryId}`
-        : '/api/v1/inventory/sub/all';
+      const url = inventoryId
+        ? `inventory/sub/all?inventoryId=${inventoryId}`
+        : 'inventory/sub/all';
       const response = await apiGet(url);
       // console.log('Get all sub-inventories response:', response);
       return response;
@@ -307,11 +440,11 @@ export const inventoryApi = {
 
   /**
    * Get sub-inventory by ID
-   * GET /api/v1/inventory/sub/:id
+   * GET inventory/sub/:id
    */
   getSubInventoryById: async (id: string): Promise<SubInventorySingleResponseDto> => {
     try {
-      const response = await apiGet(`/api/v1/inventory/sub/${id}`);
+      const response = await apiGet(`inventory/sub/${id}`);
       // console.log(`Get sub-inventory ${id} response:`, response);
       return response;
     } catch (error) {
@@ -323,11 +456,11 @@ export const inventoryApi = {
 
   /**
    * Update sub-inventory
-   * PUT /api/v1/inventory/sub/:id
+   * PUT inventory/sub/:id
    */
   updateSubInventory: async (id: string, subInventoryData: UpdateSubInventoryDto): Promise<SubInventorySingleResponseDto> => {
     try {
-      const response = await apiPut(`/api/v1/inventory/sub/${id}`, subInventoryData);
+      const response = await apiPut(`inventory/sub/${id}`, subInventoryData);
       // console.log(`Update sub-inventory ${id} response:`, response);
       return response;
     } catch (error) {
@@ -339,11 +472,11 @@ export const inventoryApi = {
 
   /**
    * Delete sub-inventory
-   * DELETE /api/v1/inventory/sub/:id
+   * DELETE inventory/sub/:id
    */
   deleteSubInventory: async (id: string): Promise<void> => {
     try {
-      await apiDelete(`/api/v1/inventory/sub/${id}`);
+      await apiDelete(`inventory/sub/${id}`);
       // console.log(`Delete sub-inventory ${id} success`);
     } catch (error) {
       console.error(`Delete sub-inventory ${id} error:`, error);
@@ -356,11 +489,11 @@ export const inventoryApi = {
 
   /**
    * Adjust stock quantity (add or subtract)
-   * POST /api/v1/inventory/adjust
+   * POST inventory/adjust
    */
   adjustStock: async (adjustmentData: StockAdjustmentDto): Promise<SubInventorySingleResponseDto> => {
     try {
-      const response = await apiPost('/api/v1/inventory/adjust', adjustmentData);
+      const response = await apiPost('inventory/adjust', adjustmentData);
       // console.log('Adjust stock response:', response);
       return response;
     } catch (error) {
@@ -372,13 +505,13 @@ export const inventoryApi = {
 
   /**
    * Get low stock items report
-   * GET /api/v1/inventory/reports/low-stock?threshold=xxx
+   * GET inventory/reports/low-stock?threshold=xxx
    */
   getLowStockItems: async (threshold?: number): Promise<LowStockResponseDto> => {
     try {
-      const url = threshold 
-        ? `/api/v1/inventory/reports/low-stock?threshold=${threshold}`
-        : '/api/v1/inventory/reports/low-stock';
+      const url = threshold
+        ? `inventory/reports/low-stock?threshold=${threshold}`
+        : 'inventory/reports/low-stock';
       const response = await apiGet(url);
       // console.log('Get low stock items response:', response);
       return response;
@@ -399,7 +532,7 @@ export const inventoryApi = {
   getInventoriesByWarehouse: async (warehouseId: string): Promise<SubInventoryListResponseDto> => {
     console.warn('getInventoriesByWarehouse is deprecated. Consider using getAllSubInventories with filter.');
     try {
-      const response = await apiGet(`/api/v1/inventory/sub/all`);
+      const response = await apiGet(`inventory/sub/all`);
       // Filter by warehouse on client side if needed
       if (response.data) {
         response.data = response.data.filter((item: SubInventoryResponseDto) => item.warehouseId === warehouseId);
@@ -419,7 +552,7 @@ export const inventoryApi = {
   getInventoriesBySupplier: async (supplierId: string): Promise<SubInventoryListResponseDto> => {
     console.warn('getInventoriesBySupplier is deprecated. Consider using getAllSubInventories with filter.');
     try {
-      const response = await apiGet(`/api/v1/inventory/sub/all`);
+      const response = await apiGet(`inventory/sub/all`);
       // Filter by supplier on client side if needed
       if (response.data) {
         response.data = response.data.filter((item: SubInventoryResponseDto) => item.supplierId === supplierId);
@@ -454,7 +587,7 @@ export const inventoryApi = {
   getExpiringInventories: async (daysAhead: number = 30): Promise<SubInventoryListResponseDto> => {
     console.warn('getExpiringInventories is deprecated. Filter sub-inventories by expiration date on client side.');
     try {
-      const response = await apiGet(`/api/v1/inventory/sub/all`);
+      const response = await apiGet(`inventory/sub/all`);
       // Filter by expiration date on client side
       if (response.data) {
         const now = new Date();
@@ -480,10 +613,10 @@ export const inventoryApi = {
   searchInventories: async (searchQuery: string): Promise<InventoryListResponseDto> => {
     console.warn('searchInventories is deprecated. Use getAllInventories and filter on client side.');
     try {
-      const response = await apiGet(`/api/v1/inventory`);
+      const response = await apiGet(`inventory`);
       // Filter on client side
       if (response.data) {
-        response.data = response.data.filter((item: InventoryResponseDto) => 
+        response.data = response.data.filter((item: InventoryResponseDto) =>
           item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           item.desc?.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -528,7 +661,78 @@ export const inventoryApi = {
       ErrorHandlerService.handleError(error, 'InventoryApi.bulkUpdateInventories');
       throw error;
     }
+  },
+
+  // ==================== QUICK ADD & SEARCH ENDPOINTS ====================
+
+  /**
+   * Quick add inventory - Creates product (if new) + inventory + sub-inventory in one call
+   * POST inventory/quick-add
+   * 
+   * This is the most commonly used endpoint for adding stock:
+   * - Searches for existing product by name
+   * - Creates product if not found
+   * - Creates inventory record if not exists
+   * - Adds new batch (sub-inventory)
+   */
+  quickAddInventory: async (data: QuickAddInventoryDto): Promise<QuickAddResponseDto> => {
+    try {
+      console.log('Quick add inventory request:', data);
+      const response = await apiPost('inventory/quick-add', data);
+      console.log('Quick add inventory response:', response);
+      return response;
+    } catch (error: any) {
+      console.error('Quick add inventory error:', error);
+      console.error('Error response data:', error.response?.data);
+      console.error('Error response status:', error.response?.status);
+      ErrorHandlerService.handleError(error, 'InventoryApi.quickAddInventory');
+      throw error;
+    }
+  },
+
+  /**
+   * Search inventory by product name or barcode
+   * GET inventory/search?query={searchTerm}
+   * 
+   * Use this for barcode scanning or product search before adding stock
+   */
+  searchInventory: async (searchQuery: string): Promise<SearchInventoryResponseDto> => {
+    try {
+      console.log('Search inventory request:', searchQuery);
+      const response = await apiGet(`inventory/search?query=${encodeURIComponent(searchQuery)}`);
+      console.log('Search inventory response:', response);
+      return response;
+    } catch (error) {
+      console.error('Search inventory error:', error);
+      ErrorHandlerService.handleError(error, 'InventoryApi.searchInventory');
+      throw error;
+    }
+  },
+
+
+
+
+  /**
+   * Check if product exists by name or barcode
+   * POST inventory/check-product
+   * 
+   * Use this to verify if a product exists before adding inventory
+   * At least one of productName or barcode must be provided
+   */
+  checkProductExists: async (data: CheckProductExistsDto): Promise<any> => {
+    try {
+      console.log('Check product exists request:', data);
+      const response = await apiPost('inventory/check-product', data);
+      console.log('Check product exists response:', response);
+      return response;
+    } catch (error) {
+      console.error('Check product exists error:', error);
+      ErrorHandlerService.handleError(error, 'InventoryApi.checkProductExists');
+      throw error;
+    }
   }
+
+  
 };
 
 export default inventoryApi;

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, CheckCircle, ShoppingCart, Package, AlertCircle, Loader2 } from 'lucide-react';
-import { InventoryStepData, SubInventoryStepData } from '../layout';
+import { ChevronLeft, CheckCircle, ShoppingCart, Package, AlertCircle, Loader2, Scan } from 'lucide-react';
+import { ProductStepData, InventoryStepData, SubInventoryStepData } from '../layout';
 import { useNotification } from '@/context/provider/NotificationProvider';
 import { useWarehouses } from '../../../provider/WarehouseProvider';
 import { useSuppliers } from '../../../provider/SupplierProvider';
+import BarcodeScannerModal from '../../../modals/BarcodeScannerModal';
 
 interface SubInventoryStepProps {
+  productData: ProductStepData;
   inventoryData: InventoryStepData;
   onComplete: (data: SubInventoryStepData) => void;
   onBack: () => void;
@@ -14,6 +16,7 @@ interface SubInventoryStepProps {
 }
 
 const SubInventoryStep: React.FC<SubInventoryStepProps> = ({
+  productData,
   inventoryData,
   onComplete,
   onBack,
@@ -24,6 +27,12 @@ const SubInventoryStep: React.FC<SubInventoryStepProps> = ({
   const { warehouses } = useWarehouses();
   const { suppliers } = useSuppliers();
 
+  // Barcode scanner modal state
+  const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState(false);
+
+  // Check if barcode is needed (not provided in previous steps)
+  const needsBarcode = !productData.barcode || productData.barcode.trim() === '';
+
   // Form state
   const [formData, setFormData] = useState({
     warehouseId: initialData?.warehouseId || '',
@@ -31,7 +40,8 @@ const SubInventoryStep: React.FC<SubInventoryStepProps> = ({
     quantity: initialData?.quantity || 0,
     unitPrice: initialData?.unitPrice || 0,
     expirationDate: initialData?.expirationDate || '',
-    desc: initialData?.desc || ''
+    subInventoryDesc: initialData?.subInventoryDesc || '',
+    barcode: initialData?.barcode || productData.barcode || ''
   });
 
   const [totalValue, setTotalValue] = useState(0);
@@ -53,6 +63,10 @@ const SubInventoryStep: React.FC<SubInventoryStepProps> = ({
       showNotification('warning', 'Depo seçimi zorunludur');
       return;
     }
+    if (!formData.supplierId) {
+      showNotification('warning', 'Tedarikçi seçimi zorunludur');
+      return;
+    }
     if (formData.quantity <= 0) {
       showNotification('warning', 'Miktar 0\'dan büyük olmalıdır');
       return;
@@ -63,13 +77,13 @@ const SubInventoryStep: React.FC<SubInventoryStepProps> = ({
     }
 
     const data: SubInventoryStepData = {
-      inventoryId: inventoryData.inventoryId || '', // Backend'de oluşturulacaksa boş olabilir
       warehouseId: formData.warehouseId,
-      supplierId: formData.supplierId || undefined,
+      supplierId: formData.supplierId,
       quantity: formData.quantity,
       unitPrice: formData.unitPrice,
       expirationDate: formData.expirationDate || undefined,
-      desc: formData.desc || undefined
+      subInventoryDesc: formData.subInventoryDesc || undefined,
+      barcode: formData.barcode || ""
     };
 
     onComplete(data);
@@ -77,19 +91,34 @@ const SubInventoryStep: React.FC<SubInventoryStepProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Inventory Summary */}
-      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-        <h4 className="font-semibold text-gray-700 mb-3">Envanter Özeti</h4>
-        <div className="grid grid-cols-2 gap-4 text-sm">
+      {/* Product & Inventory Summary */}
+      <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4 border border-blue-200">
+        <h4 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          <Package size={18} className="text-blue-600" />
+          Ürün ve Envanter Özeti
+        </h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <span className="text-gray-600">Min Stok:</span>
-            <span className="ml-2 font-semibold text-orange-600">
+            <span className="text-gray-600 block">Ürün:</span>
+            <span className="font-semibold text-gray-800">
+              {productData.productName}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-600 block">Barkod:</span>
+            <span className="font-semibold text-gray-800">
+              {productData.barcode || 'N/A'}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-600 block">Min Stok:</span>
+            <span className="font-semibold text-orange-600">
               {inventoryData.minStockLevel}
             </span>
           </div>
           <div>
-            <span className="text-gray-600">Max Stok:</span>
-            <span className="ml-2 font-semibold text-green-600">
+            <span className="text-gray-600 block">Max Stok:</span>
+            <span className="font-semibold text-green-600">
               {inventoryData.maxStockLevel}
             </span>
           </div>
@@ -200,6 +229,35 @@ const SubInventoryStep: React.FC<SubInventoryStepProps> = ({
             />
           </div>
 
+          {/* Barcode - Only show if not provided in previous steps */}
+          {needsBarcode && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Barkod <span className="text-gray-400">(Opsiyonel)</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={formData.barcode}
+                  onChange={(e) => handleInputChange('barcode', e.target.value)}
+                  className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="Barkod numarası girin"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsBarcodeModalOpen(true)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-md"
+                  title="Barkod Tara"
+                >
+                  <Scan size={18} />
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Barkod okuyucu ile tarama için sağdaki ikona tıklayın
+              </p>
+            </div>
+          )}
+
           {/* Total Value (Calculated) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -213,11 +271,11 @@ const SubInventoryStep: React.FC<SubInventoryStepProps> = ({
           {/* Description */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Açıklama / Notlar
+              Parti/Batch Notları
             </label>
             <textarea
-              value={formData.desc}
-              onChange={(e) => handleInputChange('desc', e.target.value)}
+              value={formData.subInventoryDesc}
+              onChange={(e) => handleInputChange('subInventoryDesc', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="Örn: Organik sertifikalı parti, Farm A'dan"
               rows={3}
@@ -281,6 +339,17 @@ const SubInventoryStep: React.FC<SubInventoryStepProps> = ({
           )}
         </button>
       </div>
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        open={isBarcodeModalOpen}
+        onClose={() => setIsBarcodeModalOpen(false)}
+        onResult={(barcode) => {
+          handleInputChange('barcode', barcode);
+          setIsBarcodeModalOpen(false);
+          showNotification('success', 'Barkod başarıyla okundu');
+        }}
+      />
     </form>
   );
 };

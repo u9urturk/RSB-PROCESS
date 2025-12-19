@@ -3,6 +3,7 @@ import { ChevronLeft, CheckCircle, Warehouse, AlertCircle } from 'lucide-react';
 import { ProductStepData, InventoryStepData } from '../layout';
 import { useInventory } from '../../../provider/InventoryProvider';
 import { useNotification } from '@/context/provider/NotificationProvider';
+import { useStockTypes } from '../../../provider/StockTypeProvider';
 
 interface InventoryStepProps {
   productData: ProductStepData;
@@ -19,16 +20,17 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
 }) => {
   const { showNotification } = useNotification();
   const { inventories, getInventoryByProductId } = useInventory();
+  const { stockTypes } = useStockTypes();
   const [loading, setLoading] = useState(false);
   const [existingInventory, setExistingInventory] = useState<any>(null);
 
-  // Form state
+  // Form state - QuickAdd format'ına uygun
   const [formData, setFormData] = useState({
     minStockLevel: initialData?.minStockLevel || 10,
-    maxStockLevel: initialData?.maxStockLevel || 100,
-    lastCountedAt: initialData?.lastCountedAt || new Date().toISOString().split('T')[0],
-    expirationDate: initialData?.expirationDate || '',
-    desc: initialData?.desc || ''
+    maxStockLevel: initialData?.maxStockLevel || 500,
+    inventoryDesc: initialData?.inventoryDesc || '',
+    lastCountedAt: initialData?.lastCountedAt || '',
+    stockTypeId: initialData?.stockTypeId || ''
   });
 
   // Check if product has existing inventory
@@ -46,18 +48,18 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
           if (inventory) {
             setExistingInventory(inventory);
             // Mevcut inventory bilgilerini forma yükle
-            setFormData({
-              minStockLevel: inventory.minStockLevel,
-              maxStockLevel: inventory.maxStockLevel,
-              lastCountedAt: inventory.lastCountedAt || new Date().toISOString().split('T')[0],
-              expirationDate: inventory.expirationDate || '',
-              desc: inventory.desc || ''
-            });
+            // setFormData({
+            //   minStockLevel: inventory.minStockLevel,
+            //   maxStockLevel: inventory.maxStockLevel,
+            //   inventoryDesc: '',
+            //   lastCountedAt: inventory.lastCountedAt || '',
+            //   stockTypeId: inventory.stockTypeId || ''
+            // });
+            showNotification('info', 'Mevcut envanter bilgileri yüklendi');
           }
         } catch (error) {
           console.error('Inventory check error:', error);
-          // Ürün var ama inventory yok (olmaması gereken durum)
-          showNotification('warning', 'Ürün için envanter kaydı bulunamadı, yeni kayıt oluşturulacak');
+          // Ürün var ama inventory yok - normal durum, quick add ile oluşturulacak
         } finally {
           setLoading(false);
         }
@@ -75,6 +77,10 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
     e.preventDefault();
 
     // Validation
+    if (!formData.stockTypeId) {
+      showNotification('warning', 'Stok türü seçimi zorunludur');
+      return;
+    }
     if (formData.minStockLevel < 0) {
       showNotification('warning', 'Minimum stok seviyesi 0\'dan küçük olamaz');
       return;
@@ -85,14 +91,11 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
     }
 
     const data: InventoryStepData = {
-      isExisting: !!existingInventory,
-      inventoryId: existingInventory?.id,
-      productId: productData.productId || '', // Yeni ürün için boş olacak, backend'de oluşturulacak
       minStockLevel: formData.minStockLevel,
       maxStockLevel: formData.maxStockLevel,
+      inventoryDesc: formData.inventoryDesc || undefined,
       lastCountedAt: formData.lastCountedAt || undefined,
-      expirationDate: formData.expirationDate || undefined,
-      desc: formData.desc || undefined
+      stockTypeId: formData.stockTypeId || undefined,
     };
 
     onComplete(data);
@@ -119,7 +122,7 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
             <CheckCircle className="text-orange-600" size={20} />
           </div>
           <div>
-            <div className="font-semibold text-gray-800">{productData.name}</div>
+            <div className="font-semibold text-gray-800">{productData.productName}</div>
             <div className="text-sm text-gray-600">
               {productData.barcode ? `Barkod: ${productData.barcode}` : 'Barkod yok'}
             </div>
@@ -148,6 +151,29 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Stock Type */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Stok Türü <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.stockTypeId}
+              onChange={(e) => handleInputChange('stockTypeId', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              required
+            >
+              <option value="">Stok türü seçin</option>
+              {stockTypes.map((stockType) => (
+                <option key={stockType.id} value={stockType.id}>
+                  {stockType.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Ürünün stok yönetim türünü belirler
+            </p>
+          </div>
+
           {/* Min Stock Level */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -197,30 +223,16 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
               onChange={(e) => handleInputChange('lastCountedAt', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
-          </div>
-
-          {/* Expiration Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Son Kullanma Tarihi
-            </label>
-            <input
-              type="date"
-              value={formData.expirationDate}
-              onChange={(e) => handleInputChange('expirationDate', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              min={new Date().toISOString().split('T')[0]}
-            />
-          </div>
+          </div>          
 
           {/* Description */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Açıklama / Notlar
+              Envanter Notları
             </label>
             <textarea
-              value={formData.desc}
-              onChange={(e) => handleInputChange('desc', e.target.value)}
+              value={formData.inventoryDesc}
+              onChange={(e) => handleInputChange('inventoryDesc', e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="Özel saklama koşulları, notlar vb."
               rows={3}

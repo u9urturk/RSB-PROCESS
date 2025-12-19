@@ -13,7 +13,7 @@ function createWindow() {
 
 
   // Geliştirme modunda mı kontrol et
-  const isDevelopment = process.env.NODE_ENV.trim() === 'development';
+  const isDevelopment = process.env.NODE_ENV && process.env.NODE_ENV.trim() === 'development';
 
 
   if (isDevelopment) {

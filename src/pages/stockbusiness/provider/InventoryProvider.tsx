@@ -9,14 +9,18 @@ import inventoryApi, {
   StockAdjustmentDto,
   InventoryStatsDto,
   LowStockItemDto,
-  AdjustmentType
+  AdjustmentType,
+  QuickAddInventoryDto,
+  QuickAddResponseDto,
+  InventorySummaryItem,
+  InventorySummaryStats
 } from '../apis/inventoryApi';
 import { useNotification } from '@/context/provider/NotificationProvider';
 
 // Context State Interface
 interface InventoryContextState {
   // Parent Inventories
-  inventories: InventoryResponseDto[];
+  inventories: InventorySummaryItem[];
   selectedInventory: InventoryResponseDto | null;
   
   // Sub-Inventories (Batches)
@@ -26,6 +30,7 @@ interface InventoryContextState {
   // Statistics
   stats: InventoryStatsDto | null;
   lowStockItems: LowStockItemDto[];
+  summaryStats: InventorySummaryStats | null;
   
   // Loading States
   loading: boolean;
@@ -51,6 +56,10 @@ interface InventoryContextState {
   // Stock Operations
   adjustStock: (data: StockAdjustmentDto) => Promise<void>;
   
+  // Quick Add & Search Operations
+  quickAddInventory: (data: QuickAddInventoryDto) => Promise<QuickAddResponseDto>;
+  searchInventory: (query: string) => Promise<any>;
+  
   // Reports & Stats
   loadInventoryStats: (id: string) => Promise<void>;
   loadLowStockItems: (threshold?: number) => Promise<void>;
@@ -70,18 +79,19 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
   const { showNotification } = useNotification();
   
   // State
-  const [inventories, setInventories] = useState<InventoryResponseDto[]>([]);
+  const [inventories, setInventories] = useState<InventorySummaryItem[]>([]);
   const [selectedInventory, setSelectedInventory] = useState<InventoryResponseDto | null>(null);
   
   const [subInventories, setSubInventories] = useState<SubInventoryResponseDto[]>([]);
   const [selectedSubInventory, setSelectedSubInventory] = useState<SubInventoryResponseDto | null>(null);
-  
+
   const [stats, setStats] = useState<InventoryStatsDto | null>(null);
   const [lowStockItems, setLowStockItems] = useState<LowStockItemDto[]>([]);
   
   const [loading, setLoading] = useState(false);
   const [loadingSubInventories, setLoadingSubInventories] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [summaryStats, setSummaryStats] = useState<InventorySummaryStats | null>(null);
 
   // Load all inventories on mount
   useEffect(() => {
@@ -93,8 +103,15 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
   const refreshInventories = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await inventoryApi.getAllInventories();
-      setInventories(response.data || []);
+      const response = await inventoryApi.getSummaryAll();
+      setInventories(response.items);
+      setSummaryStats({
+        total: response.total,
+        lowStockCount: response.lowStockCount,
+        normalStockCount: response.normalStockCount,
+        overstockedCount: response.overstockedCount,
+        totalInventoryValue: response.totalInventoryValue,
+      });
     } catch (error) {
       showNotification('error', 'Envanter listesi yüklenemedi');
       console.error('Error loading inventories:', error);
@@ -110,9 +127,8 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
         throw new Error('Maksimum stok seviyesi minimum stok seviyesinden büyük olmalıdır');
       }
 
-      const newInventory = await inventoryApi.createInventory(data);
       
-      setInventories(prev => [...prev, newInventory]);
+      // setInventories(prev => [...prev, newInventory]);
       showNotification('success', 'Envanter başarıyla oluşturuldu');
       
       return;
@@ -131,9 +147,9 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
 
       const response = await inventoryApi.updateInventory(id, data);
       
-      setInventories(prev =>
-        prev.map(inv => (inv.id === id ? response.data : inv))
-      );
+      // setInventories(prev =>
+      //   prev.map(inv => (inv.id === id ? response.data : inv))
+      // );
       
       if (selectedInventory?.id === id) {
         setSelectedInventory(response.data);
@@ -150,7 +166,7 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
     try {
       await inventoryApi.deleteInventory(id);
       
-      setInventories(prev => prev.filter(inv => inv.id !== id));
+      // setInventories(prev => prev.filter(inv => inv.id !== id));
       
       if (selectedInventory?.id === id) {
         setSelectedInventory(null);
@@ -326,6 +342,76 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
     }
   }, [showNotification]);
 
+  // ==================== QUICK ADD & SEARCH ====================
+
+  const quickAddInventory = useCallback(async (data: QuickAddInventoryDto): Promise<QuickAddResponseDto> => {
+    try {
+      console.log('Quick add inventory - Provider:', data);
+      
+      // Validation
+      if (!data.productName || data.productName.trim().length === 0) {
+        throw new Error('Ürün adı zorunludur');
+      }
+      if (data.quantity <= 0) {
+        throw new Error('Miktar 0\'dan büyük olmalıdır');
+      }
+      if (data.unitPrice <= 0) {
+        throw new Error('Birim fiyat 0\'dan büyük olmalıdır');
+      }
+      if (!data.warehouseId) {
+        throw new Error('Depo seçimi zorunludur');
+      }
+      if (!data.supplierId) {
+        throw new Error('Tedarikçi seçimi zorunludur');
+      }
+      if (data.minStockLevel < 0) {
+        throw new Error('Minimum stok seviyesi 0 veya daha büyük olmalıdır');
+      }
+      if (data.maxStockLevel < data.minStockLevel) {
+        throw new Error('Maksimum stok seviyesi minimum stok seviyesinden büyük olmalıdır');
+      }
+      
+      const response = await inventoryApi.quickAddInventory(data);
+      
+      // Refresh inventories to reflect the new addition
+      await refreshInventories();
+      
+      const message = response.isNewProduct 
+        ? `✅ Yeni ürün "${data.productName}" başarıyla eklendi!` 
+        : `✅ "${data.productName}" stoku güncellendi!`;
+      
+      showNotification('success', message);
+      
+      console.log('Quick add response:', response);
+      return response;
+    } catch (error: any) {
+      const errorMessage = error.message || 'Stok eklenirken hata oluştu';
+      showNotification('error', errorMessage);
+      console.error('Quick add inventory error:', error);
+      throw error;
+    }
+  }, [showNotification, refreshInventories]);
+
+  const searchInventory = useCallback(async (query: string): Promise<any> => {
+    try {
+      console.log('Search inventory - Provider:', query);
+      
+      if (!query || query.trim().length === 0) {
+        throw new Error('Arama terimi giriniz');
+      }
+
+      const response = await inventoryApi.checkProductExists({ productName: query, barcode: query });
+      // console.log('Search inventory response:', response);
+      
+      return response;
+    } catch (error: any) {
+      const errorMessage = error.message || 'Arama yapılırken hata oluştu';
+      showNotification('error', errorMessage);
+      console.error('Search inventory error:', error);
+      throw error;
+    }
+  }, [showNotification]);
+
   // ==================== UTILITY ====================
 
   const clearSelection = useCallback(() => {
@@ -345,6 +431,7 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
     loading,
     loadingSubInventories,
     loadingStats,
+    summaryStats,
     
     // Parent Inventory Operations
     createInventory,
@@ -364,6 +451,10 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
     
     // Stock Operations
     adjustStock,
+    
+    // Quick Add & Search Operations
+    quickAddInventory,
+    searchInventory,
     
     // Reports & Stats
     loadInventoryStats,

@@ -1,12 +1,11 @@
-import React, { useState, useCallback } from 'react';
-import { Search, Loader2, Package, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Package, CheckCircle, Search, Loader2 } from 'lucide-react';
 import { ProductStepData } from '../layout';
-import { ProductStatus, productApi, ProductResponseDto } from '../../../apis/productApi';
+import { ProductStatus, ProductResponseDto } from '../../../apis/productApi';
 import { useNotification } from '@/context/provider/NotificationProvider';
 import { useCategories } from '../../../provider/CategoryProvider';
-import { useStockTypes } from '../../../provider/StockTypeProvider';
 import { useBaseUnits } from '../../../provider/BaseUnitProvider';
-import { useProducts } from '@/pages/stockbusiness/provider/ProductProvider';
+import { useInventory } from '@/pages/stockbusiness/provider/InventoryProvider';
 
 interface ProductStepProps {
     onComplete: (data: ProductStepData) => void;
@@ -16,29 +15,23 @@ interface ProductStepProps {
 const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) => {
     const { showNotification } = useNotification();
     const { categories } = useCategories();
-    const { stockTypes } = useStockTypes();
     const { baseUnits } = useBaseUnits();
-    const { createProduct } = useProducts();
+    const { searchInventory } = useInventory();
 
+    // Search state
     const [searchBarcode, setSearchBarcode] = useState('');
     const [searching, setSearching] = useState(false);
     const [existingProduct, setExistingProduct] = useState<ProductResponseDto | null>(null);
-    const [showNotFound, setShowNotFound] = useState(false);
 
     // Form state for new product
-    const [formData, setFormData] = useState<Omit<ProductStepData, 'isExisting'>>({
-        barcode: initialData?.barcode || '',
-        name: initialData?.name || '',
-        description: initialData?.description || '',
-        note: initialData?.note || '',
-        imageUrls: initialData?.imageUrls || [],
-        status: initialData?.status || ProductStatus.ACTIVE,
+    const [formData, setFormData] = useState({
+        productName: initialData?.productName || '',
         categoryId: initialData?.categoryId || '',
-        stockTypeId: initialData?.stockTypeId || '',
-        baseUnitId: initialData?.baseUnitId || ''
+        baseUnitId: initialData?.baseUnitId || '',
+        productDescription: initialData?.productDescription || '',
+        note: initialData?.note || '',
+        status: initialData?.status || ProductStatus.ACTIVE
     });
-
-
 
     const handleExistingProductConfirm = () => {
         if (!existingProduct) return;
@@ -46,15 +39,13 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
         const data: ProductStepData = {
             isExisting: true,
             productId: existingProduct.id,
-            barcode: existingProduct.barcode,
-            name: existingProduct.name,
-            description: existingProduct.description,
+            productName: existingProduct.name,
+            categoryId: existingProduct.categoryId,
+            baseUnitId: existingProduct.baseUnitId,
+            productDescription: existingProduct.description,
             note: existingProduct.note,
             imageUrls: existingProduct.imageUrls,
-            status: existingProduct.status,
-            categoryId: existingProduct.categoryId,
-            stockTypeId: existingProduct.stockTypeId,
-            baseUnitId: existingProduct.baseUnitId
+            status: existingProduct.status
         };
 
         onComplete(data);
@@ -64,16 +55,12 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
         e.preventDefault();
 
         // Validation
-        if (!formData.name.trim()) {
+        if (!formData.productName.trim()) {
             showNotification('warning', 'Ürün adı zorunludur');
             return;
         }
         if (!formData.categoryId) {
             showNotification('warning', 'Kategori seçimi zorunludur');
-            return;
-        }
-        if (!formData.stockTypeId) {
-            showNotification('warning', 'Stok türü seçimi zorunludur');
             return;
         }
         if (!formData.baseUnitId) {
@@ -83,7 +70,12 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
 
         const data: ProductStepData = {
             isExisting: false,
-            ...formData
+            productName: formData.productName,
+            categoryId: formData.categoryId,
+            baseUnitId: formData.baseUnitId,
+            productDescription: formData.productDescription,
+            note: formData.note,
+            status: formData.status
         };
 
         onComplete(data);
@@ -93,42 +85,75 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    const handleSearchProduct = async () => {
+        if (!searchBarcode.trim()) {
+            showNotification('warning', 'Lütfen barkod numarası girin');
+            return;
+        }
+
+        setSearching(true);
+        try {
+            const results = await searchInventory(searchBarcode);
+            console.log('Search results:', results);
+            if (results.inventory.batchCount === 0) {
+                showNotification('info', 'Ürün bulunamadı. Yeni ürün oluşturabilirsiniz.');
+                setExistingProduct(null);
+            } else if (results.inventory.batchCount === 1) {
+                setExistingProduct(results.product);
+                showNotification('success', 'Ürün bulundu!');
+            } else {
+                // Multiple products found, use the first one or show selection
+                setExistingProduct(results.product);
+                showNotification('info', `${results.inventory.batchCount} ürün bulundu. İlk sonuç gösteriliyor.`);
+            }
+        } catch (error) {
+            console.error('Product search error:', error);
+            showNotification('error', 'Ürün araması sırasında hata oluştu');
+            setExistingProduct(null);
+        } finally {
+            setSearching(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Barcode Search Section */}
-            {/* <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Search size={20} className="text-orange-600" />
-          Barkod ile Ürün Ara
-        </h3>
-        
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={searchBarcode}
-            onChange={(e) => setSearchBarcode(e.target.value)}
-            placeholder="Barkod numarasını girin..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            disabled={searching}
-          />
-          <button
-            disabled={searching}
-            className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
-          >
-            {searching ? (
-              <>
-                <Loader2 size={20} className="animate-spin" />
-                Aranıyor...
-              </>
-            ) : (
-              <>
-                <Search size={20} />
-                Ara
-              </>
-            )}
-          </button>
-        </div>
-      </div> */}
+            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Search size={20} className="text-orange-600" />
+                    Barkod ile Ürün Ara
+                </h3>
+
+                <div className="flex gap-3">
+                    <input
+                        type="text"
+                        value={searchBarcode}
+                        onChange={(e) => setSearchBarcode(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearchProduct()}
+                        placeholder="Barkod numarasını girin..."
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        disabled={searching}
+                    />
+                    <button
+                        type="button"
+                        onClick={handleSearchProduct}
+                        disabled={searching}
+                        className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
+                    >
+                        {searching ? (
+                            <>
+                                <Loader2 size={20} className="animate-spin" />
+                                Aranıyor...
+                            </>
+                        ) : (
+                            <>
+                                <Search size={20} />
+                                Ara
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
 
             {/* Existing Product Display */}
             {existingProduct && (
@@ -140,8 +165,8 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                         </div>
                         <span
                             className={`px-3 py-1 rounded-full text-sm font-semibold ${existingProduct.status === ProductStatus.ACTIVE
-                                    ? 'bg-green-200 text-green-800'
-                                    : 'bg-gray-200 text-gray-800'
+                                ? 'bg-green-200 text-green-800'
+                                : 'bg-gray-200 text-gray-800'
                                 }`}
                         >
                             {existingProduct.status}
@@ -184,13 +209,13 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
             )}
 
             {/* New Product Form */}
-            {(showNotFound || !existingProduct) && (
+            {!existingProduct && (
                 <form onSubmit={handleNewProductSubmit} className="space-y-6">
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
                         <div className="flex items-center gap-2 mb-4">
                             <Package className="text-blue-600" size={20} />
                             <h3 className="text-lg font-semibold text-blue-800">
-                                {showNotFound ? 'Yeni Ürün Ekle' : 'Ürün Bilgileri'}
+                                Ürün Bilgileri
                             </h3>
                         </div>
 
@@ -216,8 +241,8 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                                 </label>
                                 <input
                                     type="text"
-                                    value={formData.name}
-                                    onChange={(e) => handleInputChange('name', e.target.value)}
+                                    value={formData.productName}
+                                    onChange={(e) => handleInputChange('productName', e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                     placeholder="Ürün adını girin"
                                     required
@@ -230,8 +255,8 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                                     Açıklama
                                 </label>
                                 <textarea
-                                    value={formData.description}
-                                    onChange={(e) => handleInputChange('description', e.target.value)}
+                                    value={formData.productDescription}
+                                    onChange={(e) => handleInputChange('productDescription', e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                     placeholder="Ürün açıklaması"
                                     rows={3}
@@ -267,26 +292,6 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                                     {categories.map((category) => (
                                         <option key={category.id} value={category.id}>
                                             {category.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Stock Type */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Stok Türü <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    value={formData.stockTypeId}
-                                    onChange={(e) => handleInputChange('stockTypeId', e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                    required
-                                >
-                                    <option value="">Stok türü seçin</option>
-                                    {stockTypes.map((stockType) => (
-                                        <option key={stockType.id} value={stockType.id}>
-                                            {stockType.name}
                                         </option>
                                     ))}
                                 </select>
@@ -339,14 +344,6 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                         Ürün Bilgilerini Onayla ve Devam Et
                     </button>
                 </form>
-            )}
-
-            {/* Empty State */}
-            {!existingProduct && !showNotFound && (
-                <div className="text-center py-12 text-gray-500">
-                    <Package size={48} className="mx-auto mb-4 opacity-50" />
-                    <p>Başlamak için barkod ile ürün arayın veya yeni ürün bilgilerini girin</p>
-                </div>
             )}
         </div>
     );

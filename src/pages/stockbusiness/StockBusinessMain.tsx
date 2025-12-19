@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, } from "react";
 import { Package, Plus, AlertTriangle, TrendingUp, Clock, ShoppingBag } from "lucide-react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import StockTable from "./components/StockTable";
@@ -12,15 +12,16 @@ import { useNavigation } from "../../context/provider/NavigationProvider";
 import { CategoryProvider } from "./provider/CategoryProvider";
 import { BaseUnitProvider } from "./provider/BaseUnitProvider";
 import { StockTypeProvider } from "./provider/StockTypeProvider";
-import { InventoryProvider } from "./provider/InventoryProvider";
+import { InventoryProvider, useInventory } from "./provider/InventoryProvider";
 import { ProductProvider } from "./provider/ProductProvider";
 import { SupplierProvider } from "./provider/SupplierProvider";
 import { WarehouseProvider } from "./provider/WarehouseProvider";
 import { StockItem } from "@/types/index";
 import { useNotification } from "@/context/provider/NotificationProvider";
+import { InventorySummaryItem } from "./apis/inventoryApi";
 
 interface StockTableProps {
-    items: StockItem[];
+    items: InventorySummaryItem[];
     onStockChange: (id: string, amount: number, type: "add" | "remove") => void;
 }
 
@@ -56,6 +57,7 @@ function StockBusinessMainContent() {
     const [isStockAddModalOpen, setIsStockAddModalOpen] = useState<boolean>(false);
     const [activeTab, setActiveTab] = useState<string>('stock');
     const { showNotification } = useNotification();
+    const { inventories, summaryStats } = useInventory();
 
     // URL'e göre aktif tab'ı belirle
     useEffect(() => {
@@ -119,13 +121,14 @@ function StockBusinessMainContent() {
         }));
     }, []);
 
-    // const filteredStocks = inventories.filter(stock => {
-    //     return (
-    //         stock?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    //         stock?.stockType?.toLowerCase().includes(search.toLowerCase()) ||
-    //         stock?.barcode?.toLowerCase().includes(search.toLowerCase())
-    //     );
-    // });
+    const filteredStocks = inventories.filter(stock => {
+        return (
+            stock?.productName?.toLowerCase().includes(search.toLowerCase()) ||
+            stock?.stockType?.name?.toLowerCase().includes(search.toLowerCase()) ||
+            stock?.barcode?.toLowerCase().includes(search.toLowerCase())
+        );
+    });
+
 
     const TableComponent = ({ items, onStockChange }: StockTableProps) => (
         <StockTable
@@ -140,29 +143,31 @@ function StockBusinessMainContent() {
     const stockStats = [
         {
             title: "Toplam Ürün",
-            value: null,
+            value: summaryStats?.total || 0,
             icon: <Package size={20} />,
             color: "from-blue-500 to-blue-600"
         },
         {
             title: "Düşük Stok",
-            value: null,
+            value: summaryStats?.lowStockCount || 0,
             icon: <AlertTriangle size={20} />,
             color: "from-red-500 to-red-600"
         },
         {
             title: "Toplam Değer",
-            value: null,
+            value: summaryStats?.totalInventoryValue || 0,
             icon: <TrendingUp size={20} />,
             color: "from-green-500 to-green-600"
         },
         {
-            title: "Tükenen Ürün",
-            value: null,
+            title: "Fazla Stok",
+            value: summaryStats?.overstockedCount || 0,
             icon: <ShoppingBag size={20} />,
             color: "from-orange-500 to-orange-600"
         }
     ];
+
+   
 
     return (
         <PageTransition>
@@ -256,7 +261,7 @@ function StockBusinessMainContent() {
                                                                 {stat.title}
                                                             </div>
                                                             <div className="text-lg sm:text-2xl font-bold text-gray-800">
-                                                                {stat.value}
+                                                                {stat.title === "Toplam Değer" ? `₺${stat.value.toLocaleString('tr-TR')}` : stat.value}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -287,7 +292,7 @@ function StockBusinessMainContent() {
                                     </div>
 
                                     {/* Stock Table */}
-                                    <TableComponent items={[]} onStockChange={handleStockChange} />
+                                    <TableComponent items={filteredStocks} onStockChange={handleStockChange} />
                                 </>
                             )}
                         </>
@@ -347,14 +352,9 @@ function StockBusinessMainContent() {
                 onClose={() => setIsStockAddModalOpen(false)}
                 onComplete={async (data) => {
                     try {
-                        // TODO: API çağrıları ile kayıt işlemleri
-                        // 1. Product oluştur veya mevcut olanı kullan
-                        // 2. Inventory oluştur veya mevcut olanı kullan
-                        // 3. SubInventory oluştur
-                        
-                        console.log('Stock Add Data:', data);
+                        // console.log('Stock Add Data:', data);
                         showNotification('success', 'Stok başarıyla eklendi!');
-                        setIsStockAddModalOpen(false);
+                        // setIsStockAddModalOpen(false);
                     } catch (error) {
                         console.error('Stock add error:', error);
                         showNotification('error', 'Stok eklenirken bir hata oluştu');

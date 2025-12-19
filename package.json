@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "set NODE_ENV=development && electron ."
+    "start": "NODE_ENV=development electron ."
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.0.9",
