@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Package, CheckCircle, Search, Loader2 } from 'lucide-react';
-import { ProductStepData } from '../layout';
+import { Package, CheckCircle, Search, Loader2, ScanLine } from 'lucide-react';
+import { InventoryStepData, ProductStepData } from '../layout';
 import { ProductStatus, ProductResponseDto } from '../../../apis/productApi';
 import { useNotification } from '@/context/provider/NotificationProvider';
 import { useCategories } from '../../../provider/CategoryProvider';
@@ -8,7 +8,7 @@ import { useBaseUnits } from '../../../provider/BaseUnitProvider';
 import { useInventory } from '@/pages/stockbusiness/provider/InventoryProvider';
 
 interface ProductStepProps {
-    onComplete: (data: ProductStepData) => void;
+    onComplete: (data: ProductStepData, existingInventory: InventoryStepData | null, skipToSubInventory: boolean) => void;
     initialData: ProductStepData | null;
 }
 
@@ -22,6 +22,8 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
     const [searchBarcode, setSearchBarcode] = useState('');
     const [searching, setSearching] = useState(false);
     const [existingProduct, setExistingProduct] = useState<ProductResponseDto | null>(null);
+    const [existingInventory, setExistingInventory] = useState<InventoryStepData | null>(null);
+
 
     // Form state for new product
     const [formData, setFormData] = useState({
@@ -45,10 +47,11 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
             productDescription: existingProduct.description,
             note: existingProduct.note,
             imageUrls: existingProduct.imageUrls,
-            status: existingProduct.status
+            status: existingProduct.status,
+            barcode: existingProduct.barcode, 
         };
 
-        onComplete(data);
+        onComplete(data,existingInventory, true);
     };
 
     const handleNewProductSubmit = (e: React.FormEvent) => {
@@ -78,7 +81,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
             status: formData.status
         };
 
-        onComplete(data);
+        onComplete(data, null, false);
     };
 
     const handleInputChange = (field: keyof typeof formData, value: any) => {
@@ -94,22 +97,79 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
         setSearching(true);
         try {
             const results = await searchInventory(searchBarcode);
-            console.log('Search results:', results);
             if (results.inventory.batchCount === 0) {
                 showNotification('info', 'Ürün bulunamadı. Yeni ürün oluşturabilirsiniz.');
                 setExistingProduct(null);
             } else if (results.inventory.batchCount === 1) {
-                setExistingProduct(results.product);
+                setExistingProduct({
+                    ...results.product, barcode: results.matchedBatch?.barcode || ''
+                });
+                setExistingInventory({
+                    inventoryId: results.inventory.id,
+                    minStockLevel: results.inventory.minStockLevel || 0,
+                    maxStockLevel: results.inventory.maxStockLevel || 0,
+                    totalQuantity: results.inventory.totalQuantity || 0
+                });
                 showNotification('success', 'Ürün bulundu!');
             } else {
                 // Multiple products found, use the first one or show selection
-                setExistingProduct(results.product);
+                setExistingProduct({
+                    ...results.product, barcode: results.matchedBatch?.barcode || ''
+                });
+                setExistingInventory({
+                    inventoryId: results.inventory.id,
+                    minStockLevel: results.inventory.minStockLevel || 0,
+                    maxStockLevel: results.inventory.maxStockLevel || 0,
+                    totalQuantity: results.inventory.totalQuantity || 0
+                });
                 showNotification('info', `${results.inventory.batchCount} ürün bulundu. İlk sonuç gösteriliyor.`);
             }
         } catch (error) {
             console.error('Product search error:', error);
             showNotification('error', 'Ürün araması sırasında hata oluştu');
             setExistingProduct(null);
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    const handleScanProduct = async () => {
+        if (!searchBarcode.trim()) {
+            showNotification('warning', 'Lütfen barkod numarası girin');
+            return;
+        }
+
+        setSearching(true);
+        try {
+            const results = await searchInventory(searchBarcode);
+            if (results.inventory.batchCount === 0) {
+                showNotification('warning', 'Ürün bulunamadı. Lütfen önce ürünü oluşturun.');
+                setExistingProduct(null);
+            } else {
+                const foundProduct = results.product;
+                const barcode = results.matchedBatch?.barcode || searchBarcode;
+
+                showNotification('success', 'Ürün bulundu! SubInventory adımına yönlendiriliyorsunuz...');
+
+                // Direkt SubInventory adımına geç
+                const data: ProductStepData = {
+                    isExisting: true,
+                    productId: foundProduct.id,
+                    productName: foundProduct.name,
+                    categoryId: foundProduct.categoryId,
+                    baseUnitId: foundProduct.baseUnitId,
+                    productDescription: foundProduct.description,
+                    note: foundProduct.note,
+                    imageUrls: foundProduct.imageUrls,
+                    status: foundProduct.status,
+                    barcode: barcode
+                };
+
+                onComplete(data,existingInventory, true);
+            }
+        } catch (error) {
+            console.error('Product scan error:', error);
+            showNotification('error', 'Ürün tarama sırasında hata oluştu');
         } finally {
             setSearching(false);
         }
@@ -136,6 +196,15 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                     />
                     <button
                         type="button"
+                        onClick={handleScanProduct}
+                        disabled={searching}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
+                    >
+                        <ScanLine size={20} />
+                        Tara
+                    </button>
+                    <button
+                        type="button"
                         onClick={handleSearchProduct}
                         disabled={searching}
                         className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
@@ -143,12 +212,12 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                         {searching ? (
                             <>
                                 <Loader2 size={20} className="animate-spin" />
-                                Aranıyor...
+                                Kontrol ediliyor...
                             </>
                         ) : (
                             <>
                                 <Search size={20} />
-                                Ara
+                                Kontrol Et
                             </>
                         )}
                     </button>
@@ -220,19 +289,6 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Barcode */}
-                            {/* <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Barkod <span className="text-gray-400">(Opsiyonel)</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.barcode}
-                  onChange={(e) => handleInputChange('barcode', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="Barkod numarası"
-                />
-              </div> */}
 
                             {/* Name */}
                             <div>

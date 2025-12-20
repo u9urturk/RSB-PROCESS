@@ -51,6 +51,10 @@ export interface ProductResponseDto {
   stockType?: any;
   baseUnit?: any;
   stockItems?: any[];
+  inventoryId?:string;
+  minStockLevel?: number;
+  maxStockLevel?: number;
+  totalStock?: number;
 }
 
 // Product List Response DTO Interface

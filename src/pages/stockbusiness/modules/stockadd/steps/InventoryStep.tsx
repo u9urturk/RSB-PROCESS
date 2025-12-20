@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, CheckCircle, Warehouse, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, CheckCircle, Warehouse } from 'lucide-react';
 import { ProductStepData, InventoryStepData } from '../layout';
-import { useInventory } from '../../../provider/InventoryProvider';
 import { useNotification } from '@/context/provider/NotificationProvider';
 import { useStockTypes } from '../../../provider/StockTypeProvider';
 
@@ -19,11 +18,7 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
   initialData
 }) => {
   const { showNotification } = useNotification();
-  const { inventories, getInventoryByProductId } = useInventory();
   const { stockTypes } = useStockTypes();
-  const [loading, setLoading] = useState(false);
-  const [existingInventory, setExistingInventory] = useState<any>(null);
-
   // Form state - QuickAdd format'ına uygun
   const [formData, setFormData] = useState({
     minStockLevel: initialData?.minStockLevel || 10,
@@ -33,41 +28,6 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
     stockTypeId: initialData?.stockTypeId || ''
   });
 
-  // Check if product has existing inventory
-  useEffect(() => {
-    const checkExistingInventory = async () => {
-      if (productData.isExisting && productData.productId) {
-        setLoading(true);
-        try {
-          // Ürün varsa, inventory de var olmalı (1-1 ilişki)
-          await getInventoryByProductId(productData.productId);
-          
-          // Context'ten inventory'yi bul
-          const inventory = inventories.find(inv => inv.productId === productData.productId);
-          
-          if (inventory) {
-            setExistingInventory(inventory);
-            // Mevcut inventory bilgilerini forma yükle
-            // setFormData({
-            //   minStockLevel: inventory.minStockLevel,
-            //   maxStockLevel: inventory.maxStockLevel,
-            //   inventoryDesc: '',
-            //   lastCountedAt: inventory.lastCountedAt || '',
-            //   stockTypeId: inventory.stockTypeId || ''
-            // });
-            showNotification('info', 'Mevcut envanter bilgileri yüklendi');
-          }
-        } catch (error) {
-          console.error('Inventory check error:', error);
-          // Ürün var ama inventory yok - normal durum, quick add ile oluşturulacak
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-
-    checkExistingInventory();
-  }, [productData, getInventoryByProductId, inventories, showNotification]);
 
   const handleInputChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -101,17 +61,6 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
     onComplete(data);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Envanter bilgileri kontrol ediliyor...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Product Summary */}
@@ -130,24 +79,12 @@ const InventoryStep: React.FC<InventoryStepProps> = ({
         </div>
       </div>
 
-      {/* Existing Inventory Notice */}
-      {existingInventory && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
-          <AlertCircle className="text-blue-600 flex-shrink-0" size={20} />
-          <div className="text-sm text-blue-800">
-            <strong>Mevcut Envanter:</strong> Bu ürün için envanter kaydı zaten mevcut. 
-            Bilgileri kontrol edin ve gerekirse güncelleyin.
-          </div>
-        </div>
-      )}
+  
 
       {/* Inventory Form */}
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <Warehouse className="text-orange-600" size={20} />
-          <h3 className="text-lg font-semibold">
-            {existingInventory ? 'Envanter Bilgilerini Kontrol Et' : 'Envanter Bilgilerini Gir'}
-          </h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

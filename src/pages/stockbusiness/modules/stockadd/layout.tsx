@@ -12,21 +12,28 @@ export interface ProductStepData {
   isExisting: boolean;
   productId?: string;
   productName: string;
-  barcode?: string;
   categoryId?: string;
   baseUnitId?: string;
   productDescription?: string;
   note?: string;
   imageUrls?: string[];
   status?: ProductStatus;
+  barcode?: string;
+  inventoryId?: string;
+  minStockLevel?: number;
+  maxStockLevel?: number;
+  totalStock?: number;
 }
 
 export interface InventoryStepData {
+  inventoryId?: string;
   minStockLevel: number;
   maxStockLevel: number;
   inventoryDesc?: string;
   lastCountedAt?: string;
   stockTypeId?: string;
+  barcode?: string;
+  totalQuantity?: number;
 }
 
 export interface SubInventoryStepData {
@@ -61,6 +68,8 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
   const [productData, setProductData] = useState<ProductStepData | null>(null);
   const [inventoryData, setInventoryData] = useState<InventoryStepData | null>(null);
   const [subInventoryData, setSubInventoryData] = useState<SubInventoryStepData | null>(null);
+  const [barcode, setBarcode] = useState<string>("");
+
 
   // Reset state when modal opens
   useEffect(() => {
@@ -72,10 +81,24 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
     }
   }, [open]);
 
-  const handleProductComplete = (data: ProductStepData) => {
+  const handleProductComplete = (data: ProductStepData, existingInventory: InventoryStepData | null, skipToSubInventory?: boolean) => {
     console.log('Product step completed:', data);
     setProductData(data);
-    setCurrentStep(StepEnum.INVENTORY);
+    if (skipToSubInventory) {
+      // Inventory için varsayılan değerler
+      setInventoryData({
+        inventoryId: existingInventory?.inventoryId || '',
+        minStockLevel: existingInventory?.minStockLevel || 10,
+        maxStockLevel: existingInventory?.maxStockLevel || 100,
+        totalQuantity: existingInventory?.totalQuantity || 0,
+        inventoryDesc: '',
+        stockTypeId: '',
+        barcode: data.barcode || ''
+      });
+      setCurrentStep(StepEnum.SUBINVENTORY);
+    } else {
+      setCurrentStep(StepEnum.INVENTORY);
+    }
   };
 
   const handleInventoryComplete = (data: InventoryStepData) => {
@@ -99,7 +122,7 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
           baseUnitId: productData.baseUnitId,
           stockTypeId: inventoryData.stockTypeId,
           productDescription: productData.productDescription,
-          barcode: data.barcode && data.barcode.trim() !== '' ? data.barcode : undefined,
+          barcode: barcode,
 
           // Inventory Settings
           minStockLevel: inventoryData.minStockLevel,
@@ -111,9 +134,7 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
           unitPrice: data.unitPrice,
           supplierId: data.supplierId,
           warehouseId: data.warehouseId,
-          expirationDate: data.expirationDate && data.expirationDate.trim() !== ''
-            ? `${data.expirationDate}T00:00:00.000Z`
-            : undefined,
+          expirationDate: data.expirationDate,
           subInventoryDesc: data.subInventoryDesc,
 
         };
@@ -146,49 +167,6 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
     } else if (currentStep === StepEnum.SUBINVENTORY) {
       setCurrentStep(StepEnum.INVENTORY);
       setSubInventoryData(null);
-    }
-  };
-
-  // Test function for Quick Add API
-  const handleTestQuickAdd = async () => {
-    setLoading(true);
-    try {
-      const testData: QuickAddInventoryDto = {
-        productName: "Organic Tomatoes",
-        categoryId: "d6d46758-8252-4061-9d6f-51b42f07ad86",
-        baseUnitId: "bf7d3d1f-0d9c-4400-afbe-21ee2b537f80",
-        stockTypeId: "1bc28b51-4dfa-405c-9026-b73a135a054a",
-        productDescription: "Fresh organic tomatoes from local farms",
-        minStockLevel: 10,
-        maxStockLevel: 1000,
-        inventoryDesc: "Premium quality batch",
-        barcode: "12345678901233",
-        quantity: 100,
-        unitPrice: 2.5,
-        supplierId: "31e3bda7-8c6d-40f8-8668-15aee3bb1899",
-        warehouseId: "6ca8f072-687b-4100-b9c3-737405bc24c0",
-        expirationDate: "2025-12-31T23:59:59.000Z",
-        lastCountedAt: "2025-12-31T23:59:59.000Z",
-        subInventoryDesc: "Batch #123 - Received in excellent condition"
-      };
-
-      console.log('🧪 TEST - Quick Add request:', testData);
-      const response = await quickAddInventory(testData);
-      console.log('🧪 TEST - Quick Add response:', response);
-
-      alert('Test başarılı! Console\'u kontrol edin.');
-
-      if (onComplete) {
-        onComplete(response);
-      }
-
-      onClose();
-    } catch (error: any) {
-      console.error('🧪 TEST - Quick Add error:', error);
-      console.error('🧪 TEST - Error response:', error.response?.data);
-      alert(`Test başarısız: ${error.response?.data?.message || error.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -243,15 +221,6 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
               </p>
             </div>
             <div className="flex gap-2">
-              {/* Test Button */}
-              <button
-                onClick={handleTestQuickAdd}
-                className="text-white hover:bg-white/20 rounded-lg px-4 py-2 transition-colors flex items-center gap-2 border border-white/30"
-                disabled={loading}
-                title="Quick Add API Test"
-              >
-                <span className="text-sm font-medium">🧪 Test API</span>
-              </button>
               <button
                 onClick={onClose}
                 className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
@@ -355,6 +324,8 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
               onBack={handleBack}
               initialData={subInventoryData}
               loading={loading}
+              newSubInventory={productData.isExisting}
+              handleClose={onClose}
             />
           )}
         </div>

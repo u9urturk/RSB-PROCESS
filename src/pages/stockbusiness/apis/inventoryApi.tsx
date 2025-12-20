@@ -30,6 +30,7 @@ export interface UpdateInventoryDto {
 // Create Sub-Inventory DTO Interface (Batch/Lot)
 export interface CreateSubInventoryDto {
   inventoryId: string; // Parent inventory ID
+  barcode: string;
   warehouseId: string;
   supplierId?: string;
   quantity: number;
