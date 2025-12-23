@@ -81,7 +81,8 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
     }
   }, [open]);
 
-  const handleProductComplete = (data: ProductStepData, existingInventory: InventoryStepData | null, skipToSubInventory?: boolean) => {
+  const handleProductComplete = (data: ProductStepData | null, existingInventory: InventoryStepData | null,
+    skipToSubInventory?: boolean, productId?: string | null) => {
     console.log('Product step completed:', data);
     setProductData(data);
     if (skipToSubInventory) {
@@ -93,8 +94,10 @@ const StockAddLayout: React.FC<StockAddLayoutProps> = ({ open, onClose, onComple
         totalQuantity: existingInventory?.totalQuantity || 0,
         inventoryDesc: '',
         stockTypeId: '',
-        barcode: data.barcode || ''
+        barcode: data?.barcode || ''
       });
+      setCurrentStep(StepEnum.SUBINVENTORY);
+    } else if (skipToSubInventory && productId) {
       setCurrentStep(StepEnum.SUBINVENTORY);
     } else {
       setCurrentStep(StepEnum.INVENTORY);

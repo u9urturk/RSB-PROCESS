@@ -51,7 +51,13 @@ export interface ProductResponseDto {
   stockType?: any;
   baseUnit?: any;
   stockItems?: any[];
-  inventoryId?:string;
+  inventoryId?: string;
+  inventory?: {
+    id: string;
+    minStockLevel: number;
+    maxStockLevel: number;
+    totalQuantity?: number;
+  }
   minStockLevel?: number;
   maxStockLevel?: number;
   totalStock?: number;

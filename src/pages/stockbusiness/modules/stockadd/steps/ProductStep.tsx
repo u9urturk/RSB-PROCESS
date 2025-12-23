@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
-import { Package, CheckCircle, Search, Loader2, ScanLine } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Package, CheckCircle, Search, Loader2, ScanLine, List } from 'lucide-react';
 import { InventoryStepData, ProductStepData } from '../layout';
-import { ProductStatus, ProductResponseDto } from '../../../apis/productApi';
+import { ProductStatus, ProductResponseDto, productApi } from '../../../apis/productApi';
 import { useNotification } from '@/context/provider/NotificationProvider';
 import { useCategories } from '../../../provider/CategoryProvider';
 import { useBaseUnits } from '../../../provider/BaseUnitProvider';
 import { useInventory } from '@/pages/stockbusiness/provider/InventoryProvider';
+import Modal from '@/components/Modal';
 
 interface ProductStepProps {
-    onComplete: (data: ProductStepData, existingInventory: InventoryStepData | null, skipToSubInventory: boolean) => void;
+    onComplete: (data: ProductStepData | null, existingInventory: InventoryStepData | null, skipToSubInventory: boolean, productId: string | null) => void;
     initialData: ProductStepData | null;
 }
 
@@ -24,6 +25,17 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
     const [existingProduct, setExistingProduct] = useState<ProductResponseDto | null>(null);
     const [existingInventory, setExistingInventory] = useState<InventoryStepData | null>(null);
 
+    // Product selection from list (requires barcode confirmation)
+    const [selectedProductFromList, setSelectedProductFromList] = useState<ProductResponseDto | null>(null);
+    const [selectedProductBarcode, setSelectedProductBarcode] = useState('');
+    const [validatingSelectedBarcode, setValidatingSelectedBarcode] = useState(false);
+
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [allProducts, setAllProducts] = useState<any[]>([]);
+    const [loadingProducts, setLoadingProducts] = useState(false);
+    const [productSearchQuery, setProductSearchQuery] = useState('');
+
 
     // Form state for new product
     const [formData, setFormData] = useState({
@@ -34,6 +46,115 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
         note: initialData?.note || '',
         status: initialData?.status || ProductStatus.ACTIVE
     });
+
+    // Load products when modal opens
+    useEffect(() => {
+        if (isModalOpen) {
+            loadAllProducts();
+        }
+    }, [isModalOpen]);
+
+    const loadAllProducts = async () => {
+        setLoadingProducts(true);
+        try {
+            const response = await productApi.getAllProducts();
+            setAllProducts(response);
+        } catch (error) {
+            console.error('Error loading products:', error);
+            showNotification('error', 'Ürünler yüklenirken hata oluştu');
+        } finally {
+            setLoadingProducts(false);
+        }
+    };
+
+    // Filter products based on search query
+    const filteredProducts = allProducts?.filter(product => {
+        const query = productSearchQuery.toLowerCase();
+        return (
+            product.name.toLowerCase().includes(query) ||
+            product.description?.toLowerCase().includes(query) ||
+            product.categoryName?.toLowerCase().includes(query) ||
+            product.barcode?.toLowerCase().includes(query)
+        );
+    });
+
+    const handleSelectProductFromModal = async (product: ProductResponseDto) => {
+        try {
+            setSelectedProductFromList(product);
+            setSelectedProductBarcode('');
+            setExistingProduct(null);
+            setExistingInventory(null);
+            setIsModalOpen(false);
+            console.log('Selected product from modal:', product);
+            showNotification('success', 'Ürün seçildi. Barkod girip onaylayın.');
+        } catch (error) {
+            console.error('Error selecting product:', error);
+            showNotification('error', 'Ürün seçilirken hata oluştu');
+        }
+    };
+
+    const validateSelectedProductBarcode = async () => {
+        if (!selectedProductFromList) return;
+
+        const barcode = selectedProductBarcode.trim();
+        if (!barcode) {
+            showNotification('warning', 'Lütfen barkod numarası girin');
+            return;
+        }
+
+        setValidatingSelectedBarcode(true);
+        try {
+            const results = await searchInventory(barcode);
+            if (results.inventory.batchCount === 0) {
+                showNotification('success', 'Barkod kullanılabilir');
+                return;
+            }
+
+            if (results.product?.id === selectedProductFromList.id) {
+                showNotification('info', 'Bu barkod zaten seçtiğiniz ürüne ait');
+                return;
+            }
+
+            showNotification('error', 'Bu barkod başka bir ürüne ait');
+        } catch (error) {
+            console.error('Selected product barcode validation error:', error);
+            showNotification('error', 'Barkod kontrolü sırasında hata oluştu');
+        } finally {
+            setValidatingSelectedBarcode(false);
+        }
+    };
+
+    const handleConfirmSelectedProductWithBarcode = () => {
+        if (!selectedProductFromList) return;
+
+        const barcode = selectedProductBarcode.trim();
+        if (!barcode) {
+            showNotification('warning', 'Lütfen barkod numarası girin');
+            return;
+        }
+
+        const inventoryData: InventoryStepData = {
+            inventoryId: selectedProductFromList.inventory?.id,
+            minStockLevel: selectedProductFromList.inventory?.minStockLevel ?? 0,
+            maxStockLevel: selectedProductFromList.inventory?.maxStockLevel ?? 50,
+            totalQuantity: selectedProductFromList.inventory?.totalQuantity
+        };
+
+        const data: ProductStepData = {
+            isExisting: true,
+            productId: selectedProductFromList.id,
+            productName: selectedProductFromList.name,
+            categoryId: selectedProductFromList.categoryId,
+            baseUnitId: selectedProductFromList.baseUnitId,
+            productDescription: selectedProductFromList.description,
+            note: selectedProductFromList.note,
+            imageUrls: selectedProductFromList.imageUrls,
+            status: selectedProductFromList.status,
+            barcode: barcode,
+        };
+
+        onComplete(data, inventoryData, true, selectedProductFromList.id);
+    };
 
     const handleExistingProductConfirm = () => {
         if (!existingProduct) return;
@@ -48,10 +169,10 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
             note: existingProduct.note,
             imageUrls: existingProduct.imageUrls,
             status: existingProduct.status,
-            barcode: existingProduct.barcode, 
+            barcode: existingProduct.barcode,
         };
 
-        onComplete(data,existingInventory, true);
+        onComplete(data, existingInventory, true, null);
     };
 
     const handleNewProductSubmit = (e: React.FormEvent) => {
@@ -81,7 +202,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
             status: formData.status
         };
 
-        onComplete(data, null, false);
+        onComplete(data, null, false, null);
     };
 
     const handleInputChange = (field: keyof typeof formData, value: any) => {
@@ -165,7 +286,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                     barcode: barcode
                 };
 
-                onComplete(data,existingInventory, true);
+                onComplete(data, existingInventory, true, null);
             }
         } catch (error) {
             console.error('Product scan error:', error);
@@ -222,10 +343,98 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                         )}
                     </button>
                 </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-300">
+                    <button
+                        type="button"
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all flex items-center justify-center gap-2 font-semibold"
+                    >
+                        <List size={20} />
+                        Tüm Ürünleri Listele
+                    </button>
+                </div>
             </div>
 
+            {/* Selected Product (from list) - Barcode confirmation */}
+            {selectedProductFromList && (
+                <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6">
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="text-purple-700" size={24} />
+                            <h3 className="text-lg font-semibold text-purple-900">Seçilen Ürün</h3>
+                        </div>
+                        <span
+                            className={`px-3 py-1 rounded-full text-sm font-semibold ${selectedProductFromList.status === ProductStatus.ACTIVE
+                                ? 'bg-green-200 text-green-800'
+                                : selectedProductFromList.status === ProductStatus.INACTIVE
+                                    ? 'bg-gray-200 text-gray-800'
+                                    : 'bg-yellow-200 text-yellow-800'
+                                }`}
+                        >
+                            {selectedProductFromList.status}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="col-span-2">
+                            <label className="text-sm text-gray-600 block mb-1">Ürün Adı</label>
+                            <div className="font-semibold text-gray-800">{selectedProductFromList.name}</div>
+                        </div>
+
+                        <div className="col-span-2">
+                            <label className="text-sm text-gray-600 block mb-2">Yeni Barkod</label>
+                            <div className="flex gap-3">
+                                <input
+                                    type="text"
+                                    value={selectedProductBarcode}
+                                    onChange={(e) => setSelectedProductBarcode(e.target.value)}
+                                    placeholder="Barkod numarasını girin / okutun..."
+                                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    disabled={validatingSelectedBarcode}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={validateSelectedProductBarcode}
+                                    disabled={validatingSelectedBarcode}
+                                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
+                                >
+                                    {validatingSelectedBarcode ? (
+                                        <>
+                                            <Loader2 size={20} className="animate-spin" />
+                                            Kontrol...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ScanLine size={20} />
+                                            Tara
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {selectedProductFromList.description && (
+                            <div className="col-span-2">
+                                <label className="text-sm text-gray-600 block mb-1">Açıklama</label>
+                                <div className="text-gray-700">{selectedProductFromList.description}</div>
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleConfirmSelectedProductWithBarcode}
+                        className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all font-semibold flex items-center justify-center gap-2"
+                    >
+                        <CheckCircle size={20} />
+                        Barkodu Onayla ve Devam Et
+                    </button>
+                </div>
+            )}
+
             {/* Existing Product Display */}
-            {existingProduct && (
+            {!selectedProductFromList && existingProduct && (
                 <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -278,7 +487,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
             )}
 
             {/* New Product Form */}
-            {!existingProduct && (
+            {!selectedProductFromList && !existingProduct && (
                 <form onSubmit={handleNewProductSubmit} className="space-y-6">
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
                         <div className="flex items-center gap-2 mb-4">
@@ -401,6 +610,98 @@ const ProductStep: React.FC<ProductStepProps> = ({ onComplete, initialData }) =>
                     </button>
                 </form>
             )}
+
+            {/* Product List Modal */}
+            <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                <div className="w-[800px] max-w-[90vw]">
+                    <div className="p-6 border-b border-gray-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <List size={24} className="text-purple-600" />
+                                Ürün Listesi
+                            </h2>
+
+                        </div>
+
+                        {/* Search Input */}
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <input
+                                type="text"
+                                value={productSearchQuery}
+                                onChange={(e) => setProductSearchQuery(e.target.value)}
+                                placeholder="Ürün adı, açıklama veya barkod ile ara..."
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="p-6 max-h-[500px] overflow-y-auto">
+                        {loadingProducts ? (
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="animate-spin text-purple-600" size={40} />
+                            </div>
+                        ) : filteredProducts?.length === 0 ? (
+                            <div className="text-center py-12 text-gray-500">
+                                {productSearchQuery ? 'Arama kriterlerine uygun ürün bulunamadı' : 'Henüz ürün bulunmamaktadır'}
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {filteredProducts.map((product) => {
+
+                                    return (
+                                        <div
+                                            key={product.id}
+                                            onClick={() => handleSelectProductFromModal(product)}
+                                            className="p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 cursor-pointer transition-all group"
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <h3 className="font-semibold text-gray-800 group-hover:text-purple-700">
+                                                            {product.name}
+                                                        </h3>
+                                                        <span
+                                                            className={`px-2 py-1 rounded-full text-xs font-semibold ${product.status === ProductStatus.ACTIVE
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : product.status === ProductStatus.INACTIVE
+                                                                    ? 'bg-gray-100 text-gray-700'
+                                                                    : 'bg-yellow-100 text-yellow-700'
+                                                                }`}
+                                                        >
+                                                            {product.status}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                                                        <div>
+                                                            <span className="font-medium">Kategori:</span> {product.categoryName}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-medium">Birim:</span> {product.baseUnitName} ({product.baseUnitSymbol})
+                                                        </div>
+                                                    </div>
+
+                                                    {product.description && (
+                                                        <p className="mt-2 text-sm text-gray-600">
+                                                            {product.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <CheckCircle
+                                                    className="text-gray-300 group-hover:text-purple-600 flex-shrink-0"
+                                                    size={24}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 };
